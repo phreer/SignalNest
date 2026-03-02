@@ -1,7 +1,6 @@
 """
 summarizer.py - AI 摘要与品味过滤引擎
 ==========================================
-改编自 obsidian-daily-digest/summarizer.py
 主要改动：
   - 用传入的 config dict 替换 import config 模块
   - 使用 LiteLLM 替代 Anthropic SDK，支持任意 OpenAI 兼容接口
@@ -332,6 +331,7 @@ def summarize_items(
     results.sort(key=lambda x: x.get("ai_score", 0), reverse=True)
 
     # 按来源分桶，每源保底
+
     source_buckets: dict[str, list] = {}
     for item in results:
         src = item.get("source", "unknown")
@@ -354,3 +354,67 @@ def summarize_items(
 
     selected.sort(key=lambda x: x.get("ai_score", 0), reverse=True)
     return selected
+
+
+def generate_digest_summary(
+    news_items: list[dict],
+    config: dict,
+    focus: str = "",
+) -> str:
+    """
+    对已筛选的 news_items 生成「今日要点」整体总结。
+    单次 AI 调用，token 消耗极小。
+
+    Returns:
+        总结文本（纯文本，含换行），失败时返回空字符串。
+    """
+    if not news_items:
+        return ""
+
+    ai_cfg = config.get("ai", {})
+    model    = os.environ.get("AI_MODEL")    or ai_cfg.get("model", "openai/gpt-4o-mini")
+    api_base = os.environ.get("AI_API_BASE") or ai_cfg.get("api_base") or None
+    api_key  = os.environ.get("AI_API_KEY", "")
+    language = config.get("app", {}).get("language", "zh")
+
+    if not api_key:
+        return ""
+
+    call_kwargs: dict = dict(model=model, api_key=api_key, max_tokens=600)
+    if api_base:
+        call_kwargs["api_base"] = api_base
+
+    lang_label = "中文" if language == "zh" else "English"
+    focus_line = f"本次关注方向：{focus}\n\n" if focus else ""
+
+    items_text = ""
+    for i, item in enumerate(news_items, 1):
+        source  = item.get("source", "").upper()
+        title   = item.get("title", "")
+        summary = item.get("ai_summary", "")
+        score   = item.get("ai_score", "?")
+        items_text += f"{i}. [{source}][{score}/10] {title}\n"
+        if summary:
+            items_text += f"   {summary}\n"
+
+    user_message = f"""{focus_line}以下是今日精选的 {len(news_items)} 条内容：
+
+{items_text}
+请用{lang_label}撰写「今日要点」总结：
+- 提炼 3-5 条最值得关注的主题或趋势
+- 每条要点 1-2 句，言简意赅
+- 覆盖不同领域（AI/科技/金融/政治等）
+- 直接输出要点列表，每条以「• 」开头，不需要标题或其他说明文字"""
+
+    try:
+        response = litellm.completion(
+            messages=[
+                {"role": "system", "content": f"你是专业的信息分析师，擅长跨领域提炼要点，请用{lang_label}输出。"},
+                {"role": "user",   "content": user_message},
+            ],
+            **call_kwargs,
+        )
+        return response.choices[0].message.content.strip()
+    except Exception as e:
+        logger.warning(f"生成今日要点失败: {e}")
+        return ""

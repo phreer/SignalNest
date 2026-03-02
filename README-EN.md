@@ -35,7 +35,9 @@ A self-hosted personal AI digest service — aggregates GitHub / YouTube / RSS, 
 ## 🎯 Features
 
 - **Three source types**: GitHub trending repos / YouTube curated videos / RSS feeds — mix and match
-- **AI digest**: auto-scores each item (1–10), generates summaries, filters low-quality content
+- **Focus-based filtering**: each schedule has a `focus` field; the AI prioritizes content that matches it
+- **Two-stage AI pipeline**: batch title filtering (low token cost) → deep read scoring (only for selected items)
+- **YouTube dual-track**: subscribed channels ranked by views + AI auto-generates search keywords from `focus` to discover other channels
 - **Preference learning**: rate items to teach the AI your taste — recommendations improve over time
 - **Personal assistant**: morning schedule reminder + TODO due-date checker (overdue / today / upcoming)
 - **Multi-channel delivery**: Email (HTML) + Feishu + WeCom, with per-recipient content splitting
@@ -99,13 +101,15 @@ schedules:
   - name: "Morning Digest"
     cron: "0 8 * * *"
     content: [schedule, todos, news]   # schedule + todos + news
-    sources: [github, rss]
+    sources: [github, youtube, rss]
+    focus: "AI agents, LLM engineering, and open-source ecosystem updates"
     subject_prefix: "Good Morning | DailyRadar"
 
   - name: "Evening Digest"
     cron: "0 21 * * *"
     content: [news]
     sources: [github, youtube, rss]
+    focus: "Today's tech and AI industry news, product launches, and research breakthroughs"
     subject_prefix: "Evening Picks | DailyRadar"
 ```
 
@@ -116,6 +120,8 @@ schedules:
 | `news` | Collect sources + AI digest |
 | `schedule` | Today's schedule from `personal/schedule.yaml` |
 | `todos` | Due / overdue TODOs from `personal/todos.yaml` |
+
+`focus` field: the AI uses this as the primary scoring signal for each schedule run. Leave blank to rely solely on learned preferences.
 
 ---
 
@@ -204,7 +210,7 @@ docker compose down
 In `docker/.env`:
 
 ```dotenv
-IMMEDIATE_RUN=true          # Run once immediately on startup
+IMMEDIATE_RUN=true            # Run once immediately on startup
 SCHEDULE_NAME=Morning Digest  # Leave blank to use the first schedule
 ```
 
@@ -248,24 +254,56 @@ ai:
   api_base: ""                  # Custom endpoint; env AI_API_BASE takes priority
   min_relevance_score: 5        # Filter items below this score (1–10)
   max_items_per_digest: 20      # Max items shown per digest
-  max_tokens: 512               # Max tokens per summary
+  max_tokens: 2048              # Max tokens per summary
 ```
 
 ### GitHub collector
 
+Scrapes `github.com/trending`; the AI filters by `focus` — no manual keyword lists needed.
+
 ```yaml
 collectors:
   github:
-    topics: [llm, ai-agent, python]
-    min_stars: 50
-    max_repos: 12
-    days_lookback: 7
+    enabled: true
+    trending_since: "daily"      # daily / weekly / monthly
+    trending_languages: []       # Leave empty for all languages, or e.g. ["python", "typescript"]
+    max_repos: 25                # Max repos to fetch
 ```
+
+### YouTube collector
+
+Two parallel tracks. Transcripts are fetched **after** title-based AI filtering, so only selected videos incur transcript requests.
+
+```yaml
+collectors:
+  youtube:
+    enabled: true                # Requires YOUTUBE_API_KEY
+    # ── Track 1: Subscribed channels ─────────────────────────
+    channel_ids:
+      - "UCnUYZLuoy1rq1aVMwx4aTzw"   # Lex Fridman Podcast
+      - "UCcefcZRL2oaA_uBNeo5UOWg"   # Y Combinator
+    max_results_per_channel: 3   # Videos kept per channel (sorted by views)
+    days_lookback: 2             # Only fetch videos from the last N days
+    sort_by: "views"             # "views" (popularity) / "date" (newest first)
+    # ── Track 2: AI keyword search (other channels) ───────────
+    enable_keyword_search: false # Set true to enable; costs one extra AI call
+    max_search_results: 3        # Max videos per keyword (sorted by views)
+    search_days_lookback: 3      # Time window for keyword search (independent of channel window)
+```
+
+When `enable_keyword_search` is enabled, the AI derives 3–5 English search phrases from the current schedule's `focus` and queries the YouTube Search API to surface content beyond your subscribed channels.
 
 ### RSS feeds
 
+Two-phase fetch: each feed initially pulls `max_items_per_feed_initial` titles for batch AI filtering, then only the selected items proceed to deep-read scoring.
+
 ```yaml
+collectors:
   rss:
+    enabled: true
+    days_lookback: 2
+    max_items_per_feed_initial: 10  # Titles fetched per feed for batch filtering
+    max_items_per_feed: 3           # Max articles per feed that reach deep-read scoring
     feeds:
       - id: "hacker-news"
         name: "Hacker News"
@@ -286,38 +324,32 @@ notifications:
 
 > **Privacy**: `schedule` and `todos` are personal content — only sent to `EMAIL_FROM` (the sender). Other recipients receive only the news section.
 
-<br>
-
 ## ❓ FAQ
 
-**Q: Email sending fails with 535 authentication error**
+### Q: Email sending fails with 535 authentication error
 
-A: Use an app password / SMTP auth code, not your account login password.
+Use an app password / SMTP auth code, not your account login password.
 
-**Q: GitHub collection is slow or hitting rate limits**
+### Q: GitHub collection is slow or hitting rate limits
 
-A: Without `GITHUB_TOKEN`, you're limited to 60 API requests/hour. Generate a token at GitHub Settings → Developer Settings → Personal Access Tokens (no permissions needed).
+Without `GITHUB_TOKEN`, you're limited to 60 API requests/hour. Generate a token at GitHub Settings → Developer Settings → Personal Access Tokens (no permissions needed).
 
-**Q: YouTube returns 403 Forbidden**
+### Q: YouTube returns 403 Forbidden
 
-A: Enable YouTube Data API v3 in Google Cloud Console, and make sure the API key has no HTTP referrer restrictions.
+Enable YouTube Data API v3 in Google Cloud Console, and make sure the API key has no HTTP referrer restrictions.
 
-**Q: How to add more RSS feeds**
+### Q: Enabling `enable_keyword_search` increases my YouTube API quota usage
 
-A: Edit `collectors.rss.feeds` in `config/config.yaml`, add `{id, name, url}`, then `docker compose restart`.
+Keyword search makes one extra AI call (to generate keywords) plus several YouTube Search API requests. The YouTube Data API v3 free tier is 10,000 units/day; each Search call costs ~100 units while channel playlist fetches cost ~1 unit. Keep `max_search_results` low to stay within quota.
 
-**Q: How to run only one schedule manually**
+### Q: How to add more RSS feeds
 
-A: Set `IMMEDIATE_RUN=true` and `SCHEDULE_NAME=Morning Digest` in `docker/.env`, then recreate the container.
+Edit `collectors.rss.feeds` in `config/config.yaml`, add `{id, name, url}`, then `docker compose restart`.
 
-<br>
+### Q: How to run only one schedule manually
+
+Set `IMMEDIATE_RUN=true` and `SCHEDULE_NAME=Morning Digest` in `docker/.env`, then recreate the container.
 
 ## 📚 Credits
 
-| Component | Source |
-|------|------|
-| GitHub / YouTube / RSS collectors | Adapted from [obsidian-daily-digest](https://github.com/iamseeley/obsidian-daily-digest) |
-| AI digest + preference learning | Adapted from [obsidian-daily-digest](https://github.com/iamseeley/obsidian-daily-digest) |
-| Docker + supercronic multi-schedule | Adapted from [TrendRadar](https://github.com/sansan0/TrendRadar) |
-| Feishu / WeCom push | Adapted from [TrendRadar](https://github.com/sansan0/TrendRadar) |
-| Email HTML template | Adapted from [obsidian-daily-digest](https://github.com/iamseeley/obsidian-daily-digest) |
+Inspired by [TrendRadar](https://github.com/sansan0/TrendRadar) and [obsidian-daily-digest](https://github.com/iamseeley/obsidian-daily-digest)

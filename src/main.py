@@ -122,9 +122,15 @@ def run(schedule_name: str, config: dict, dry_run: bool = False):
 
         if raw_items:
             logger.info("🤖 AI 摘要中...")
-            from src.ai.summarizer import summarize_items
+            from src.ai.summarizer import summarize_items, generate_digest_summary
             news_items = summarize_items(raw_items, config, focus=focus)
             logger.info(f"   筛选后: {len(news_items)} 条")
+
+    # ── Section 2b: 生成今日要点总结 ─────────────────────────
+    digest_summary = ""
+    if news_items:
+        logger.info("🤖 生成今日要点...")
+        digest_summary = generate_digest_summary(news_items, config, focus=focus)
 
     # ── Section 3: 组装 Payload ──────────────────────────────
     payload = {
@@ -136,6 +142,7 @@ def run(schedule_name: str, config: dict, dry_run: bool = False):
         "schedule_entries": schedule_entries,
         "todos":            todos,
         "news_items":       news_items,
+        "digest_summary":   digest_summary,
         "content_blocks":   content_blocks,
     }
 

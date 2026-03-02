@@ -30,14 +30,22 @@ schedules:
     cron: "0 10 * * *"           # 每天早上 10:00
     content: [schedule, todos, news]
     sources: [github, youtube, rss]
-    focus: "AI Agent、大模型工程化与开源生态最新进展"   # AI 筛选方向
+    # 早间：快速感知四个维度的要闻，侧重「发生了什么」
+    # - AI/科技：昨夜重要发布、开源项目、模型更新
+    # - 金融：亚欧市场动态、美股期货、宏观政策信号
+    # - 政治：重大外交/政策动向、地缘风险预警
+    focus: "AI大模型与科技产品最新动态（发布/开源/融资）；金融市场早盘信号、宏观经济政策与央行动向；全球重要政治外交事件与地缘风险；优先呈现时效性强、影响面广的突发与要闻"
     subject_prefix: "早安 | DailyRadar"
 
   - name: "晚间日报"
     cron: "0 21 * * *"          # 每天晚上 9:00
     content: [news]
     sources: [github, youtube, rss]
-    focus: "今日科技与 AI 行业动态、产品发布与研究突破"  # AI 筛选方向
+    # 晚间：深度消化今日全局，侧重「意味着什么」
+    # - AI/科技：研究突破、深度评测、行业格局变化
+    # - 金融：收盘复盘、机构观点、中长期趋势
+    # - 政治：事件进展分析、政策解读、多方博弈
+    focus: "AI前沿研究与工程实践深度内容；科技公司战略动向与产品分析；金融市场今日复盘、机构观点与宏观趋势解读；全球政治热点事件深度分析与政策影响；优先选取有深度、有观点、值得精读的内容"
     subject_prefix: "晚间精选 | DailyRadar"
 
   # 更多示例（取消注释即可启用）：
@@ -80,12 +88,13 @@ collectors:
       - "UCcefcZRL2oaA_uBNeo5UOWg"   # Y Combinator
       - "UC9cn0TuPq4dnbTY-CBsm8XA"   # a16z
     max_results_per_channel: 3  # 每个频道最终保留的视频数（按热度排序）
-    days_lookback: 2            # 只抓取最近 N 天的视频
+    days_lookback: 7            # 只抓取最近 N 天的视频
     sort_by: "views"            # 排序方式："views"（热度）/ "date"（最新）
     # ── 关键词搜索（其他频道）────────────────────────────────
     # AI 根据当次 schedule 的 focus 自动推导搜索词，覆盖 channel_ids 之外的内容
     enable_keyword_search: true  # 改为 true 开启；会额外消耗一次 AI 调用 + YouTube Search 配额
     max_search_results: 3        # 每个关键词最多取多少条视频（按热度排序）
+    search_days_lookback: 3      # 关键词搜索的时间窗口（热点时效性短，独立于订阅频道）
 
   # ── RSS ──────────────────────────────────────────────────────
   rss:
@@ -123,13 +132,29 @@ collectors:
       - id: "simon-willison"
         name: "Simon Willison"
         url: "https://simonwillison.net/atom/everything/"
-      # 更多示例（取消注释即可添加）：
-      # - id: "ruan-yifeng"
-      #   name: "阮一峰的网络日志"
-      #   url: "https://www.ruanyifeng.com/blog/atom.xml"
-      # - id: "fortune-tech"
-      #   name: "Fortune Tech"
-      #   url: "https://fortune.com/feed/fortune-feeds/?id=3230629"
+      # 金融 / 经济
+      - id: "reuters-business"
+        name: "Reuters Business"
+        url: "https://feeds.reuters.com/reuters/businessNews"
+      - id: "ft-world"
+        name: "Financial Times World"
+        url: "https://www.ft.com/world?format=rss"
+      - id: "bloomberg-tech"
+        name: "Bloomberg Technology"
+        url: "https://feeds.bloomberg.com/technology/news.rss"
+      - id: "economist-finance"
+        name: "The Economist Finance"
+        url: "https://www.economist.com/finance-and-economics/rss.xml"
+      # 政治 / 国际
+      - id: "reuters-politics"
+        name: "Reuters World"
+        url: "https://feeds.reuters.com/reuters/worldNews"
+      - id: "economist-world"
+        name: "The Economist World"
+        url: "https://www.economist.com/the-world-this-week/rss.xml"
+      - id: "foreign-affairs"
+        name: "Foreign Affairs"
+        url: "https://www.foreignaffairs.com/rss.xml"
 
 
 # ──────────────────────────────────────────────────────────────
@@ -139,8 +164,8 @@ collectors:
 # ──────────────────────────────────────────────────────────────
 ai:
   # 模型名称（LiteLLM 格式：provider/model_name），环境变量 AI_MODEL 优先
-  # 示例：openai/gpt-5.2  |  gemini/gemini-3.1-flash
-  model: "openai/gemini-3.1-pro-preview"
+  # 示例：openai/gpt-5.2  |  gemini/gemini-3.1-pro-preview
+  model: "openai/gpt-5.2"
   # 自定义 API 端点（环境变量 AI_API_BASE 优先，使用官方接口时留空）
   api_base: ""
   max_tokens: 2048              # 每条摘要的最大 token 数

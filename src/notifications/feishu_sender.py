@@ -1,6 +1,5 @@
 """
 feishu_sender.py - 飞书群机器人 Webhook 推送
-改编自 TrendRadar/trendradar/notification/senders.py
 """
 
 import logging
@@ -53,14 +52,21 @@ def _build_text(payload: dict) -> str:
     news = payload.get("news_items") or []
     if news:
         lines.append(f"━━━━ 今日精选 ({len(news)} 条) ━━━━")
-        for item in news:
+        for i, item in enumerate(news, 1):
             score = item.get("ai_score", "?")
             source = item.get("source", "").upper()
-            lines.append(f"[{score}/10][{source}] {item['title']}")
+            lines.append(f"[{i}/{len(news)}][{score}/10][{source}] {item['title']}")
             if item.get("ai_summary"):
                 lines.append(f"  {item['ai_summary']}")
             lines.append(f"  {item['url']}")
             lines.append("")
+
+    # ── 今日要点 ──────────────────────────────────────────────
+    digest_summary = payload.get("digest_summary", "")
+    if digest_summary:
+        lines.append("━━━━ 今日要点 ━━━━")
+        lines.append(digest_summary)
+        lines.append("")
 
     lines.append("━━━━━━━━━━━━━━━━━━")
     lines.append(f"DailyRadar · {payload.get('schedule_name', '')}")

@@ -1,7 +1,6 @@
 """
 feedback.py - SQLite 偏好反馈读写
 ====================================
-改编自 obsidian-daily-digest/summarizer.py 中的反馈功能
 负责：
   - 初始化 feedback.db
   - 保存用户反馈（score 1-5）

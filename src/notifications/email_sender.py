@@ -1,6 +1,5 @@
 """
 email_sender.py - SMTP 邮件发送（Jinja2 HTML 模板）
-改编自 obsidian-daily-digest/mailer.py
 """
 
 import logging
@@ -71,6 +70,7 @@ def _render_html(payload: dict, config: dict) -> str:
         schedule_entries=payload.get("schedule_entries") or [],
         todos=payload.get("todos") or [],
         news_items=payload.get("news_items") or [],
+        digest_summary=payload.get("digest_summary", ""),
         ai_model=config.get("ai", {}).get("model", ""),
     )
 

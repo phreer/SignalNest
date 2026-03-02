@@ -334,6 +334,8 @@ def collect_youtube(
     channel_ids = yt_cfg.get("channel_ids", [])
     enable_keyword_search = yt_cfg.get("enable_keyword_search", False)
     max_search_results = yt_cfg.get("max_search_results", 10)
+    # 关键词搜索单独的时间窗口（热点时效性更短，默认比订阅频道窗口小）
+    search_days_back = yt_cfg.get("search_days_lookback", days_back)
 
     collected: list[dict] = []
     seen_urls: set[str] = set()
@@ -360,7 +362,7 @@ def collect_youtube(
             logger.info(f"   关键词: {keywords}")
             search_added = 0
             for kw in keywords:
-                videos = _search_by_keyword(yt, kw, days_back, max_results=max_search_results)
+                videos = _search_by_keyword(yt, kw, search_days_back, max_results=max_search_results)
                 for v in videos:
                     if v["url"] not in seen_urls:
                         seen_urls.add(v["url"])

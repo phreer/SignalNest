@@ -1,6 +1,5 @@
 """
 wework_sender.py - 企业微信群机器人 Webhook 推送
-改编自 TrendRadar/trendradar/notification/senders.py
 """
 
 import logging
@@ -54,10 +53,10 @@ def _build_markdown(payload: dict) -> str:
     if news:
         lines.append(f"**📰 今日精选（{len(news)} 条）**")
         lines.append("")
-        for item in news:
+        for i, item in enumerate(news, 1):
             score = item.get("ai_score", "?")
             source = item.get("source", "").upper()
-            lines.append(f"**[{score}/10] {source}** · `{item['title'][:50]}`")
+            lines.append(f"**[{i}/{len(news)}][{score}/10] {source}** · `{item['title'][:50]}`")
             if item.get("ai_summary"):
                 lines.append(f"> {item['ai_summary']}")
             lines.append(f"> [查看详情]({item['url']})")
@@ -150,10 +149,10 @@ def _split_markdown(payload: dict, max_bytes: int) -> list[str]:
     chunks = []
     current = header_text + f"\n**📰 今日精选（{len(news_items)} 条）**\n\n"
 
-    for item in news_items:
+    for i, item in enumerate(news_items, 1):
         score = item.get("ai_score", "?")
         source = item.get("source", "").upper()
-        item_text = f"**[{score}/10] {source}** · `{item['title'][:50]}`\n"
+        item_text = f"**[{i}/{len(news_items)}][{score}/10] {source}** · `{item['title'][:50]}`\n"
         if item.get("ai_summary"):
             item_text += f"> {item['ai_summary']}\n"
         item_text += f"> [查看详情]({item['url']})\n\n"
