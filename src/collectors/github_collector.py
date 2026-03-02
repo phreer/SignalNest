@@ -8,6 +8,7 @@ github_collector.py - GitHub Trending 爬取器
 
 import logging
 import re
+import time
 from typing import Optional
 
 import requests
@@ -24,6 +25,8 @@ _HEADERS = {
         "Chrome/124.0.0.0 Safari/537.36"
     ),
     "Accept-Language": "en-US,en;q=0.9",
+    # 避免部分网络环境下 Keep-Alive 连接被对端提前关闭
+    "Connection": "close",
 }
 
 
@@ -36,6 +39,30 @@ def _parse_int(text: str) -> int:
         return int(text)
     except (ValueError, AttributeError):
         return 0
+
+
+def _get_with_retry(url: str, params: dict, attempts: int = 3, timeout: int = 15) -> requests.Response:
+    """
+    对短暂网络波动进行重试，降低 RemoteDisconnected 导致的单次抓取失败概率。
+    """
+    last_exc: Exception | None = None
+    for attempt in range(1, attempts + 1):
+        try:
+            resp = requests.get(url, params=params, headers=_HEADERS, timeout=timeout)
+            resp.raise_for_status()
+            return resp
+        except requests.RequestException as e:
+            last_exc = e
+            if attempt < attempts:
+                wait_s = 1.2 * attempt
+                logger.warning(
+                    f"GitHub Trending 请求失败，第 {attempt}/{attempts} 次重试前等待 {wait_s:.1f}s: {e}"
+                )
+                time.sleep(wait_s)
+
+    if last_exc is not None:
+        raise last_exc
+    raise requests.RequestException("GitHub Trending 请求失败（未知错误）")
 
 
 def _scrape_trending(language: str = "", since: str = "daily", max_repos: int = 25) -> list[dict]:
@@ -52,8 +79,7 @@ def _scrape_trending(language: str = "", since: str = "daily", max_repos: int = 
     """
     url = f"{TRENDING_URL}/{language.lower()}" if language else TRENDING_URL
     try:
-        resp = requests.get(url, params={"since": since}, headers=_HEADERS, timeout=15)
-        resp.raise_for_status()
+        resp = _get_with_retry(url, params={"since": since}, attempts=3, timeout=15)
     except requests.RequestException as e:
         logger.error(f"GitHub Trending 页面请求失败 language={language!r}: {e}")
         return []
