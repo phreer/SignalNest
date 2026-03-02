@@ -68,7 +68,7 @@ def _render_html(payload: dict, config: dict) -> str:
         date_str=today.strftime("%Y-%m-%d"),
         weekday_str=WEEKDAY_ZH[today.weekday()],
         schedule_entries=payload.get("schedule_entries") or [],
-        todos=payload.get("todos") or [],
+        projects=payload.get("projects") or [],
         news_items=payload.get("news_items") or [],
         digest_summary=payload.get("digest_summary", ""),
         ai_model=config.get("ai", {}).get("model", ""),
@@ -120,7 +120,7 @@ def send_email(payload: dict, config: dict) -> bool:
 
     today: date = payload["date"]
     subject = f"{payload.get('subject_prefix', 'SignalNest')} · {today.strftime('%Y-%m-%d')}"
-    has_personal = bool(payload.get("schedule_entries") or payload.get("todos"))
+    has_personal = bool(payload.get("schedule_entries") or payload.get("projects"))
 
     # 有个人内容时：个人邮箱收完整版，其他收件人收纯新闻版
     personal_recipients = [r for r in recipients if r == smtp_user] if has_personal else []
@@ -151,7 +151,7 @@ def send_email(payload: dict, config: dict) -> bool:
             success = True
 
         if other_recipients:
-            news_payload = {**payload, "schedule_entries": [], "todos": []}
+            news_payload = {**payload, "schedule_entries": [], "projects": []}
             html = _render_html(news_payload, config)
             _smtp_send(smtp_server, smtp_port, smtp_user, smtp_pass,
                        other_recipients, _make_msg(html, other_recipients))

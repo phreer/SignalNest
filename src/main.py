@@ -73,22 +73,22 @@ def run(schedule_name: str, config: dict, dry_run: bool = False):
 
     # ── Section 1: 个人助手 ───────────────────────────────────
     schedule_entries = None
-    todos = None
+    projects = None
 
     if "schedule" in content_blocks:
-        from src.personal.schedule_reader import read_today_schedule
+        from src.personal.ai_reader import read_today_schedule
         personal_dir = config.get("_personal_dir", "/app/config/personal")
-        schedule_path = str(Path(personal_dir) / "schedule.yaml")
-        schedule_entries = read_today_schedule(schedule_path, today, tz)
+        schedule_path = str(Path(personal_dir) / "schedule.md")
+        schedule_entries = read_today_schedule(schedule_path, today, config)
         logger.info(f"  日程: {len(schedule_entries)} 条")
 
     if "todos" in content_blocks:
-        from src.personal.todo_reader import read_due_todos
+        from src.personal.ai_reader import read_active_projects
         personal_dir = config.get("_personal_dir", "/app/config/personal")
-        todos_path = str(Path(personal_dir) / "todos.yaml")
-        lookahead = config.get("storage", {}).get("todo_lookahead_days", 3)
-        todos = read_due_todos(todos_path, today, lookahead)
-        logger.info(f"  TODO: {len(todos)} 条需提醒")
+        projects_path = str(Path(personal_dir) / "projects.md")
+        lookahead = config.get("storage", {}).get("todo_lookahead_days", 7)
+        projects = read_active_projects(projects_path, today, config, lookahead)
+        logger.info(f"  项目: {len(projects)} 个活跃项目")
 
     # ── Section 2: 新闻采集 + AI 摘要 ──────────────────────────
     news_items = []
@@ -149,7 +149,7 @@ def run(schedule_name: str, config: dict, dry_run: bool = False):
         "date":             today,
         "datetime":         now,
         "schedule_entries": schedule_entries,
-        "todos":            todos,
+        "projects":         projects,
         "news_items":       news_items,
         "digest_summary":   digest_summary,
         "content_blocks":   content_blocks,
@@ -300,11 +300,15 @@ def _print_dry_run(payload: dict):
             loc = f" @ {e['location']}" if e.get("location") else ""
             print(f"  {e['time']}  {e['title']}{loc}")
 
-    todos = payload.get("todos") or []
+    todos = payload.get("projects") or []
     if todos:
-        print(f"\n--- TODO ({len(todos)} 条) ---")
-        for t in todos:
-            print(f"  [{t['status']}] {t['title']} (due: {t['due']})")
+        print(f"\n--- 项目进展 ({len(todos)} 个) ---")
+        for proj in todos:
+            due = f" (软截止 {proj['soft_due']})" if proj.get("soft_due") else ""
+            print(f"  ▶ {proj['title']}{due}")
+            for t in proj.get("tasks", []):
+                task_due = f" [{t['soft_due']}]" if t.get("soft_due") else ""
+                print(f"    · {t['title']}{task_due}")
 
     news = payload.get("news_items") or []
     if news:

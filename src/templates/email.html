@@ -66,8 +66,48 @@
     color: #7c3aed;
     margin-bottom: 4px;
   }
-  .section-title.todos    { border-color: #f59e0b; color: #b45309; }
+  .section-title.projects { border-color: #f59e0b; color: #b45309; }
   .section-title.news     { border-color: #10b981; color: #047857; }
+
+  /* ── 项目 ── */
+  .project-block {
+    padding: 10px 12px;
+    margin-bottom: 12px;
+    border-left: 3px solid #e5e7eb;
+  }
+  .project-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #111827;
+    margin-bottom: 6px;
+  }
+  .soft-due {
+    font-size: 11px;
+    font-weight: 500;
+    padding: 1px 7px;
+    border-radius: 10px;
+    margin-left: 8px;
+    background: #fef3c7;
+    color: #92400e;
+  }
+  .soft-due.soft-due-overdue  { background: #fee2e2; color: #991b1b; }
+  .soft-due.soft-due-today    { background: #fef3c7; color: #92400e; }
+  .soft-due.soft-due-upcoming { background: #eff6ff; color: #1e40af; }
+  .task-item {
+    font-size: 13px;
+    color: #374151;
+    padding: 3px 0 3px 12px;
+    border-left: 2px solid #f3f4f6;
+    margin-bottom: 3px;
+  }
+  .task-due {
+    font-size: 11px;
+    color: #9ca3af;
+    margin-left: 6px;
+  }
+  .task-item.task-overdue  .task-due { color: #ef4444; }
+  .task-item.task-today    .task-due { color: #f59e0b; }
+  .task-item.task-upcoming .task-due { color: #3b82f6; }
 
   /* ── 日程 ── */
   .schedule-table { width: 100%; border-collapse: collapse; }
@@ -195,23 +235,36 @@
 </div>
 {% endif %}
 
-{% if todos %}
-<!-- 待办提醒 -->
+{% if projects %}
+<!-- 项目进展 -->
 <div class="card">
-  <div class="section-title todos">✅ 待办提醒</div>
-  {% for todo in todos %}
-  <div class="todo-item {{ todo.status }}">
-    <div class="todo-status">
-      {% if todo.status == "overdue" %}⚠ 已逾期 {{ todo.days_until | abs }} 天
-      {% elif todo.status == "today" %}★ 今日截止
-      {% else %}○ 还有 {{ todo.days_until }} 天 ({{ todo.due }})
+  <div class="section-title projects">📋 项目进展</div>
+  {% for proj in projects %}
+  <div class="project-block">
+    <div class="project-title">
+      {{ proj.title }}
+      {% if proj.soft_due %}
+      <span class="soft-due {% if proj.soft_due_status %}soft-due-{{ proj.soft_due_status }}{% endif %}">
+        {% if proj.soft_due_status == "overdue" %}建议尽快完成
+        {% elif proj.soft_due_status == "today" %}今日建议完成
+        {% else %}软截止 {{ proj.soft_due }}
+        {% endif %}
+      </span>
       {% endif %}
     </div>
-    <div class="todo-title {{ 'priority-' + todo.priority }}">{{ todo.title }}</div>
-    <div class="todo-meta">
-      优先级: {{ {'high': '高', 'medium': '中', 'low': '低'}.get(todo.priority, todo.priority) }}
-      {% if todo.notes %} &nbsp;·&nbsp; {{ todo.notes }}{% endif %}
+    {% for task in proj.tasks %}
+    <div class="task-item {% if task.status %}task-{{ task.status }}{% endif %}">
+      · {{ task.title }}
+      {% if task.soft_due %}
+      <span class="task-due">
+        {% if task.status == "overdue" %}（建议完成，已过 {{ task.days_until | abs }} 天）
+        {% elif task.status == "today" %}（今日建议完成）
+        {% elif task.status == "upcoming" %}（建议 {{ task.soft_due }}，还有 {{ task.days_until }} 天）
+        {% endif %}
+      </span>
+      {% endif %}
     </div>
+    {% endfor %}
   </div>
   {% endfor %}
 </div>

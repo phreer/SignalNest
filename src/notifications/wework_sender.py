@@ -11,7 +11,6 @@ logger = logging.getLogger(__name__)
 MAX_MARKDOWN_BYTES = 4000  # 企业微信 Markdown 上限 4096 字节，留余量
 
 WEEKDAY_ZH = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
-STATUS_LABELS = {"overdue": "⚠ 逾期", "today": "★ 今日", "upcoming": "○ 即将"}
 
 
 def _build_markdown(payload: dict) -> str:
@@ -32,20 +31,31 @@ def _build_markdown(payload: dict) -> str:
             lines.append(f"> **{e['time']}** {e['title']}{loc}{notes}")
         lines.append("")
 
-    # ── TODO ──────────────────────────────────────────────────
-    todos = payload.get("todos") or []
-    if todos:
-        lines.append("**✅ 待办提醒**")
-        for t in todos:
-            label = STATUS_LABELS.get(t["status"], "")
-            days = t.get("days_until", 0)
-            if t["status"] == "overdue":
-                date_info = f"逾期 {abs(days)} 天（{t['due']}）"
-            elif t["status"] == "today":
-                date_info = "今日截止"
-            else:
-                date_info = f"{t['due']}，还有 {days} 天"
-            lines.append(f"> {label}：**{t['title']}** — {date_info}")
+    # ── 项目进展 ───────────────────────────────────────────────
+    projects = payload.get("projects") or []
+    if projects:
+        lines.append("**📋 项目进展**")
+        for proj in projects:
+            due_info = ""
+            if proj.get("soft_due"):
+                s = proj["soft_due_status"]
+                if s == "overdue":
+                    due_info = " `建议尽快完成`"
+                elif s == "today":
+                    due_info = " `今日建议完成`"
+                else:
+                    due_info = f" `软截止 {proj['soft_due']}`"
+            lines.append(f"> **{proj['title']}**{due_info}")
+            for t in proj.get("tasks", []):
+                task_info = ""
+                if t.get("soft_due"):
+                    if t["status"] == "overdue":
+                        task_info = f" — 建议完成，已过 {abs(t['days_until'])} 天"
+                    elif t["status"] == "today":
+                        task_info = " — 今日建议完成"
+                    elif t["status"] == "upcoming":
+                        task_info = f" — 建议 {t['soft_due']}"
+                lines.append(f">   · {t['title']}{task_info}")
         lines.append("")
 
     # ── 新闻（按条目可分片）──────────────────────────────────

@@ -13,14 +13,17 @@ import logging
 import os
 import re
 from collections import Counter
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Optional
 
-import litellm
+try:
+    import litellm
+    litellm.suppress_debug_info = True
+except ImportError:
+    litellm = None  # type: ignore
 
+from src.ai.cli_backend import _call_ai
 from src.ai.feedback import load_taste_examples
-
-# 静默 LiteLLM 冗余日志
-litellm.suppress_debug_info = True
 
 logger = logging.getLogger(__name__)
 
@@ -109,6 +112,59 @@ def _make_item_text(item: dict) -> str:
     return "\n".join(lines)
 
 
+def _score_single_item(
+    item: dict,
+    system_prompt: str,
+    backend: str,
+    call_kwargs: dict,
+    min_score: int,
+    idx: int,
+    total: int,
+) -> tuple[dict | None, dict | None]:
+    """
+    对单条内容调用 AI 打分+摘要。
+    Returns: (high_score_item, low_score_item)，有分数的一侧非 None，失败时均为 None。
+    """
+    logger.info(f"  摘要进度: {idx+1}/{total} - {item.get('title', '')[:50]}")
+    item_text = _make_item_text(item)
+    user_message = f"""请对以下内容进行评估，并以 JSON 格式返回结果：
+
+{item_text}
+
+请严格按照以下 JSON 格式返回（不要包含其他文字）：
+{{
+  "score": <1到10的整数>,
+  "summary": "<2-4句话的摘要，说明核心内容>",
+  "reason": "<1-2句话说明为什么推荐或不推荐>"
+}}
+"""
+    try:
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user",   "content": user_message},
+        ]
+        raw_text = _call_ai(messages, backend, call_kwargs)
+        json_match = re.search(r"\{[\s\S]*\}", raw_text)
+        if not json_match:
+            logger.warning(f"AI 返回格式异常: {raw_text[:100]}")
+            return None, None
+        parsed = json.loads(json_match.group())
+        score = int(parsed.get("score", 0))
+        enriched = dict(item)
+        enriched["ai_score"] = score
+        enriched["ai_summary"] = parsed.get("summary", "")
+        enriched["ai_reason"] = parsed.get("reason", "")
+        if score < min_score:
+            logger.debug(f"  跳过低分内容 score={score}: {item.get('title', '')[:40]}")
+            return None, enriched
+        return enriched, None
+    except json.JSONDecodeError as e:
+        logger.warning(f"JSON 解析失败: {e}")
+    except Exception as e:
+        logger.error(f"AI 摘要失败: {e}")
+    return None, None
+
+
 def _batch_select_by_titles(
     items: list[dict],
     focus: str,
@@ -116,6 +172,7 @@ def _batch_select_by_titles(
     call_kwargs: dict,
     language: str,
     max_keep: int,
+    backend: str = "litellm",
 ) -> list[int]:
     """
     第一阶段：仅凭标题+简介，一次 API 调用批量筛选值得深读的条目。
@@ -157,14 +214,11 @@ selected 数组填入值得保留的条目序号（0-based 整数）。"""
     try:
         # 标题筛选只需要短回复，压缩 token 用量
         filter_kwargs = {**call_kwargs, "max_tokens": 256}
-        response = litellm.completion(
-            messages=[
-                {"role": "system", "content": f"你是内容筛选助手，请用{lang_label}思考，只输出 JSON。"},
-                {"role": "user", "content": user_message},
-            ],
-            **filter_kwargs,
-        )
-        raw_text = response.choices[0].message.content.strip()
+        messages = [
+            {"role": "system", "content": f"你是内容筛选助手，请用{lang_label}思考，只输出 JSON。"},
+            {"role": "user", "content": user_message},
+        ]
+        raw_text = _call_ai(messages, backend, filter_kwargs)
         json_match = re.search(r"\{[\s\S]*\}", raw_text)
         if json_match:
             parsed = json.loads(json_match.group())
@@ -407,9 +461,10 @@ def summarize_items(
     source_minimums = _normalize_source_minimums(ai_cfg.get("min_items_per_source"))
     language = config.get("app", {}).get("language", "zh")
 
+    backend = os.environ.get("AI_BACKEND") or ai_cfg.get("backend", "litellm")
     api_key = os.environ.get("AI_API_KEY", "")
-    if not api_key:
-        logger.error("AI_API_KEY 未配置，跳过 AI 摘要")
+    if backend == "litellm" and not api_key:
+        logger.error("AI_API_KEY 未配置，跳过 AI 摘要（backend=litellm 需要 API key）")
         return raw_items[:max_output]
 
     call_kwargs: dict = dict(
@@ -426,7 +481,8 @@ def summarize_items(
     # 预留 max_output 的 2 倍进入第二阶段，给评分留余量
     max_keep = min(max_output * 2, len(raw_items))
     selected_indices = _batch_select_by_titles(
-        raw_items, focus, taste_examples, call_kwargs, language, max_keep
+        raw_items, focus, taste_examples, call_kwargs, language, max_keep,
+        backend=backend,
     )
     selected_indices = _ensure_source_candidates(
         raw_items, selected_indices, source_minimums, max_keep
@@ -466,62 +522,27 @@ def summarize_items(
         logger.info(f"  RSS per-feed 封顶：{len(candidates)} → {len(capped)} 条进入摘要")
     candidates = capped
 
-    # ── 阶段二：逐条完整评分+摘要 ────────────────────────────
+    # ── 阶段二：并行完整评分+摘要 ─────────────────────────────
     system_prompt = _build_system_prompt(taste_examples, language, focus=focus)
     results: list[dict] = []
     low_score_pool: list[dict] = []
+    max_workers = ai_cfg.get("max_workers", 5)
+    total = len(candidates)
 
-    for i, item in enumerate(candidates):
-        logger.info(f"  摘要进度: {i+1}/{len(candidates)} - {item.get('title', '')[:50]}")
-        item_text = _make_item_text(item)
-
-        user_message = f"""请对以下内容进行评估，并以 JSON 格式返回结果：
-
-{item_text}
-
-请严格按照以下 JSON 格式返回（不要包含其他文字）：
-{{
-  "score": <1到10的整数>,
-  "summary": "<2-4句话的摘要，说明核心内容>",
-  "reason": "<1-2句话说明为什么推荐或不推荐>"
-}}
-"""
-        try:
-            response = litellm.completion(
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user",   "content": user_message},
-                ],
-                **call_kwargs,
-            )
-            raw_text = response.choices[0].message.content.strip()
-
-            json_match = re.search(r"\{[\s\S]*\}", raw_text)
-            if not json_match:
-                logger.warning(f"AI 返回格式异常: {raw_text[:100]}")
-                continue
-
-            parsed = json.loads(json_match.group())
-            score = int(parsed.get("score", 0))
-            summary = parsed.get("summary", "")
-            reason = parsed.get("reason", "")
-
-            enriched = dict(item)
-            enriched["ai_score"] = score
-            enriched["ai_summary"] = summary
-            enriched["ai_reason"] = reason
-
-            if score < min_score:
-                logger.debug(f"  跳过低分内容 score={score}: {item.get('title', '')[:40]}")
-                low_score_pool.append(enriched)
-                continue
-
-            results.append(enriched)
-
-        except json.JSONDecodeError as e:
-            logger.warning(f"JSON 解析失败: {e}")
-        except Exception as e:
-            logger.error(f"AI 摘要失败: {e}")
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        futures = {
+            executor.submit(
+                _score_single_item,
+                item, system_prompt, backend, call_kwargs, min_score, i, total,
+            ): item
+            for i, item in enumerate(candidates)
+        }
+        for future in as_completed(futures):
+            high, low = future.result()
+            if high is not None:
+                results.append(high)
+            elif low is not None:
+                low_score_pool.append(low)
 
     results.sort(key=lambda x: x.get("ai_score", 0), reverse=True)
 
@@ -576,10 +597,11 @@ def generate_digest_summary(
     ai_cfg = config.get("ai", {})
     model    = os.environ.get("AI_MODEL")    or ai_cfg.get("model", "openai/gpt-4o-mini")
     api_base = os.environ.get("AI_API_BASE") or ai_cfg.get("api_base") or None
+    backend  = os.environ.get("AI_BACKEND") or ai_cfg.get("backend", "litellm")
     api_key  = os.environ.get("AI_API_KEY", "")
     language = config.get("app", {}).get("language", "zh")
 
-    if not api_key:
+    if backend == "litellm" and not api_key:
         return ""
 
     call_kwargs: dict = dict(model=model, api_key=api_key, max_tokens=600)
@@ -609,14 +631,11 @@ def generate_digest_summary(
 - 直接输出要点列表，每条以「• 」开头，不需要标题或其他说明文字"""
 
     try:
-        response = litellm.completion(
-            messages=[
-                {"role": "system", "content": f"你是专业的信息分析师，擅长跨领域提炼要点，请用{lang_label}输出。"},
-                {"role": "user",   "content": user_message},
-            ],
-            **call_kwargs,
-        )
-        return response.choices[0].message.content.strip()
+        messages = [
+            {"role": "system", "content": f"你是专业的信息分析师，擅长跨领域提炼要点，请用{lang_label}输出。"},
+            {"role": "user",   "content": user_message},
+        ]
+        return _call_ai(messages, backend, call_kwargs)
     except Exception as e:
         logger.warning(f"生成今日要点失败: {e}")
         return ""
