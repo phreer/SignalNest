@@ -18,7 +18,7 @@ def _build_markdown(payload: dict) -> str:
     today = payload["date"]
     date_str = today.strftime("%Y-%m-%d")
     weekday = WEEKDAY_ZH[today.weekday()]
-    subject = payload.get("subject_prefix", "DailyRadar")
+    subject = payload.get("subject_prefix", "SignalNest")
 
     lines = [f"**【{subject}】** {date_str} ({weekday})", ""]
 
@@ -62,7 +62,7 @@ def _build_markdown(payload: dict) -> str:
             lines.append(f"> [查看详情]({item['url']})")
             lines.append("")
 
-    lines.append(f"*DailyRadar · {payload.get('schedule_name', '')}*")
+    lines.append(f"*SignalNest · {payload.get('schedule_name', '')}*")
     return "\n".join(lines)
 
 
@@ -110,7 +110,7 @@ def _split_markdown(payload: dict, max_bytes: int) -> list[str]:
     today = payload["date"]
     date_str = today.strftime("%Y-%m-%d")
     weekday = WEEKDAY_ZH[today.weekday()]
-    subject = payload.get("subject_prefix", "DailyRadar")
+    subject = payload.get("subject_prefix", "SignalNest")
 
     # 构造 header + 日程 + TODO 部分
     header_lines = [f"**【{subject}】** {date_str} ({weekday})", ""]
@@ -165,7 +165,8 @@ def _split_markdown(payload: dict, max_bytes: int) -> list[str]:
             current += item_text
 
     if current.strip():
-        current += f"\n*DailyRadar · {payload.get('schedule_name', '')}*"
+        current += f"\n*SignalNest · {payload.get('schedule_name', '')}*"
         chunks.append(current.rstrip())
 
     return chunks if chunks else [header_text]
+

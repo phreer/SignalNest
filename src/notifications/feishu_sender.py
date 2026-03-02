@@ -18,7 +18,7 @@ def _build_text(payload: dict) -> str:
     today = payload["date"]
     date_str = today.strftime("%Y-%m-%d")
     weekday = WEEKDAY_ZH[today.weekday()]
-    subject = payload.get("subject_prefix", "DailyRadar")
+    subject = payload.get("subject_prefix", "SignalNest")
 
     lines = [f"【{subject}】{date_str} ({weekday})", ""]
 
@@ -69,7 +69,7 @@ def _build_text(payload: dict) -> str:
         lines.append("")
 
     lines.append("━━━━━━━━━━━━━━━━━━")
-    lines.append(f"DailyRadar · {payload.get('schedule_name', '')}")
+    lines.append(f"SignalNest · {payload.get('schedule_name', '')}")
     return "\n".join(lines)
 
 
@@ -127,3 +127,4 @@ def _split_text(text: str, max_bytes: int) -> list[str]:
         chunks.append("\n".join(current_lines))
 
     return chunks
+

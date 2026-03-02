@@ -1,5 +1,5 @@
 # ═══════════════════════════════════════════════════════════════
-#                    DailyRadar 主配置文件
+#                    SignalNest 主配置文件
 #
 # 所有 API Key / 密码请放在 .env 文件中，不要写在此处。
 # ═══════════════════════════════════════════════════════════════
@@ -35,7 +35,7 @@ schedules:
     # - 金融：亚欧市场动态、美股期货、宏观政策信号
     # - 政治：重大外交/政策动向、地缘风险预警
     focus: "AI大模型与科技产品最新动态（发布/开源/融资）；金融市场早盘信号、宏观经济政策与央行动向；全球重要政治外交事件与地缘风险；优先呈现时效性强、影响面广的突发与要闻"
-    subject_prefix: "早安 | DailyRadar"
+    subject_prefix: "早安 | SignalNest"
 
   - name: "晚间日报"
     cron: "0 21 * * *"          # 每天晚上 9:00
@@ -46,7 +46,7 @@ schedules:
     # - 金融：收盘复盘、机构观点、中长期趋势
     # - 政治：事件进展分析、政策解读、多方博弈
     focus: "AI前沿研究与工程实践深度内容；科技公司战略动向与产品分析；金融市场今日复盘、机构观点与宏观趋势解读；全球政治热点事件深度分析与政策影响；优先选取有深度、有观点、值得精读的内容"
-    subject_prefix: "晚间精选 | DailyRadar"
+    subject_prefix: "晚间精选 | SignalNest"
 
   # 更多示例（取消注释即可启用）：
   #
@@ -55,14 +55,14 @@ schedules:
   #   content: [news]
   #   sources: [rss]
   #   focus: "今日头条科技快讯"
-  #   subject_prefix: "午间快讯 | DailyRadar"
+  #   subject_prefix: "午间快讯 | SignalNest"
   #
   # - name: "周末深度"
   #   cron: "0 10 * * 6"        # 每周六早上 10:00
   #   content: [news]
   #   sources: [github, youtube, rss]
   #   focus: "深度技术文章、开源项目与学术前沿"
-  #   subject_prefix: "周末精选 | DailyRadar"
+  #   subject_prefix: "周末精选 | SignalNest"
 
 
 # ──────────────────────────────────────────────────────────────
@@ -209,3 +209,4 @@ notifications:
 storage:
   data_dir: "/app/data"         # 数据目录（容器内路径，通过 volume 持久化）
   todo_lookahead_days: 3        # TODO 提前提醒天数（未来 N 天内的 TODO 都会显示）
+

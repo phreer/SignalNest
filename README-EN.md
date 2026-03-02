@@ -1,6 +1,6 @@
 <div align="center">
 
-# DailyRadar 📡
+# SignalNest 📡
 
 A self-hosted personal AI digest service — aggregates GitHub / YouTube / RSS, filters with AI, delivered straight to your inbox on a schedule.
 
@@ -52,7 +52,7 @@ A self-hosted personal AI digest service — aggregates GitHub / YouTube / RSS, 
 ### Step 1: Configure environment variables
 
 ```bash
-cd DailyRadar/docker/
+cd SignalNest/docker/
 cp .env.example .env
 ```
 
@@ -104,14 +104,14 @@ schedules:
     content: [schedule, todos, news]   # schedule + todos + news
     sources: [github, youtube, rss]
     focus: "AI agents, LLM engineering, and open-source ecosystem updates"
-    subject_prefix: "Good Morning | DailyRadar"
+    subject_prefix: "Good Morning | SignalNest"
 
   - name: "Evening Digest"
     cron: "0 21 * * *"
     content: [news]
     sources: [github, youtube, rss]
     focus: "Today's tech and AI industry news, product launches, and research breakthroughs"
-    subject_prefix: "Evening Picks | DailyRadar"
+    subject_prefix: "Evening Picks | SignalNest"
 ```
 
 `content` options:
@@ -173,14 +173,14 @@ TODOs are grouped automatically in the digest:
 ### Step 4: Launch
 
 ```bash
-cd DailyRadar/docker/
+cd SignalNest/docker/
 docker compose up -d
 ```
 
 Check logs:
 
 ```bash
-docker logs -f dailyradar
+docker logs -f signalnest
 ```
 
 <br>
@@ -220,6 +220,7 @@ Then: `docker compose up -d --force-recreate`
 ### Data persistence
 
 `data/` is mounted as a Docker volume to the host. `feedback.db` (preference history) survives container rebuilds.
+Each run (morning/evening/weekly) is also archived to `data/history/` by run time, so historical outputs are preserved instead of overwritten.
 
 <br>
 
@@ -364,3 +365,4 @@ Set `IMMEDIATE_RUN=true` and `SCHEDULE_NAME=Morning Digest` in `docker/.env`, th
 ## 📚 Credits
 
 Inspired by [TrendRadar](https://github.com/sansan0/TrendRadar) and [obsidian-daily-digest](https://github.com/iamseeley/obsidian-daily-digest)
+

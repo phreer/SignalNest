@@ -1,10 +1,10 @@
 services:
-  dailyradar:
+  signalnest:
     build:
       context: ..
       dockerfile: docker/Dockerfile
-    image: dailyradar:latest
-    container_name: dailyradar
+    image: signalnest:latest
+    container_name: signalnest
     restart: unless-stopped
 
     volumes:
@@ -47,3 +47,4 @@ services:
       - IMMEDIATE_RUN=${IMMEDIATE_RUN:-false}
       # RUN_MODE=once 时指定哪个 schedule（空则用第一个）
       - SCHEDULE_NAME=${SCHEDULE_NAME:-}
+

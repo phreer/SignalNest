@@ -62,7 +62,7 @@ def _render_html(payload: dict, config: dict) -> str:
     template = env.get_template("email.html")
     today: date = payload["date"]
     return template.render(
-        subject_prefix=payload.get("subject_prefix", "DailyRadar"),
+        subject_prefix=payload.get("subject_prefix", "SignalNest"),
         schedule_name=payload.get("schedule_name", ""),
         focus=payload.get("focus", ""),
         date_str=today.strftime("%Y-%m-%d"),
@@ -119,7 +119,7 @@ def send_email(payload: dict, config: dict) -> bool:
         return False
 
     today: date = payload["date"]
-    subject = f"{payload.get('subject_prefix', 'DailyRadar')} · {today.strftime('%Y-%m-%d')}"
+    subject = f"{payload.get('subject_prefix', 'SignalNest')} · {today.strftime('%Y-%m-%d')}"
     has_personal = bool(payload.get("schedule_entries") or payload.get("todos"))
 
     # 有个人内容时：个人邮箱收完整版，其他收件人收纯新闻版
@@ -166,3 +166,4 @@ def send_email(payload: dict, config: dict) -> bool:
         return False
 
     return success
+

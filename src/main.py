@@ -1,5 +1,5 @@
 """
-main.py - DailyRadar 主编排器
+main.py - SignalNest 主编排器
 ===================================
 被 Docker entrypoint / supercronic 调用:
   python -m src.main --schedule-name "早间日报"
@@ -14,6 +14,7 @@ main.py - DailyRadar 主编排器
 
 import argparse
 import logging
+import re
 import sys
 from datetime import date, datetime
 from pathlib import Path
@@ -21,9 +22,17 @@ from zoneinfo import ZoneInfo
 
 from src.config_loader import load_config
 
-logger = logging.getLogger("dailyradar")
+logger = logging.getLogger("signalnest")
 
 WEEKDAY_ZH = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
+
+# 常见中文调度名称 -> 英文文件名别名
+SCHEDULE_SLUG_MAP = {
+    "早间日报": "morning_digest",
+    "晚间日报": "evening_digest",
+    "午间快讯": "midday_brief",
+    "周末深度": "weekend_deep_dive",
+}
 
 
 def run(schedule_name: str, config: dict, dry_run: bool = False):
@@ -54,7 +63,7 @@ def run(schedule_name: str, config: dict, dry_run: bool = False):
 
     content_blocks = schedule.get("content", ["news"])
     sources        = schedule.get("sources", ["github", "youtube", "rss"])
-    subject_prefix = schedule.get("subject_prefix", "DailyRadar")
+    subject_prefix = schedule.get("subject_prefix", "SignalNest")
     focus          = schedule.get("focus", "")
     tz = ZoneInfo(config.get("app", {}).get("timezone", "Asia/Shanghai"))
     now = datetime.now(tz)
@@ -155,7 +164,13 @@ def run(schedule_name: str, config: dict, dry_run: bool = False):
 
     # ── Section 5: 保存新闻条目供反馈打分使用 ────────────────
     if news_items:
-        _save_last_digest(news_items, today, config)
+        _save_last_digest(
+            news_items=news_items,
+            today=today,
+            run_dt=now,
+            schedule_name=schedule.get("name", ""),
+            config=config,
+        )
 
     logger.info("✅ 完成")
 
@@ -206,9 +221,31 @@ def _apply_pending_feedback(config: dict):
         logger.info(f"✨ 已将 {applied} 条用户反馈写入偏好数据库")
 
 
-def _save_last_digest(news_items: list[dict], today: date, config: dict):
+def _slugify_schedule_name(name: str) -> str:
+    """
+    将调度名转为英文/数字/下划线文件名片段。
+    """
+    raw = (name or "").strip()
+    if not raw:
+        return "schedule"
+    if raw in SCHEDULE_SLUG_MAP:
+        return SCHEDULE_SLUG_MAP[raw]
+
+    ascii_text = raw.encode("ascii", errors="ignore").decode("ascii").lower()
+    slug = re.sub(r"[^a-z0-9]+", "_", ascii_text).strip("_")
+    return slug or "schedule"
+
+
+def _save_last_digest(
+    news_items: list[dict],
+    today: date,
+    run_dt: datetime,
+    schedule_name: str,
+    config: dict,
+):
     """
     将本次新闻条目保存到 data/last_digest.json。
+    同时归档一份到 data/history/*.json（英文文件名）。
     每条记录预留 user_score / user_notes 字段（默认 null / ""），
     用户可直接编辑此文件填写分数，下次运行时自动写入偏好数据库。
     """
@@ -237,6 +274,18 @@ def _save_last_digest(news_items: list[dict], today: date, config: dict):
         json.dump(records, f, ensure_ascii=False, indent=2)
 
     logger.info(f"📋 已保存 {len(records)} 条内容到 {out_path}（填写 user_score 后下次运行自动学习偏好）")
+
+    # 归档：每次运行保存一份历史快照（英文文件名）
+    history_dir = data_dir / "history"
+    history_dir.mkdir(parents=True, exist_ok=True)
+    schedule_slug = _slugify_schedule_name(schedule_name)
+    timestamp = run_dt.strftime("%Y%m%d_%H%M%S_%f")
+    history_path = history_dir / f"digest_{timestamp}_{schedule_slug}.json"
+
+    with open(history_path, "w", encoding="utf-8") as f:
+        json.dump(records, f, ensure_ascii=False, indent=2)
+
+    logger.info(f"🗂️ 已归档本次结果到 {history_path}")
 
 
 def _print_dry_run(payload: dict):
@@ -267,7 +316,7 @@ def _print_dry_run(payload: dict):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="DailyRadar - 个人 AI 日报服务")
+    parser = argparse.ArgumentParser(description="SignalNest - 个人 AI 日报服务")
     parser.add_argument(
         "--schedule-name",
         default="",
@@ -296,3 +345,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 HEADERS = {
     "User-Agent": (
-        "Mozilla/5.0 (compatible; DailyRadarBot/1.0)"
+        "Mozilla/5.0 (compatible; SignalNestBot/1.0)"
     )
 }
 
@@ -147,3 +147,4 @@ def collect_rss(config: dict, max_total: Optional[int] = None) -> list[dict]:
 
     logger.info(f"RSS: 共收集 {len(collected)} 篇文章（每 feed 最多 {max_per_feed_initial} 条标题入池）")
     return collected
+
