@@ -6,5 +6,5 @@ __pycache__/
 *.egg-info/
 .venv/
 venv/
-config\personal\schedule.yaml
-config\personal\todos.yaml
+config/personal/schedule.yaml
+config/personal/todos.yaml
