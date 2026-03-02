@@ -1,0 +1,185 @@
+# ═══════════════════════════════════════════════════════════════
+#                    DailyRadar 主配置文件
+#
+# 所有 API Key / 密码请放在 .env 文件中，不要写在此处。
+# ═══════════════════════════════════════════════════════════════
+
+# ──────────────────────────────────────────────────────────────
+# 1. 基础设置
+# ──────────────────────────────────────────────────────────────
+app:
+  timezone: "Asia/Shanghai"   # 所有时间操作的基准时区
+  language: "zh"              # Claude 输出语言："zh" 中文 | "en" 英文
+
+
+# ──────────────────────────────────────────────────────────────
+# 2. 调度计划（多时间点）
+#
+# 每个 entry 定义一个触发时间点：
+#   name:           调度名称（日志和邮件主题中显示）
+#   cron:           标准 cron 表达式（由 supercronic 执行）
+#   content:        内容块列表，可选值：
+#                     news     - 采集新闻 + Claude AI 摘要
+#                     schedule - 读取今日日程（personal/schedule.yaml）
+#                     todos    - 读取待办提醒（personal/todos.yaml）
+#   sources:        news 内容块使用的采集源，可选：github / youtube / rss
+#   subject_prefix: 邮件/通知标题前缀
+# ──────────────────────────────────────────────────────────────
+schedules:
+  - name: "早间日报"
+    cron: "0 8 * * *"           # 每天早上 8:00
+    content: [schedule, todos, news]
+    sources: [github, rss]      # 早间不采集 YouTube（速度慢，节省时间）
+    subject_prefix: "早安 | DailyRadar"
+
+  - name: "晚间日报"
+    cron: "0 21 * * *"          # 每天晚上 9:00
+    content: [news]
+    sources: [github, youtube, rss]
+    subject_prefix: "晚间精选 | DailyRadar"
+
+  # 更多示例（取消注释即可启用）：
+  #
+  # - name: "午间快讯"
+  #   cron: "0 12 * * *"
+  #   content: [news]
+  #   sources: [rss]
+  #   subject_prefix: "午间快讯 | DailyRadar"
+  #
+  # - name: "周末深度"
+  #   cron: "0 10 * * 6"        # 每周六早上 10:00
+  #   content: [news]
+  #   sources: [github, youtube, rss]
+  #   subject_prefix: "周末精选 | DailyRadar"
+
+
+# ──────────────────────────────────────────────────────────────
+# 3. 信息源配置
+# ──────────────────────────────────────────────────────────────
+collectors:
+
+  # ── GitHub ────────────────────────────────────────────────────
+  github:
+    enabled: true
+    # 要监控的 GitHub Topics 关键词
+    topics:
+      - "llm"
+      - "ai-agent"
+      - "machine-learning"
+      - "python"
+      - "claude"
+      - "openai"
+    min_stars: 50               # 只抓取 star 数 ≥ 此值的仓库
+    max_repos: 12               # 每次最多抓取的仓库数
+    days_lookback: 7            # 只抓取最近 N 天有更新的仓库
+
+  # ── YouTube ──────────────────────────────────────────────────
+  youtube:
+    enabled: true               # 需要配置 YOUTUBE_API_KEY 才能生效
+    # 要订阅的频道 ID（打开频道主页，URL 中的 UC... 部分）
+    channel_ids:
+      - "UCnUYZLuoy1rq1aVMwx4aTzw"   # Lex Fridman Podcast
+      - "UCcefcZRL2oaA_uBNeo5UOWg"   # Y Combinator
+      - "UC9cn0TuPq4dnbTY-CBsm8XA"   # a16z
+    # 关键词搜索
+    keywords:
+      - "Sam Altman interview"
+      - "Andrej Karpathy lecture"
+      - "Dario Amodei interview"
+      - "Demis Hassabis interview"
+      - "Jensen Huang interview"
+    max_results_per_keyword: 2  # 每个关键词最多抓取的视频数
+    days_lookback: 14           # 只抓取最近 N 天的视频
+
+  # ── RSS ──────────────────────────────────────────────────────
+  rss:
+    enabled: true
+    days_lookback: 2            # 只抓取最近 N 天的文章
+    max_items_per_feed: 3       # 每个 RSS 源最多抓取的文章数
+    feeds:
+      # 科技资讯
+      - id: "hacker-news"
+        name: "Hacker News"
+        url: "https://hnrss.org/frontpage"
+      - id: "hacker-news-best"
+        name: "Hacker News Best"
+        url: "https://hnrss.org/best"
+      - id: "techcrunch"
+        name: "TechCrunch"
+        url: "https://techcrunch.com/feed/"
+      - id: "the-verge"
+        name: "The Verge"
+        url: "https://www.theverge.com/rss/index.xml"
+      - id: "wired"
+        name: "Wired"
+        url: "https://www.wired.com/feed/rss"
+      - id: "ars-technica"
+        name: "Ars Technica"
+        url: "https://feeds.arstechnica.com/arstechnica/index"
+      - id: "mit-tech-review"
+        name: "MIT Technology Review"
+        url: "https://www.technologyreview.com/feed/"
+      # AI 专项
+      - id: "langchain-blog"
+        name: "LangChain Blog"
+        url: "https://blog.langchain.dev/rss/"
+      - id: "simon-willison"
+        name: "Simon Willison"
+        url: "https://simonwillison.net/atom/everything/"
+      # 更多示例（取消注释即可添加）：
+      # - id: "ruan-yifeng"
+      #   name: "阮一峰的网络日志"
+      #   url: "https://www.ruanyifeng.com/blog/atom.xml"
+      # - id: "fortune-tech"
+      #   name: "Fortune Tech"
+      #   url: "https://fortune.com/feed/fortune-feeds/?id=3230629"
+
+
+# ──────────────────────────────────────────────────────────────
+# 4. AI 配置
+# API Key / 模型 / 端点通过环境变量配置（AI_API_KEY / AI_MODEL / AI_API_BASE）
+# 以下为 fallback 默认值，环境变量优先级更高
+# ──────────────────────────────────────────────────────────────
+ai:
+  # 模型名称（LiteLLM 格式：provider/model_name），环境变量 AI_MODEL 优先
+  # 示例：openai/gpt-4o  |  anthropic/claude-sonnet-4-6  |  deepseek/deepseek-chat
+  model: "openai/gemini-3.1-pro-preview"
+  # 自定义 API 端点（环境变量 AI_API_BASE 优先，使用官方接口时留空）
+  api_base: "https://jeniya.cn/v1"
+  max_tokens: 512               # 每条摘要的最大 token 数
+  min_relevance_score: 5        # 相关性过滤阈值（1-10），低于此分数不展示
+  max_items_per_digest: 15      # 每次最多展示的新闻条目数
+  taste_examples_limit: 8       # 从历史反馈中取多少条高分示例作为 few-shot
+
+
+# ──────────────────────────────────────────────────────────────
+# 5. 通知渠道
+# 所有 API Key / 密码 / Webhook URL 请在 .env 中配置
+# ──────────────────────────────────────────────────────────────
+notifications:
+
+  # ── 邮件（主要渠道）──────────────────────────────────────────
+  email:
+    enabled: true
+    # 收件人列表（也可通过 EMAIL_TO 环境变量配置，逗号分隔）
+    recipients:
+      - "your_email@example.com"
+    # SMTP 配置通过环境变量：
+    #   EMAIL_FROM, EMAIL_PASSWORD, EMAIL_SMTP_SERVER, EMAIL_SMTP_PORT
+
+  # ── 飞书群机器人 ──────────────────────────────────────────────
+  feishu:
+    enabled: false              # 改为 true 并配置 FEISHU_WEBHOOK_URL 即可启用
+
+  # ── 企业微信群机器人 ─────────────────────────────────────────
+  wework:
+    enabled: false              # 改为 true 并配置 WEWORK_WEBHOOK_URL 即可启用
+    msg_type: "markdown"        # "markdown" 或 "text"
+
+
+# ──────────────────────────────────────────────────────────────
+# 6. 存储设置
+# ──────────────────────────────────────────────────────────────
+storage:
+  data_dir: "/app/data"         # 数据目录（容器内路径，通过 volume 持久化）
+  todo_lookahead_days: 3        # TODO 提前提醒天数（未来 N 天内的 TODO 都会显示）

@@ -1,0 +1,106 @@
+# ═══════════════════════════════════════════════════════════════
+#              个人日程配置 - personal/schedule.yaml
+#
+# DailyRadar 早间日报会读取今天对应星期的所有条目，
+# 生成"今日日程"模块。
+#
+# 字段说明：
+#   time:     时间，格式 HH:MM（24小时制）
+#   title:    事项名称
+#   location: 地点（可选，留空则不显示）
+#   notes:    备注（可选，显示为浅色小字）
+# ═══════════════════════════════════════════════════════════════
+
+# ── 每日固定事项 ─────────────────────────────────────────────
+daily:
+  - time: "07:00"
+    title: "起床 & 晨间整理"
+    location: ""
+    notes: ""
+
+  - time: "07:30"
+    title: "晨间锻炼"
+    location: ""
+    notes: "跑步 30 分钟或健身房训练"
+
+  - time: "22:30"
+    title: "睡前阅读 & 复盘"
+    location: ""
+    notes: "写日记，回顾今日完成事项"
+
+# ── 每周固定日程 ─────────────────────────────────────────────
+weekly:
+
+  mon:  # 周一
+    - time: "09:00"
+      title: "组会"
+      location: "理科五号楼 201"
+      notes: "带论文进展 PPT，准备问题清单"
+    - time: "14:00"
+      title: "文献阅读时间"
+      location: ""
+      notes: "本周目标：精读 2 篇"
+    - time: "20:00"
+      title: "本周计划回顾"
+      location: ""
+      notes: "检查本周 TODO 完成情况"
+
+  tue:  # 周二
+    - time: "10:00"
+      title: "导师 1v1 会议"
+      location: "教授办公室"
+      notes: "汇报进度，准备 3 个明确问题"
+    - time: "15:00"
+      title: "代码实验"
+      location: ""
+      notes: "专注开发，关闭通知"
+
+  wed:  # 周三
+    - time: "09:30"
+      title: "论文写作时间"
+      location: "图书馆"
+      notes: "Deep Work，目标 500 字"
+    - time: "16:00"
+      title: "英语学习"
+      location: ""
+      notes: "听力练习或阅读英文论文"
+
+  thu:  # 周四
+    - time: "09:00"
+      title: "课程：机器学习理论"
+      location: "理科一号楼 108"
+      notes: "提前预习课件"
+    - time: "14:30"
+      title: "研讨组 Seminar"
+      location: "理科五号楼 301"
+      notes: ""
+
+  fri:  # 周五
+    - time: "09:00"
+      title: "代码 Review & 测试"
+      location: ""
+      notes: "整理本周代码，写测试"
+    - time: "16:00"
+      title: "周总结"
+      location: ""
+      notes: "回顾本周目标，规划下周"
+
+  sat:  # 周六
+    - time: "10:00"
+      title: "自由学习时间"
+      location: "图书馆 / 咖啡馆"
+      notes: "可用于探索新技术或副项目"
+    - time: "14:00"
+      title: "休闲娱乐"
+      location: ""
+      notes: "适当放松，避免 burnout"
+
+  sun:  # 周日
+    - time: "10:00"
+      title: "下周规划"
+      location: ""
+      notes: "整理 TODO，设定下周 3 个关键目标"
+    - time: "20:00"
+      title: "周日复盘"
+      location: ""
+      notes: "本周 highlight、lowlight 各 1 条"

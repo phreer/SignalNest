@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Noto Sans CJK SC", sans-serif;
+    max-width: 720px;
+    margin: auto;
+    padding: 24px 16px;
+    color: #1a1a1a;
+    line-height: 1.7;
+    background: #f8f9fa;
+  }
+  .card {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 16px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  }
+  .header {
+    background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%);
+    color: white;
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 16px;
+  }
+  .header h1 {
+    margin: 0 0 6px 0;
+    font-size: 22px;
+    font-weight: 700;
+  }
+  .header .meta {
+    font-size: 13px;
+    opacity: 0.85;
+  }
+  .section-title {
+    font-size: 15px;
+    font-weight: 600;
+    margin: 0 0 14px 0;
+    padding-bottom: 8px;
+    border-bottom: 2px solid;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .section-title.schedule { border-color: #0ea5e9; color: #0369a1; }
+  .section-title.todos    { border-color: #f59e0b; color: #b45309; }
+  .section-title.news     { border-color: #10b981; color: #047857; }
+
+  /* ── 日程 ── */
+  .schedule-table { width: 100%; border-collapse: collapse; }
+  .schedule-table td { padding: 7px 10px; vertical-align: top; }
+  .schedule-table tr:not(:last-child) td { border-bottom: 1px solid #f3f4f6; }
+  .time-cell { white-space: nowrap; font-weight: 600; color: #374151; width: 60px; }
+  .title-cell { color: #111827; }
+  .location-tag { font-size: 12px; color: #6b7280; background: #f3f4f6; padding: 1px 6px; border-radius: 4px; margin-left: 6px; }
+  .notes-text { font-size: 12px; color: #9ca3af; display: block; margin-top: 2px; }
+
+  /* ── TODO ── */
+  .todo-item {
+    padding: 10px 12px;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    border-left: 4px solid;
+    background: #fafafa;
+  }
+  .todo-item.overdue  { border-color: #ef4444; background: #fff5f5; }
+  .todo-item.today    { border-color: #f59e0b; background: #fffbeb; }
+  .todo-item.upcoming { border-color: #3b82f6; background: #eff6ff; }
+  .todo-status {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 3px;
+  }
+  .todo-item.overdue  .todo-status { color: #dc2626; }
+  .todo-item.today    .todo-status { color: #d97706; }
+  .todo-item.upcoming .todo-status { color: #2563eb; }
+  .todo-title { font-size: 14px; font-weight: 600; color: #111827; }
+  .todo-meta  { font-size: 12px; color: #6b7280; margin-top: 2px; }
+  .priority-high   { color: #dc2626; }
+  .priority-medium { color: #d97706; }
+  .priority-low    { color: #6b7280; }
+
+  /* ── 新闻 ── */
+  .news-item {
+    padding: 14px 0;
+    border-bottom: 1px solid #f3f4f6;
+  }
+  .news-item:last-child { border-bottom: none; }
+  .news-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+    flex-wrap: wrap;
+  }
+  .score-badge {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 10px;
+    white-space: nowrap;
+  }
+  .score-high   { background: #d1fae5; color: #065f46; }
+  .score-medium { background: #fef3c7; color: #78350f; }
+  .score-low    { background: #f3f4f6; color: #6b7280; }
+  .source-tag {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+  .source-github  { background: #1f2937; color: #fff; }
+  .source-rss     { background: #ea580c; color: #fff; }
+  .source-youtube { background: #dc2626; color: #fff; }
+  .news-title { font-size: 15px; font-weight: 600; margin: 0 0 6px 0; }
+  .news-title a { color: #1d4ed8; text-decoration: none; }
+  .news-title a:hover { text-decoration: underline; }
+  .news-summary { font-size: 13px; color: #374151; margin: 0 0 4px 0; }
+  .news-reason { font-size: 12px; color: #6b7280; margin: 0; }
+  .news-extra { font-size: 12px; color: #9ca3af; margin-top: 4px; }
+
+  /* ── Footer ── */
+  .footer {
+    text-align: center;
+    font-size: 12px;
+    color: #9ca3af;
+    padding: 16px;
+    border-top: 1px solid #e5e7eb;
+    margin-top: 8px;
+  }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <h1>{{ subject_prefix }}</h1>
+  <div class="meta">{{ date_str }} &nbsp;·&nbsp; {{ weekday_str }} &nbsp;·&nbsp; {{ schedule_name }}</div>
+</div>
+
+{% if schedule_entries %}
+<!-- 今日日程 -->
+<div class="card">
+  <div class="section-title schedule">📅 今日日程</div>
+  <table class="schedule-table">
+    {% for entry in schedule_entries %}
+    <tr>
+      <td class="time-cell">{{ entry.time }}</td>
+      <td class="title-cell">
+        {{ entry.title }}
+        {% if entry.location %}<span class="location-tag">📍 {{ entry.location }}</span>{% endif %}
+        {% if entry.notes %}<span class="notes-text">{{ entry.notes }}</span>{% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+{% endif %}
+
+{% if todos %}
+<!-- 待办提醒 -->
+<div class="card">
+  <div class="section-title todos">✅ 待办提醒</div>
+  {% for todo in todos %}
+  <div class="todo-item {{ todo.status }}">
+    <div class="todo-status">
+      {% if todo.status == "overdue" %}⚠ 已逾期 {{ todo.days_until | abs }} 天
+      {% elif todo.status == "today" %}★ 今日截止
+      {% else %}○ 还有 {{ todo.days_until }} 天 ({{ todo.due }})
+      {% endif %}
+    </div>
+    <div class="todo-title {{ 'priority-' + todo.priority }}">{{ todo.title }}</div>
+    <div class="todo-meta">
+      优先级: {{ {'high': '高', 'medium': '中', 'low': '低'}.get(todo.priority, todo.priority) }}
+      {% if todo.notes %} &nbsp;·&nbsp; {{ todo.notes }}{% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% if news_items %}
+<!-- 今日精选 -->
+<div class="card">
+  <div class="section-title news">📰 今日精选 &nbsp;<span style="font-weight:400;font-size:13px;color:#6b7280">{{ news_items | length }} 条</span></div>
+  {% for item in news_items %}
+  <div class="news-item">
+    <div class="news-meta">
+      {% set score = item.ai_score %}
+      <span class="score-badge {% if score >= 8 %}score-high{% elif score >= 6 %}score-medium{% else %}score-low{% endif %}">
+        ★ {{ score }}/10
+      </span>
+      <span class="source-tag source-{{ item.source }}">{{ item.source }}</span>
+      {% if item.source == 'github' and item.stars %}
+      <span style="font-size:12px;color:#6b7280">⭐ {{ '{:,}'.format(item.stars) }}</span>
+      {% endif %}
+      {% if item.source == 'rss' and item.feed_title %}
+      <span style="font-size:12px;color:#6b7280">{{ item.feed_title }}</span>
+      {% endif %}
+      {% if item.source == 'youtube' and item.channel %}
+      <span style="font-size:12px;color:#6b7280">{{ item.channel }}</span>
+      {% endif %}
+    </div>
+    <p class="news-title"><a href="{{ item.url }}" target="_blank">{{ item.title }}</a></p>
+    {% if item.ai_summary %}
+    <p class="news-summary">{{ item.ai_summary }}</p>
+    {% endif %}
+    {% if item.ai_reason %}
+    <p class="news-reason">{{ item.ai_reason }}</p>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<div class="footer">
+  由 DailyRadar 自动生成 &nbsp;·&nbsp; {{ date_str }} &nbsp;·&nbsp; {{ ai_model }}
+  <br>运行 <code>python -m src.feedback</code> 可为内容打分，帮助 AI 学习你的偏好
+</div>
+
+</body>
+</html>

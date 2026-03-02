@@ -1,0 +1,87 @@
+"""
+feedback.py - SQLite 偏好反馈读写
+====================================
+改编自 obsidian-daily-digest/summarizer.py 中的反馈功能
+负责：
+  - 初始化 feedback.db
+  - 保存用户反馈（score 1-5）
+  - 读取高分历史作为 Claude few-shot 示例
+"""
+
+import sqlite3
+import logging
+from pathlib import Path
+
+logger = logging.getLogger(__name__)
+
+
+def get_db_path(config: dict) -> Path:
+    data_dir = config.get("storage", {}).get("data_dir", "/app/data")
+    return Path(data_dir) / "feedback.db"
+
+
+def init_db(config: dict):
+    db_path = get_db_path(config)
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+    conn = sqlite3.connect(db_path)
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS feedback (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            date        TEXT NOT NULL,
+            source      TEXT NOT NULL,
+            title       TEXT NOT NULL,
+            url         TEXT NOT NULL,
+            score       INTEGER,
+            notes       TEXT,
+            ai_summary  TEXT,
+            created_at  TEXT DEFAULT (datetime('now'))
+        )
+    """)
+    conn.commit()
+    conn.close()
+
+
+def load_taste_examples(config: dict, limit: int = 8) -> list[dict]:
+    """读取高分历史（score >= 4），作为 Claude few-shot 示例。"""
+    init_db(config)
+    db_path = get_db_path(config)
+    conn = sqlite3.connect(db_path)
+    rows = conn.execute(
+        """
+        SELECT title, source, ai_summary, score, notes
+        FROM feedback
+        WHERE score >= 4
+        ORDER BY score DESC, created_at DESC
+        LIMIT ?
+        """,
+        (limit,),
+    ).fetchall()
+    conn.close()
+
+    return [
+        {
+            "title": r[0],
+            "source": r[1],
+            "summary": r[2] or "",
+            "score": r[3],
+            "notes": r[4] or "",
+        }
+        for r in rows
+    ]
+
+
+def save_feedback(config: dict, date_str: str, source: str, title: str, url: str,
+                  score: int, ai_summary: str = "", notes: str = ""):
+    """保存一条用户反馈。"""
+    init_db(config)
+    db_path = get_db_path(config)
+    conn = sqlite3.connect(db_path)
+    conn.execute(
+        """
+        INSERT INTO feedback (date, source, title, url, score, notes, ai_summary)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+        """,
+        (date_str, source, title, url, score, notes, ai_summary),
+    )
+    conn.commit()
+    conn.close()

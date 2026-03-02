@@ -1,0 +1,49 @@
+services:
+  dailyradar:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    image: dailyradar:latest
+    container_name: dailyradar
+    restart: unless-stopped
+
+    volumes:
+      # 配置文件（只读）：config.yaml + personal/ 目录
+      - ../config:/app/config:ro
+      # 数据目录（读写）：feedback.db 持久化
+      - ../data:/app/data
+
+    environment:
+      - TZ=Asia/Shanghai
+
+      # ── AI 配置（LiteLLM 格式）───────────────────────────────
+      - AI_API_KEY=${AI_API_KEY:-}
+      - AI_MODEL=${AI_MODEL:-}
+      - AI_API_BASE=${AI_API_BASE:-}
+
+      # ── 信息源 API Keys ─────────────────────────────────────
+      - GITHUB_TOKEN=${GITHUB_TOKEN:-}
+      - YOUTUBE_API_KEY=${YOUTUBE_API_KEY:-}
+
+      # ── 邮件配置 ─────────────────────────────────────────────
+      - EMAIL_FROM=${EMAIL_FROM:-}
+      - EMAIL_PASSWORD=${EMAIL_PASSWORD:-}
+      # 多收件人用逗号分隔
+      - EMAIL_TO=${EMAIL_TO:-}
+      - EMAIL_SMTP_SERVER=${EMAIL_SMTP_SERVER:-smtp.qq.com}
+      - EMAIL_SMTP_PORT=${EMAIL_SMTP_PORT:-465}
+
+      # ── 飞书 Webhook ─────────────────────────────────────────
+      - FEISHU_WEBHOOK_URL=${FEISHU_WEBHOOK_URL:-}
+
+      # ── 企业微信 Webhook ─────────────────────────────────────
+      - WEWORK_WEBHOOK_URL=${WEWORK_WEBHOOK_URL:-}
+      - WEWORK_MSG_TYPE=${WEWORK_MSG_TYPE:-markdown}
+
+      # ── 运行模式 ─────────────────────────────────────────────
+      # RUN_MODE: cron（持续运行）或 once（单次执行后退出）
+      - RUN_MODE=${RUN_MODE:-cron}
+      # 启动时立即执行一次（true/false）
+      - IMMEDIATE_RUN=${IMMEDIATE_RUN:-false}
+      # RUN_MODE=once 时指定哪个 schedule（空则用第一个）
+      - SCHEDULE_NAME=${SCHEDULE_NAME:-}
