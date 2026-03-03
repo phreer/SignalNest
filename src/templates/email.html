@@ -36,6 +36,17 @@
     font-size: 13px;
     opacity: 0.85;
   }
+  .opening-card {
+    background: #eef6ff;
+    border-left: 4px solid #2563eb;
+    border-radius: 10px;
+    padding: 12px 14px;
+  }
+  .opening-line {
+    font-size: 14px;
+    color: #1e3a8a;
+    font-weight: 500;
+  }
   .section-title {
     font-size: 15px;
     font-weight: 600;
@@ -215,6 +226,12 @@
   <h1>{{ subject_prefix }}</h1>
   <div class="meta">{{ date_str }} &nbsp;·&nbsp; {{ weekday_str }} &nbsp;·&nbsp; {{ schedule_name }}</div>
 </div>
+
+{% if opening_line %}
+<div class="card opening-card">
+  <div class="opening-line">{{ opening_line }}</div>
+</div>
+{% endif %}
 
 {% if schedule_entries %}
 <!-- 今日日程 -->

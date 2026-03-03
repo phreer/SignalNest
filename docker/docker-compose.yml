@@ -32,6 +32,9 @@ services:
       - EMAIL_TO=${EMAIL_TO:-}
       - EMAIL_SMTP_SERVER=${EMAIL_SMTP_SERVER:-smtp.qq.com}
       - EMAIL_SMTP_PORT=${EMAIL_SMTP_PORT:-465}
+      - EMAIL_OPENING_AI_NAMES=${EMAIL_OPENING_AI_NAMES:-yy}
+      - EMAIL_OPENING_ME=${EMAIL_OPENING_ME:-}
+      - EMAIL_OPENING_YY=${EMAIL_OPENING_YY:-}
 
       # ── 飞书 Webhook ─────────────────────────────────────────
       - FEISHU_WEBHOOK_URL=${FEISHU_WEBHOOK_URL:-}

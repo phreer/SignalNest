@@ -27,7 +27,7 @@ app:
 # ──────────────────────────────────────────────────────────────
 schedules:
   - name: "早间日报"
-    cron: "0 10 * * *"           # 每天早上 10:00
+    cron: "0 9 * * *"           # 每天早上 9:00
     content: [schedule, todos, news]
     sources: [github, youtube, rss]
     # 早间：快速感知四个维度的要闻，侧重「发生了什么」

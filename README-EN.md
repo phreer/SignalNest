@@ -35,10 +35,10 @@ A self-hosted personal AI digest system — scheduled aggregation from GitHub Tr
 - History deduplication: inject recent 7-day titles from `data/history/` to reduce repeats.
 - Per-source minimums: `ai.min_items_per_source` (default GitHub>=5, YouTube>=2).
 - Dual-track YouTube: subscribed channels + optional keyword search derived from `focus`.
-- Personal assistant blocks: parse `config/personal/schedule.md` and `projects.md` with AI.
+- Personal assistant blocks: parse `config/personal/schedule.md` and `projects.md`, with optional per-recipient files `schedule-<name>.md` / `projects-<name>.md`.
 - Preference learning: `user_score` in `data/last_digest.json` is persisted into `feedback.db`.
 - Multi-channel delivery: HTML email + Feishu webhook + WeCom webhook.
-- Privacy split: personal blocks go only to `EMAIL_FROM`; other recipients get news-only.
+- Privacy split: `EMAIL_FROM` keeps default personal blocks; other recipients get personal blocks only when matching named files exist, otherwise news-only.
 - Dual execution paths: `agent` (default) and `legacy`.
 
 ## 🏗️ Architecture Overview
@@ -68,7 +68,7 @@ cp .env.example .env
 Edit `docker/.env` with at least:
 
 - `AI_API_KEY`, `AI_MODEL` (when `AI_BACKEND=litellm`)
-- `EMAIL_FROM`, `EMAIL_PASSWORD`, `EMAIL_TO`
+- `EMAIL_FROM`, `EMAIL_PASSWORD`, `EMAIL_TO` (use `name:email` format in `EMAIL_TO` to enable per-recipient personalization)
 
 Common optional fields:
 
@@ -76,6 +76,8 @@ Common optional fields:
 - `YOUTUBE_API_KEY`
 - `FEISHU_WEBHOOK_URL`
 - `WEWORK_WEBHOOK_URL`
+- `EMAIL_OPENING_AI_NAMES` (opening-line enabled names, default `yy`)
+- `EMAIL_OPENING_YY` (manual opening line for `yy`; manual text takes priority, AI is fallback)
 
 ### 2) Prepare personal files (optional)
 
@@ -83,9 +85,14 @@ Common optional fields:
 cd ..
 cp config/personal/schedule_example.md config/personal/schedule.md
 cp config/personal/projects_example.md config/personal/projects.md
+
+# Optional: recipient-specific files (name must exactly match EMAIL_TO name)
+cp config/personal/schedule_example.md config/personal/schedule-yy.md
+cp config/personal/projects_example.md config/personal/projects-yy.md
 ```
 
-`schedule.md` and `projects.md` can be free-form Markdown. Structure extraction is handled by AI.
+`schedule.md` and `projects.md` can be free-form Markdown. Structure extraction is handled by AI.  
+If `EMAIL_TO` includes `yy:foo@example.com`, the system will try `schedule-yy.md` and `projects-yy.md` and include whichever personal blocks are available in yy's email.
 
 ### 3) Configure schedules
 
@@ -271,7 +278,7 @@ Check:
 ## 🔐 Security Notes
 
 - Never commit `docker/.env` or repository-root `.env`.
-- `config/personal/schedule.md` and `projects.md` may contain private data and should remain local.
+- `config/personal/schedule.md`, `projects.md`, and `schedule-*.md` / `projects-*.md` may contain private data and should remain local.
 - Rotate keys/passwords immediately if leaked.
 
 ## 📚 Credits
