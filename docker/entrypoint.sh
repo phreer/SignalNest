@@ -11,11 +11,23 @@ fi
 # 保存环境变量，确保 cron 任务可以继承
 env >> /etc/environment
 
+# 调度执行器：
+# - agent（默认）：通过本地 agent kernel 执行
+# - legacy：走历史主流程 run(schedule)
+SCHEDULE_EXECUTOR="${SCHEDULE_EXECUTOR:-agent}"
+if [ "${SCHEDULE_EXECUTOR}" = "agent" ]; then
+    SCHEDULE_ARG="--agent-schedule-name"
+    echo "🤖 调度执行器: agent"
+else
+    SCHEDULE_ARG="--schedule-name"
+    echo "⚙️ 调度执行器: legacy"
+fi
+
 case "${RUN_MODE:-cron}" in
 
 "once")
     echo "🔄 单次执行模式: ${SCHEDULE_NAME:-（使用第一个 schedule）}"
-    cd /app && exec python -m src.main --schedule-name "${SCHEDULE_NAME:-}"
+    cd /app && exec python -m src.main ${SCHEDULE_ARG} "${SCHEDULE_NAME:-}"
     ;;
 
 "cron")
@@ -37,13 +49,14 @@ if not schedules:
     print('ERROR: config.yaml 中没有定义任何 schedules', file=sys.stderr)
     sys.exit(1)
 
+arg = '${SCHEDULE_ARG}'
 for s in schedules:
     cron = s.get('cron', '').strip()
     name = s.get('name', '').strip()
     if not cron or not name:
         continue
     # 单引号包裹 name，避免空格问题
-    print(f\"{cron} cd /app && python -m src.main --schedule-name '{name}'\")
+    print(f\"{cron} cd /app && python -m src.main {arg} '{name}'\")
 " > /tmp/crontab
 
     if [ $? -ne 0 ]; then
@@ -62,7 +75,7 @@ for s in schedules:
     # 立即执行一次（如果配置了）
     if [ "${IMMEDIATE_RUN:-false}" = "true" ]; then
         echo "▶ 立即执行一次: ${SCHEDULE_NAME:-（使用第一个 schedule）}"
-        cd /app && python -m src.main --schedule-name "${SCHEDULE_NAME:-}" || true
+        cd /app && python -m src.main ${SCHEDULE_ARG} "${SCHEDULE_NAME:-}" || true
     fi
 
     echo "🚀 启动 supercronic..."

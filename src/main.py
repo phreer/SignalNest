@@ -13,11 +13,14 @@ main.py - SignalNest 主编排器
 """
 
 import argparse
+import json
 import logging
+import os
 import re
 import sys
 from datetime import date, datetime
 from pathlib import Path
+from uuid import uuid4
 from zoneinfo import ZoneInfo
 
 from src.config_loader import load_config
@@ -35,6 +38,135 @@ SCHEDULE_SLUG_MAP = {
 }
 
 
+def _split_csv(value: str) -> list[str] | None:
+    raw = (value or "").strip()
+    if not raw:
+        return None
+    items = [x.strip() for x in raw.split(",")]
+    normalized = [x for x in items if x]
+    return normalized or None
+
+
+def _env_bool(name: str) -> bool | None:
+    value = os.environ.get(name)
+    if value is None:
+        return None
+    normalized = value.strip().lower()
+    if normalized in {"1", "true", "yes", "on"}:
+        return True
+    if normalized in {"0", "false", "no", "off"}:
+        return False
+    return None
+
+
+def _auto_persist_schedule_runs_enabled(config: dict) -> bool:
+    """
+    是否为常规 schedule run 自动写入 agent 会话库。
+
+    优先级：
+      1) 环境变量 AGENT_AUTO_PERSIST_SCHEDULE_RUNS
+      2) config.agent.auto_persist_schedule_runs
+      3) 默认 True
+    """
+    env_override = _env_bool("AGENT_AUTO_PERSIST_SCHEDULE_RUNS")
+    if env_override is not None:
+        return env_override
+
+    agent_cfg = config.get("agent", {})
+    return bool(agent_cfg.get("auto_persist_schedule_runs", True))
+
+
+def _resolve_schedule(schedule_name: str, config: dict) -> dict:
+    """
+    Resolve schedule by name, fallback to the first one.
+    """
+    schedule = next(
+        (s for s in config.get("schedules", []) if s.get("name") == schedule_name),
+        None,
+    )
+    if schedule is not None:
+        return schedule
+
+    schedules = config.get("schedules", [])
+    if schedules:
+        schedule = schedules[0]
+        logger.warning(f"Schedule '{schedule_name}' 未找到，使用第一个: '{schedule['name']}'")
+        return schedule
+
+    logger.error("config.yaml 中没有定义任何 schedules")
+    sys.exit(1)
+
+
+def _build_agent_schedule_message(schedule: dict, *, dry_run: bool) -> str:
+    content_blocks = schedule.get("content", ["news"])
+    sources = schedule.get("sources", ["github", "youtube", "rss"])
+    focus = schedule.get("focus", "")
+    schedule_name = schedule.get("name", "")
+    subject_prefix = schedule.get("subject_prefix", "SignalNest")
+
+    dry_run_note = (
+        "这是 dry-run，不要真实发送通知；可调用 dispatch_notifications 走通流程。"
+        if dry_run
+        else "这是正式定时任务，必须完成通知发送（dispatch_notifications）。"
+    )
+
+    return (
+        "你正在执行 SignalNest 的定时调度任务，请按配置完成本次日报。\n"
+        f"- schedule_name: {schedule_name}\n"
+        f"- content_blocks: {content_blocks}\n"
+        f"- sources: {sources}\n"
+        f"- focus: {focus}\n"
+        f"- subject_prefix: {subject_prefix}\n"
+        f"- {dry_run_note}\n\n"
+        "执行要求：\n"
+        "1) 如果 content_blocks 包含 news：调用 collect_all_news 与 summarize_news。\n"
+        "2) 如果包含 schedule：调用 read_today_schedule。\n"
+        "3) 如果包含 todos：调用 read_active_projects。\n"
+        "4) 调用 build_digest_payload 组装推送载荷（传入 schedule_name/subject_prefix/focus）。\n"
+        "5) 若非 dry-run，必须调用 dispatch_notifications。\n"
+        "6) 最后返回清晰的最终结果。"
+    )
+
+
+def run_agent_for_schedule(schedule_name: str, config: dict, dry_run: bool = False) -> dict:
+    """
+    Run one scheduled task through the local agent kernel.
+    """
+    from src.agent.kernel import AgentRunOptions, run_agent_turn
+
+    schedule = _resolve_schedule(schedule_name, config)
+    message = _build_agent_schedule_message(schedule, dry_run=dry_run)
+
+    agent_cfg = config.get("agent", {})
+    schedule_max_steps = agent_cfg.get("schedule_max_steps", agent_cfg.get("max_steps"))
+    result = run_agent_turn(
+        message,
+        config,
+        options=AgentRunOptions(
+            max_steps=schedule_max_steps,
+            dry_run=dry_run,
+            allow_side_effects=True,
+        ),
+    )
+
+    status = str(result.get("status", ""))
+    if status != "ok":
+        raise RuntimeError(result.get("response", "agent schedule run failed"))
+
+    if not dry_run:
+        steps = result.get("steps", [])
+        dispatched = any(
+            isinstance(step, dict)
+            and step.get("tool") == "dispatch_notifications"
+            and "error" not in step
+            for step in steps
+        )
+        if not dispatched:
+            raise RuntimeError("agent run finished without dispatch_notifications")
+
+    return result
+
+
 def run(schedule_name: str, config: dict, dry_run: bool = False):
     """
     执行一次完整的日报生成和推送流程。
@@ -48,131 +180,189 @@ def run(schedule_name: str, config: dict, dry_run: bool = False):
     _apply_pending_feedback(config)
 
     # ── 找到匹配的 schedule entry ─────────────────────────────
-    schedule = next(
-        (s for s in config.get("schedules", []) if s.get("name") == schedule_name),
-        None,
-    )
-    if schedule is None:
-        schedules = config.get("schedules", [])
-        if schedules:
-            schedule = schedules[0]
-            logger.warning(f"Schedule '{schedule_name}' 未找到，使用第一个: '{schedule['name']}'")
-        else:
-            logger.error("config.yaml 中没有定义任何 schedules")
-            sys.exit(1)
+    schedule = _resolve_schedule(schedule_name, config)
 
     content_blocks = schedule.get("content", ["news"])
-    sources        = schedule.get("sources", ["github", "youtube", "rss"])
+    sources = schedule.get("sources", ["github", "youtube", "rss"])
     subject_prefix = schedule.get("subject_prefix", "SignalNest")
-    focus          = schedule.get("focus", "")
+    focus = schedule.get("focus", "")
     tz = ZoneInfo(config.get("app", {}).get("timezone", "Asia/Shanghai"))
     now = datetime.now(tz)
     today = now.date()
 
-    logger.info(f"▶ Schedule: '{schedule['name']}' | content={content_blocks} | sources={sources} | focus={focus!r}")
+    logger.info(
+        f"▶ Schedule: '{schedule['name']}' | content={content_blocks} | sources={sources} | focus={focus!r}"
+    )
 
-    # ── Section 1: 个人助手 ───────────────────────────────────
+    # 默认将每次 schedule 推送也记录为一个持久会话（可用于 Docker 场景回溯）。
+    session_store = None
+    turn_ref = None
+    session_id = ""
+    session_status = "ok"
+    session_reply = ""
+
+    if _auto_persist_schedule_runs_enabled(config):
+        from src.agent.session_store import AgentSessionStore
+
+        data_dir = Path(config.get("storage", {}).get("data_dir", "/app/data"))
+        session_store = AgentSessionStore(data_dir / "agent_sessions.db")
+        session_id = (
+            f"schedule-{_slugify_schedule_name(schedule.get('name', ''))}-"
+            f"{now.strftime('%Y%m%d_%H%M%S')}-{uuid4().hex[:8]}"
+        )
+        session_store.ensure_session(session_id, title=f"Scheduled Push | {schedule['name']}")
+        backend = os.environ.get("AI_BACKEND") or config.get("ai", {}).get("backend", "litellm")
+        model = os.environ.get("AI_MODEL") or config.get("ai", {}).get("model", "")
+        turn_ref = session_store.start_turn(
+            session_id,
+            (
+                f"Auto schedule push: name={schedule['name']} "
+                f"date={today} dry_run={str(dry_run).lower()}"
+            ),
+            backend=backend,
+            model=model,
+        )
+        logger.info(f"🧠 已开启自动会话持久化: session_id={session_id}")
+
     schedule_entries = None
     projects = None
-
-    if "schedule" in content_blocks:
-        from src.personal.ai_reader import read_today_schedule
-        personal_dir = config.get("_personal_dir", "/app/config/personal")
-        schedule_path = str(Path(personal_dir) / "schedule.md")
-        schedule_entries = read_today_schedule(schedule_path, today, config)
-        logger.info(f"  日程: {len(schedule_entries)} 条")
-
-    if "todos" in content_blocks:
-        from src.personal.ai_reader import read_active_projects
-        personal_dir = config.get("_personal_dir", "/app/config/personal")
-        projects_path = str(Path(personal_dir) / "projects.md")
-        lookahead = config.get("storage", {}).get("todo_lookahead_days", 7)
-        projects = read_active_projects(projects_path, today, config, lookahead)
-        logger.info(f"  项目: {len(projects)} 个活跃项目")
-
-    # ── Section 2: 新闻采集 + AI 摘要 ──────────────────────────
-    news_items = []
-
-    if "news" in content_blocks:
-        raw_items = []
-        collectors_cfg = config.get("collectors", {})
-
-        if "github" in sources and collectors_cfg.get("github", {}).get("enabled", True):
-            logger.info("📦 抓取 GitHub...")
-            try:
-                from src.collectors.github_collector import collect_github
-                items = collect_github(config)
-                raw_items.extend(items)
-                logger.info(f"   GitHub: {len(items)} 个仓库")
-            except Exception as e:
-                logger.error(f"   GitHub 失败: {e}")
-
-        if "youtube" in sources and collectors_cfg.get("youtube", {}).get("enabled", False):
-            logger.info("📺 抓取 YouTube...")
-            try:
-                from src.collectors.youtube_collector import collect_youtube
-                items = collect_youtube(config, focus=focus)
-                raw_items.extend(items)
-                logger.info(f"   YouTube: {len(items)} 个视频")
-            except Exception as e:
-                logger.error(f"   YouTube 失败: {e}")
-
-        if "rss" in sources and collectors_cfg.get("rss", {}).get("enabled", True):
-            logger.info("📰 抓取 RSS...")
-            try:
-                from src.collectors.rss_collector import collect_rss
-                items = collect_rss(config)
-                raw_items.extend(items)
-                logger.info(f"   RSS: {len(items)} 篇文章")
-            except Exception as e:
-                logger.error(f"   RSS 失败: {e}")
-
-        logger.info(f"采集完成，共 {len(raw_items)} 条原始内容")
-
-        if raw_items:
-            logger.info("🤖 AI 摘要中...")
-            from src.ai.summarizer import summarize_items, generate_digest_summary
-            news_items = summarize_items(raw_items, config, focus=focus)
-            logger.info(f"   筛选后: {len(news_items)} 条")
-
-    # ── Section 2b: 生成今日要点总结 ─────────────────────────
+    raw_items: list[dict] = []
+    news_items: list[dict] = []
     digest_summary = ""
-    if news_items:
-        logger.info("🤖 生成今日要点...")
-        digest_summary = generate_digest_summary(news_items, config, focus=focus)
+    payload: dict | None = None
 
-    # ── Section 3: 组装 Payload ──────────────────────────────
-    payload = {
-        "schedule_name":    schedule["name"],
-        "subject_prefix":   subject_prefix,
-        "focus":            focus,
-        "date":             today,
-        "datetime":         now,
-        "schedule_entries": schedule_entries,
-        "projects":         projects,
-        "news_items":       news_items,
-        "digest_summary":   digest_summary,
-        "content_blocks":   content_blocks,
-    }
+    try:
+        # ── Section 1: 个人助手 ───────────────────────────────────
+        if "schedule" in content_blocks:
+            from src.personal.ai_reader import read_today_schedule
 
-    # ── Section 4: 分发通知 ──────────────────────────────────
-    if dry_run:
-        _print_dry_run(payload)
-    else:
-        from src.notifications.dispatcher import dispatch
-        dispatch(payload, config)
+            personal_dir = config.get("_personal_dir", "/app/config/personal")
+            schedule_path = str(Path(personal_dir) / "schedule.md")
+            schedule_entries = read_today_schedule(schedule_path, today, config)
+            logger.info(f"  日程: {len(schedule_entries)} 条")
 
-    # ── Section 5: 保存新闻条目供反馈打分使用 ────────────────
-    if news_items:
-        _save_last_digest(
-            news_items=news_items,
-            today=today,
-            run_dt=now,
-            schedule_name=schedule.get("name", ""),
-            config=config,
+        if "todos" in content_blocks:
+            from src.personal.ai_reader import read_active_projects
+
+            personal_dir = config.get("_personal_dir", "/app/config/personal")
+            projects_path = str(Path(personal_dir) / "projects.md")
+            lookahead = config.get("storage", {}).get("todo_lookahead_days", 7)
+            projects = read_active_projects(projects_path, today, config, lookahead)
+            logger.info(f"  项目: {len(projects)} 个活跃项目")
+
+        # ── Section 2: 新闻采集 + AI 摘要 ──────────────────────────
+        if "news" in content_blocks:
+            collectors_cfg = config.get("collectors", {})
+
+            if "github" in sources and collectors_cfg.get("github", {}).get("enabled", True):
+                logger.info("📦 抓取 GitHub...")
+                try:
+                    from src.collectors.github_collector import collect_github
+
+                    items = collect_github(config)
+                    raw_items.extend(items)
+                    logger.info(f"   GitHub: {len(items)} 个仓库")
+                except Exception as e:
+                    logger.error(f"   GitHub 失败: {e}")
+
+            if "youtube" in sources and collectors_cfg.get("youtube", {}).get("enabled", False):
+                logger.info("📺 抓取 YouTube...")
+                try:
+                    from src.collectors.youtube_collector import collect_youtube
+
+                    items = collect_youtube(config, focus=focus)
+                    raw_items.extend(items)
+                    logger.info(f"   YouTube: {len(items)} 个视频")
+                except Exception as e:
+                    logger.error(f"   YouTube 失败: {e}")
+
+            if "rss" in sources and collectors_cfg.get("rss", {}).get("enabled", True):
+                logger.info("📰 抓取 RSS...")
+                try:
+                    from src.collectors.rss_collector import collect_rss
+
+                    items = collect_rss(config)
+                    raw_items.extend(items)
+                    logger.info(f"   RSS: {len(items)} 篇文章")
+                except Exception as e:
+                    logger.error(f"   RSS 失败: {e}")
+
+            logger.info(f"采集完成，共 {len(raw_items)} 条原始内容")
+
+            if raw_items:
+                logger.info("🤖 AI 摘要中...")
+                from src.ai.summarizer import summarize_items
+
+                news_items = summarize_items(raw_items, config, focus=focus)
+                logger.info(f"   筛选后: {len(news_items)} 条")
+
+        # ── Section 2b: 生成今日要点总结 ─────────────────────────
+        if news_items:
+            logger.info("🤖 生成今日要点...")
+            from src.ai.summarizer import generate_digest_summary
+
+            digest_summary = generate_digest_summary(news_items, config, focus=focus)
+
+        # ── Section 3: 组装 Payload ──────────────────────────────
+        payload = {
+            "schedule_name": schedule["name"],
+            "subject_prefix": subject_prefix,
+            "focus": focus,
+            "date": today,
+            "datetime": now,
+            "schedule_entries": schedule_entries,
+            "projects": projects,
+            "news_items": news_items,
+            "digest_summary": digest_summary,
+            "content_blocks": content_blocks,
+        }
+
+        # ── Section 4: 分发通知 ──────────────────────────────────
+        if dry_run:
+            _print_dry_run(payload)
+        else:
+            from src.notifications.dispatcher import dispatch
+
+            dispatch(payload, config)
+
+        # ── Section 5: 保存新闻条目供反馈打分使用 ────────────────
+        if news_items:
+            _save_last_digest(
+                news_items=news_items,
+                today=today,
+                run_dt=now,
+                schedule_name=schedule.get("name", ""),
+                config=config,
+            )
+
+        session_reply = (
+            f"Schedule push completed: schedule={schedule['name']} "
+            f"news_items={len(news_items)} dry_run={str(dry_run).lower()}"
         )
-
-    logger.info("✅ 完成")
+        logger.info("✅ 完成")
+    except Exception as e:
+        session_status = "error"
+        session_reply = f"Schedule push failed: {e}"
+        raise
+    finally:
+        if session_store and turn_ref:
+            state_snapshot = {
+                "schedule_name": schedule.get("name", ""),
+                "focus": focus,
+                "date": today,
+                "datetime": now,
+                "content_blocks": content_blocks,
+                "sources": sources,
+                "dry_run": dry_run,
+                "schedule_entries": schedule_entries,
+                "projects": projects,
+                "raw_items": raw_items,
+                "news_items": news_items,
+                "digest_summary": digest_summary,
+                "payload": payload,
+            }
+            session_store.save_state(session_id, state_snapshot)
+            session_store.finish_turn(turn_ref.turn_id, session_reply, session_status)
 
 
 def _apply_pending_feedback(config: dict):
@@ -331,6 +521,53 @@ def main():
         action="store_true",
         help="打印预览，不发送通知",
     )
+    parser.add_argument(
+        "--agent-message",
+        default="",
+        help="运行本地 agent（无 gateway），输入用户消息文本",
+    )
+    parser.add_argument(
+        "--agent-schedule-name",
+        default=None,
+        help="按 schedule 配置自动生成任务并运行本地 agent（用于 cron）",
+    )
+    parser.add_argument(
+        "--agent-session-id",
+        default="",
+        help="本地 agent 会话 ID（不填则自动新建）",
+    )
+    parser.add_argument(
+        "--agent-max-steps",
+        type=int,
+        default=None,
+        help="本地 agent 最大工具步数（默认读 config.agent.max_steps，缺省 6）",
+    )
+    parser.add_argument(
+        "--agent-allow-side-effects",
+        action="store_true",
+        default=None,
+        help="允许本地 agent 执行副作用工具（如发送通知）",
+    )
+    parser.add_argument(
+        "--agent-allow-tools",
+        default="",
+        help="本地 agent 工具白名单，逗号分隔；为空表示不设白名单",
+    )
+    parser.add_argument(
+        "--agent-deny-tools",
+        default="",
+        help="本地 agent 工具黑名单，逗号分隔",
+    )
+    parser.add_argument(
+        "--agent-json",
+        action="store_true",
+        help="本地 agent 结果按 JSON 输出",
+    )
+    parser.add_argument(
+        "--agent-tools-schema",
+        action="store_true",
+        help="输出本地 agent tools schema（JSON）并退出",
+    )
     args = parser.parse_args()
 
     logging.basicConfig(
@@ -339,7 +576,51 @@ def main():
         datefmt="%H:%M:%S",
     )
 
+    if args.agent_tools_schema:
+        from src.agent.tools import build_agent_tools, export_tools_schema
+
+        schema = export_tools_schema(build_agent_tools())
+        print(json.dumps(schema, ensure_ascii=False, indent=2))
+        return
+
     config = load_config()
+
+    if args.agent_schedule_name is not None:
+        result = run_agent_for_schedule(
+            schedule_name=args.agent_schedule_name or "",
+            config=config,
+            dry_run=args.dry_run,
+        )
+        if args.agent_json:
+            print(json.dumps(result, ensure_ascii=False, indent=2, default=str))
+        else:
+            print(f"[agent schedule] {args.agent_schedule_name or '(default)'}")
+            print(f"[agent session] {result['session_id']} | turn #{result['turn_index']}")
+            print(result.get("response", ""))
+        return
+
+    if args.agent_message:
+        from src.agent.kernel import AgentRunOptions, run_agent_turn
+
+        result = run_agent_turn(
+            args.agent_message,
+            config,
+            options=AgentRunOptions(
+                session_id=args.agent_session_id or None,
+                max_steps=args.agent_max_steps,
+                dry_run=args.dry_run,
+                allow_side_effects=args.agent_allow_side_effects,
+                allow_tools=_split_csv(args.agent_allow_tools),
+                deny_tools=_split_csv(args.agent_deny_tools),
+            ),
+        )
+        if args.agent_json:
+            print(json.dumps(result, ensure_ascii=False, indent=2, default=str))
+        else:
+            print(f"[agent session] {result['session_id']} | turn #{result['turn_index']}")
+            print(result.get("response", ""))
+        return
+
     run(
         schedule_name=args.schedule_name,
         config=config,
