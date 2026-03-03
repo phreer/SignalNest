@@ -75,12 +75,13 @@ main.py::run()
   │
   ├─ ai/summarizer.py
   │   ├─ Stage 1: batch title filtering (1 LiteLLM call)
+  │   │     ↳ injects last-7-day history titles to avoid duplicate content
   │   ├─ [YouTube only] fetch transcripts for shortlisted videos
   │   ├─ [RSS only] cap per-feed candidates
   │   ├─ Stage 2: per-item score + summary (N parallel LiteLLM calls)
   │   └─ generate_digest_summary() → 1 extra call for "今日要点" bullet list
   │
-  ├─ ai/feedback.py  → SQLite feedback.db, taste examples for few-shot
+  ├─ ai/feedback.py  → SQLite feedback.db, taste examples for few-shot; also loads recent history titles for dedup
   │
   └─ notifications/dispatcher.py
       ├── email_sender.py   → SMTP HTML email
@@ -142,7 +143,7 @@ Each run saves `data/last_digest.json`. Users can fill in `user_score` (1-5) on 
 | `src/config_loader.py` | Merges `config.yaml` + `.env` into a single config dict |
 | `src/ai/summarizer.py` | Two-stage AI filtering engine (core logic, most complex file) |
 | `src/ai/cli_backend.py` | Unified AI call entry point: LiteLLM or local CLI (`claude`/`codex`) |
-| `src/ai/feedback.py` | SQLite feedback store + taste example loader |
+| `src/ai/feedback.py` | SQLite feedback store + taste example loader + recent history title loader (dedup) |
 | `src/personal/ai_reader.py` | AI-powered parser for `schedule.md` and `projects.md` |
 | `src/notifications/dispatcher.py` | Routes payload to enabled notification channels |
 | `config/config.yaml` | Primary user-facing configuration |

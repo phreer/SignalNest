@@ -37,6 +37,7 @@ A self-hosted personal AI digest service — aggregates GitHub / YouTube / RSS, 
 - **Three source types**: GitHub trending repos / YouTube curated videos / RSS feeds — mix and match
 - **Focus-based filtering**: each schedule has a `focus` field; the AI prioritizes content that matches it
 - **Two-stage AI pipeline**: batch title filtering (low token cost) → deep-read scoring and summary (only selected items)
+- **History deduplication**: Stage 1 automatically injects the past 7 days of sent titles so the AI skips repeated or highly similar content
 - **Daily digest summary**: AI generates 3–5 cross-domain key takeaways after scoring, giving you an at-a-glance overview
 - **Per-source minimums**: configurable minimum item counts per source (default GitHub≥5, YouTube≥2) to prevent source imbalance
 - **YouTube dual-track**: subscribed channels with views/newest ordering + AI auto-generates search keywords from `focus` to discover other channels
