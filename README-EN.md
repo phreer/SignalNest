@@ -2,16 +2,12 @@
 
 # SignalNest 📡
 
-A self-hosted personal AI digest service — aggregates GitHub / YouTube / RSS, two-stage AI filtering and summarization, delivered straight to your inbox on a schedule.
+A self-hosted personal AI digest system — scheduled aggregation from GitHub Trending / YouTube / RSS, two-stage AI filtering and summarization, delivered via Email / Feishu / WeCom.
 
-[![Docker](https://img.shields.io/badge/Docker-ready-2496ED?style=flat-square&logo=docker&logoColor=white)](#-docker-deployment)
-[![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
-[![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)](LICENSE)
-[![supercronic](https://img.shields.io/badge/scheduler-supercronic-orange?style=flat-square)](https://github.com/aptible/supercronic)
-
-[![Email](https://img.shields.io/badge/Email-HTML_Rich_Text-00D4AA?style=flat-square)](#)
-[![Feishu](https://img.shields.io/badge/Feishu-Webhook-00D4AA?style=flat-square)](https://www.feishu.cn/)
-[![WeCom](https://img.shields.io/badge/WeCom-Webhook-00D4AA?style=flat-square)](https://work.weixin.qq.com/)
+[![Docker](https://img.shields.io/badge/Docker-ready-2496ED?style=flat-square&logo=docker&logoColor=white)](#-quick-start)
+[![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=flat-square&logo=python&logoColor=white)](#)
+[![Scheduler](https://img.shields.io/badge/Scheduler-supercronic-orange?style=flat-square)](https://github.com/aptible/supercronic)
+[![Mode](https://img.shields.io/badge/Executor-agent%20(default)-00A86B?style=flat-square)](#-agent-mode)
 
 **[中文](README.md)** | **[English](README-EN.md)**
 
@@ -25,174 +21,88 @@ A self-hosted personal AI digest service — aggregates GitHub / YouTube / RSS, 
 
 | | | |
 |:---:|:---:|:---:|
-| [🚀 Quick Start](#-quick-start) | [⚙️ Configuration](#️-configuration) | [🐳 Docker Deployment](#-docker-deployment) |
-| [🎯 Features](#-features) | [🧠 Preference Learning](#-preference-learning) | [❓ FAQ](#-faq) |
+| [🚀 Quick Start](#-quick-start) | [⚙️ Configuration](#️-configuration) | [🤖 Agent Mode](#-agent-mode) |
+| [💻 Local Development](#-local-development-without-docker) | [🗂️ Data & Preference Learning](#️-data--preference-learning) | [❓ FAQ](#-faq) |
 
 </div>
 
 <br>
 
-## 🎯 Features
+## ✨ Key Features
 
-- **Three source types**: GitHub trending repos / YouTube curated videos / RSS feeds — mix and match
-- **Focus-based filtering**: each schedule has a `focus` field; the AI prioritizes content that matches it
-- **Two-stage AI pipeline**: batch title filtering (low token cost) → deep-read scoring and summary (only selected items)
-- **History deduplication**: Stage 1 automatically injects the past 7 days of sent titles so the AI skips repeated or highly similar content
-- **Daily digest summary**: AI generates 3–5 cross-domain key takeaways after scoring, giving you an at-a-glance overview
-- **Per-source minimums**: configurable minimum item counts per source (default GitHub≥5, YouTube≥2) to prevent source imbalance
-- **YouTube dual-track**: subscribed channels with views/newest ordering + AI auto-generates search keywords from `focus` to discover other channels
-- **Preference learning**: rate items to teach the AI your taste — recommendations improve over time
-- **Personal assistant**: morning schedule reminder + project task due-date checker (overdue / today / upcoming)
-- **Multi-channel delivery**: Email (HTML) + Feishu + WeCom, with personal content split by recipient
-- **Multi-schedule**: define any number of cron triggers in `config.yaml`, push different content at different times
-- **Flexible AI backend**: LiteLLM (any cloud API) / Claude CLI / Codex CLI — three backends supported
+- Multi-source ingestion: compose `github` / `youtube` / `rss` per schedule.
+- Two-stage AI pipeline: batch title filtering first, then per-item scoring and summaries.
+- History deduplication: inject recent 7-day titles from `data/history/` to reduce repeats.
+- Per-source minimums: `ai.min_items_per_source` (default GitHub>=5, YouTube>=2).
+- Dual-track YouTube: subscribed channels + optional keyword search derived from `focus`.
+- Personal assistant blocks: parse `config/personal/schedule.md` and `projects.md` with AI.
+- Preference learning: `user_score` in `data/last_digest.json` is persisted into `feedback.db`.
+- Multi-channel delivery: HTML email + Feishu webhook + WeCom webhook.
+- Privacy split: personal blocks go only to `EMAIL_FROM`; other recipients get news-only.
+- Dual execution paths: `agent` (default) and `legacy`.
 
-<br>
+## 🏗️ Architecture Overview
+
+```text
+Docker entrypoint (supercronic)
+  -> python -m src.main --agent-schedule-name <name>   # default
+  -> python -m src.main --schedule-name <name>         # legacy
+
+main.py
+  -> personal.ai_reader        (schedule/projects)
+  -> collectors.*              (github/youtube/rss)
+  -> ai.summarizer             (stage1 filter + stage2 summary)
+  -> notifications.dispatcher  (email/feishu/wework)
+  -> ai.feedback + data/history + data/last_digest.json
+```
 
 ## 🚀 Quick Start
 
-### Step 1: Configure environment variables
+### 1) Configure Docker environment variables
 
 ```bash
-cd SignalNest/docker/
+cd SignalNest/docker
 cp .env.example .env
 ```
 
-Edit `docker/.env` with required fields:
+Edit `docker/.env` with at least:
 
-```dotenv
-# AI (required)
-AI_API_KEY=your_api_key_here
-AI_MODEL=openai/gpt-4o          # LiteLLM format: provider/model_name
-AI_API_BASE=                    # Custom endpoint for proxy services; leave blank for official APIs
+- `AI_API_KEY`, `AI_MODEL` (when `AI_BACKEND=litellm`)
+- `EMAIL_FROM`, `EMAIL_PASSWORD`, `EMAIL_TO`
 
-# Email (required)
-EMAIL_FROM=your_email@example.com
-EMAIL_PASSWORD=your_smtp_password   # Use app password / auth code, NOT your login password
-EMAIL_TO=recipient@example.com      # Comma-separated for multiple recipients
-```
+Common optional fields:
 
-<details>
-<summary>Optional: GitHub / YouTube / Feishu / WeCom</summary>
+- `GITHUB_TOKEN`
+- `YOUTUBE_API_KEY`
+- `FEISHU_WEBHOOK_URL`
+- `WEWORK_WEBHOOK_URL`
 
-```dotenv
-# GitHub Token (without this, API rate limit is 60 req/hour)
-GITHUB_TOKEN=ghp_xxxxx
-
-# YouTube Data API v3 (skip YouTube collection if not set)
-YOUTUBE_API_KEY=AIzaSy_xxxxx
-
-# Feishu group bot
-FEISHU_WEBHOOK_URL=https://open.feishu.cn/open-apis/bot/v2/hook/xxxxx
-
-# WeCom group bot
-WEWORK_WEBHOOK_URL=https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=xxxxx
-```
-
-</details>
-
-> **Gmail / SMTP**: Use an app password generated from your account security settings, not your login password.
-
----
-
-### Step 2: Configure schedules and sources
-
-Edit `config/config.yaml`:
-
-```yaml
-schedules:
-  - name: "Morning Digest"
-    cron: "0 8 * * *"
-    content: [schedule, todos, news]   # schedule + project tasks + news
-    sources: [github, youtube, rss]
-    focus: "AI agents, LLM engineering, and open-source ecosystem updates"
-    subject_prefix: "Good Morning | SignalNest"
-
-  - name: "Evening Digest"
-    cron: "0 21 * * *"
-    content: [news]
-    sources: [github, youtube, rss]
-    focus: "Today's tech and AI industry news, product launches, and research breakthroughs"
-    subject_prefix: "Evening Picks | SignalNest"
-```
-
-`content` options:
-
-| Value | Description | File |
-| --- | --- | --- |
-| `news` | Collect sources + two-stage AI digest + key takeaways | — |
-| `schedule` | Today's schedule (AI-parsed) | `config/personal/schedule.md` |
-| `todos` | Active projects and tasks (AI-parsed) | `config/personal/projects.md` |
-
-`focus` field: the AI uses this as the primary scoring signal for each schedule run. Leave blank to rely solely on learned preferences.
-
----
-
-### Step 3: Set up personal assistant (optional)
-
-Personal files support **any free-form Markdown** — tables, checklists, natural language. An LLM parses the content automatically; no fixed schema required.
-
-<details>
-<summary><code>config/personal/schedule.md</code> — Course timetable and weekly schedule</summary>
-
-```markdown
----
-semester_start: 2025-09-09
----
-
-## Timetable
-
-| Course | Day | Time | Room | Weeks |
-|--------|-----|------|------|-------|
-| Machine Learning | Thu | 09:00-11:35 | Building 1, Room 108 | 1-16 |
-| NLP | Tue | 13:00-15:35 | Building 2, Room 206 | 3-16 odd |
-
-## Daily
-
-- 07:30 Morning workout
-- 22:30 Evening review
-
-## Monday
-
-- 09:00 Group meeting @ Room 201 // Bring slides
-```
-
-The AI calculates the current week from `semester_start` and extracts only applicable entries.
-See `config/personal/schedule_example.md` for a full example.
-
-</details>
-
-<details>
-<summary><code>config/personal/projects.md</code> — Projects and tasks</summary>
-
-```markdown
-## Thesis
-
-> Soft deadline: 2026-06-30
-
-- [x] Literature review
-- [ ] Draft chapter 3 <!-- 2026-03-20 -->
-- [ ] Organize experimental data <!-- 2026-04-01 -->
-- [ ] Submit to advisor
-
-## Coursework
-
-- [ ] ML Theory - Assignment 3 <!-- 2026-03-07 -->
-- [ ] NLP - Reading report <!-- 2026-03-14 -->
-```
-
-`[x]` completed tasks are excluded from the digest. `<!-- YYYY-MM-DD -->` sets a soft deadline — overdue tasks show a gentle reminder, not a hard alert.
-See `config/personal/projects_example.md` for a full example.
-
-</details>
-
----
-
-### Step 4: Launch
+### 2) Prepare personal files (optional)
 
 ```bash
-cd SignalNest/docker/
-docker compose up -d
+cd ..
+cp config/personal/schedule_example.md config/personal/schedule.md
+cp config/personal/projects_example.md config/personal/projects.md
+```
+
+`schedule.md` and `projects.md` can be free-form Markdown. Structure extraction is handled by AI.
+
+### 3) Configure schedules
+
+Edit `config/config.yaml`. Key fields:
+
+- `schedules[].name`
+- `schedules[].cron`
+- `schedules[].content`: `news` / `schedule` / `todos`
+- `schedules[].sources`: `github` / `youtube` / `rss`
+- `schedules[].focus`: priority direction for AI scoring
+- `schedules[].subject_prefix`: notification title prefix
+
+### 4) Launch
+
+```bash
+cd docker
+docker compose up -d --build
 ```
 
 Check logs:
@@ -201,219 +111,170 @@ Check logs:
 docker logs -f signalnest
 ```
 
-<br>
+### 5) Trigger one immediate run (optional)
+
+Set in `docker/.env`:
+
+```dotenv
+IMMEDIATE_RUN=true
+SCHEDULE_NAME=Morning Digest
+```
+
+Then run:
+
+```bash
+docker compose up -d --force-recreate
+```
 
 ## 💻 Local Development (without Docker)
 
+Install dependencies:
+
 ```bash
-# Install dependencies
 pip install -r requirements.txt
+```
 
-# Copy and fill in credentials
-cp docker/.env.example docker/.env
+Prepare local env file:
 
-# Preview mode (prints output, no notifications sent)
+```bash
+cp docker/.env.example .env
+```
+
+For local runs, `src/config_loader.py` reads repository-root `.env` (not `docker/.env`).
+
+### Legacy flow
+
+```bash
 python -m src.main --schedule-name "Morning Digest" --dry-run
-
-# Full run
 python -m src.main --schedule-name "Morning Digest"
 ```
 
-<br>
-
-## 🐳 Docker Deployment
-
-### Common commands
+### Agent flow
 
 ```bash
-# Start (background, triggers automatically by cron)
-docker compose up -d
-
-# Rebuild after source code changes
-docker compose up -d --build
-
-# Restart only (after editing config.yaml or personal/)
-docker compose restart
-
-# Recreate container (after changing .env)
-docker compose up -d --force-recreate
-
-# Stop
-docker compose down
+python -m src.main --agent-schedule-name "Morning Digest" --dry-run
+python -m src.main --agent-message "Collect today news and summarize" --agent-json
+python -m src.main --agent-tools-schema
 ```
-
-### Trigger immediately for testing
-
-In `docker/.env`:
-
-```dotenv
-IMMEDIATE_RUN=true              # Run once immediately on startup
-SCHEDULE_NAME=Morning Digest    # Leave blank to use the first schedule
-```
-
-Then: `docker compose up -d --force-recreate`
-
-### Data persistence
-
-`data/` is mounted as a Docker volume to the host. `feedback.db` (preference history) survives container rebuilds.
-Each run is archived to `data/history/` with a timestamp, so historical outputs are never overwritten.
-
-<br>
-
-## 🧠 Preference Learning
-
-After each digest run, `data/last_digest.json` is generated automatically:
-
-```json
-{
-  "date": "2026-03-02",
-  "source": "github",
-  "title": "vllm-project/vllm",
-  "ai_score": 9,
-  "ai_summary": "High-performance LLM inference engine...",
-  "user_score": null,
-  "user_notes": ""
-}
-```
-
-Set `user_score` to an integer 1–5 for items you care about. **On the next run, scores are applied automatically** — the AI references your high-rated history when filtering new content.
-
-> `data/` is volume-mounted to the host, so you can edit the file directly without entering the container.
-
-<br>
 
 ## ⚙️ Configuration
 
-### AI settings
+### Core config blocks
 
-```yaml
-ai:
-  backend: "litellm"            # litellm (default) / claude-cli / codex-cli
-  model: "openai/gpt-4o"        # LiteLLM format; env AI_MODEL takes priority
-  api_base: ""                  # Custom endpoint; env AI_API_BASE takes priority
-  min_relevance_score: 5        # Filter items below this score (1–10)
-  max_items_per_digest: 20      # Max items shown per digest
-  min_items_per_source:         # Optional per-source minimums
-    github: 5
-    youtube: 2
-  max_tokens: 2048              # Max tokens per summary
-  max_workers: 10               # Parallel AI calls in stage 2
-```
+| Config Path | Purpose |
+| --- | --- |
+| `app.timezone` / `app.language` | Global timezone and output language |
+| `schedules[]` | Cron plans and content composition |
+| `collectors.github` | GitHub Trending collection parameters |
+| `collectors.youtube` | Subscribed-channel + keyword-search parameters |
+| `collectors.rss` | RSS window and per-feed limits |
+| `ai.*` | Backend/model/threshold/concurrency/source minimums |
+| `notifications.*` | Delivery channel toggles |
+| `storage.*` | Data directory and todo lookahead window |
 
-**AI backend options**:
+### AI backends
 
-| Backend | Description | API Key required |
+| Backend | Description | API Key Required |
 | --- | --- | :---: |
-| `litellm` (default) | Calls any OpenAI-compatible cloud API | Yes (`AI_API_KEY`) |
-| `claude-cli` | Calls local `claude --print` (Claude Code CLI) | No |
-| `codex-cli` | Calls local `codex -q` (OpenAI Codex CLI) | No |
+| `litellm` (default) | Calls OpenAI-compatible cloud APIs | Yes (`AI_API_KEY`) |
+| `claude-cli` | Uses local `claude --print` | No |
+| `codex-cli` | Uses local `codex -q` | No |
 
-Switch via the `AI_BACKEND` environment variable or `ai.backend` in `config.yaml`.
+Environment variables override `config.yaml`:
 
-`min_items_per_source` is enforced in both stages (title selection + final output). If high-score items are insufficient, lower-score candidates from that source are used as fallback. If collection itself returns too few items, the final count can still be below target.
+- `AI_BACKEND`
+- `AI_MODEL`
+- `AI_API_BASE`
+- `AI_API_KEY`
 
-### GitHub collector
+### Docker execution modes
 
-Scrapes `github.com/trending`; the AI filters by `focus` — no manual keyword lists needed.
+`docker/entrypoint.sh` supports:
 
-```yaml
-collectors:
-  github:
-    enabled: true
-    trending_since: "daily"       # daily / weekly / monthly
-    trending_languages: []        # Leave empty for all languages, or e.g. ["python", "typescript"]
-    max_repos: 25                 # Max repos to fetch
-```
+- `RUN_MODE=cron` (default): parse `config.yaml`, generate crontab, keep running with supercronic.
+- `RUN_MODE=once`: execute one schedule and exit.
 
-### YouTube collector
+Default schedule executor: `SCHEDULE_EXECUTOR=agent` (default set in entrypoint).
 
-Two parallel tracks. Transcripts are fetched **after** title-based AI filtering, so only selected videos incur transcript requests.
+- `agent` -> `python -m src.main --agent-schedule-name <name>`
+- `legacy` -> `python -m src.main --schedule-name <name>`
 
-```yaml
-collectors:
-  youtube:
-    enabled: true                  # Requires YOUTUBE_API_KEY
-    # ── Track 1: Subscribed channels ────────────────────────────
-    channel_ids:
-      - "UCnUYZLuoy1rq1aVMwx4aTzw"   # Lex Fridman Podcast
-      - "UCcefcZRL2oaA_uBNeo5UOWg"   # Y Combinator
-    max_results_per_channel: 3     # Final videos kept per channel
-    days_lookback: 7               # Only fetch videos from the last N days
-    sort_by: "views"               # "views" (popularity) / "date" (newest)
-    # ── Track 2: AI keyword search (other channels) ─────────────
-    enable_keyword_search: true    # Adds one AI call + YouTube Search API quota
-    search_sort_by: "views"        # Track 2 ordering: "views" / "date"
-    max_search_results: 5          # Max videos per keyword
-    search_days_lookback: 3        # Time window for keyword search (independent of channel window)
-```
+> `docker/docker-compose.yml` does not expose `SCHEDULE_EXECUTOR` by default. Add it under `environment` if you want legacy mode in container runtime.
 
-When `enable_keyword_search` is enabled, the AI derives 3–5 English search phrases from the current schedule's `focus` and queries the YouTube Search API to surface content beyond your subscribed channels.
+## 🤖 Agent Mode
 
-### RSS feeds
+Agent core lives in `src/agent/`, following “LLM planning -> tool calls -> state persistence”.
 
-Two-phase fetch: each feed initially pulls `max_items_per_feed_initial` titles for batch AI filtering, then only the selected items proceed to deep-read scoring.
+### Built-in tools
 
-```yaml
-collectors:
-  rss:
-    enabled: true
-    days_lookback: 2
-    max_items_per_feed_initial: 10  # Titles fetched per feed for batch filtering
-    max_items_per_feed: 3           # Max articles per feed that reach deep-read scoring
-    feeds:
-      - id: "hacker-news"
-        name: "Hacker News"
-        url: "https://hnrss.org/frontpage"
-      # Add more feeds here...
-```
+- `collect_github`
+- `collect_rss`
+- `collect_youtube`
+- `collect_all_news`
+- `summarize_news`
+- `read_today_schedule`
+- `read_active_projects`
+- `build_digest_payload`
+- `dispatch_notifications` (side-effect tool)
 
-Changes to `config.yaml` take effect after `docker compose restart` — no rebuild needed.
+### Policy and persistence
 
-### Notification channels
+- Tool policy: allowlist / denylist / `allow_side_effects`
+- Session DB: `data/agent_sessions.db`
+- Auto-persist switch for scheduled runs:
+  - environment variable `AGENT_AUTO_PERSIST_SCHEDULE_RUNS`
+  - or `config.agent.auto_persist_schedule_runs`
 
-```yaml
-notifications:
-  email:  { enabled: true }
-  feishu: { enabled: true }   # Also set FEISHU_WEBHOOK_URL in .env
-  wework: { enabled: true }   # Also set WEWORK_WEBHOOK_URL in .env
-```
+## 🗂️ Data & Preference Learning
 
-> **Privacy**: `schedule` and `todos` are personal content — only sent to `EMAIL_FROM` (the sender/owner). Other recipients receive only the news section.
+Key runtime files:
+
+- `data/last_digest.json`: latest items with editable `user_score`
+- `data/history/digest_*.json`: archived run snapshots
+- `data/feedback.db`: persisted user feedback
+- `data/agent_sessions.db`: agent sessions and tool traces
+
+Feedback loop:
+
+1. Edit `data/last_digest.json` and set `user_score` to `1-5` for preferred items.
+2. Next run imports those scores into `feedback.db` automatically.
+3. Future summarization uses high-score records as taste examples.
 
 ## ❓ FAQ
 
-### Q: Email sending fails with 535 authentication error
+### Email failed with 535 authentication error
 
-Use an app password / SMTP auth code, not your account login password.
+Use SMTP app password / authorization code, not your mailbox login password.
 
-### Q: GitHub collection is slow or hitting rate limits
+### Local run cannot read environment variables
 
-Without `GITHUB_TOKEN`, you're limited to 60 API requests/hour. Generate a token at GitHub Settings → Developer Settings → Personal Access Tokens (no permissions needed).
+Make sure `.env` is in repository root. Local mode does not read `docker/.env`.
 
-### Q: YouTube returns 403 Forbidden
+### YouTube collector returned no items
 
-Enable YouTube Data API v3 in Google Cloud Console, and make sure the API key has no HTTP referrer restrictions.
+Check:
 
-### Q: Enabling `enable_keyword_search` increases my YouTube API quota usage
+- `collectors.youtube.enabled=true`
+- `YOUTUBE_API_KEY` is set
+- `days_lookback` / `search_days_lookback` are not too short
 
-Keyword search makes one extra AI call (to generate keywords) plus several YouTube Search API requests. The YouTube Data API v3 free tier is 10,000 units/day; each Search call costs ~100 units while channel playlist fetches cost ~1 unit. Keep `max_search_results` low to stay within quota.
+### Keyword search does not work with `claude-cli` / `codex-cli`
 
-### Q: Why can final output still be below `github: 5` / `youtube: 2`?
+`youtube_collector._ai_generate_keywords()` currently hardcodes LiteLLM + `AI_API_KEY`. Without `AI_API_KEY`, keyword search is skipped, while subscribed-channel collection still works.
 
-Minimums can only be enforced when candidates exist. If a source returns too few items during collection (for example, no recent YouTube uploads within `days_lookback`, or temporary API failures), final counts may still be below target. Increase `days_lookback` / `search_days_lookback`, add more `channel_ids`, and check runtime logs.
+### Notifications enabled but run still fails
 
-### Q: How to add more RSS feeds
+`dispatch()` requires at least one enabled channel to succeed by default. Verify SMTP/webhook credentials and connectivity.
 
-Edit `collectors.rss.feeds` in `config/config.yaml`, add `{id, name, url}`, then `docker compose restart`.
+## 🔐 Security Notes
 
-### Q: How to run only one schedule manually
-
-Set `IMMEDIATE_RUN=true` and `SCHEDULE_NAME=Morning Digest` in `docker/.env`, then recreate the container. For local development, run `python -m src.main --schedule-name "Morning Digest"` directly.
-
-### Q: Can I run AI locally without a cloud API key?
-
-Set `AI_BACKEND=claude-cli` or `AI_BACKEND=codex-cli` in `.env` to use your locally installed Claude Code CLI or OpenAI Codex CLI respectively — no API key required.
+- Never commit `docker/.env` or repository-root `.env`.
+- `config/personal/schedule.md` and `projects.md` may contain private data and should remain local.
+- Rotate keys/passwords immediately if leaked.
 
 ## 📚 Credits
 
-Inspired by [TrendRadar](https://github.com/sansan0/TrendRadar) and [obsidian-daily-digest](https://github.com/Lantern567/obsidian-daily-digest.git)
+Inspired by:
+
+- [TrendRadar](https://github.com/sansan0/TrendRadar)
+- [obsidian-daily-digest](https://github.com/Lantern567/obsidian-daily-digest)

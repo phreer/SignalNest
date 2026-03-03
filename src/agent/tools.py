@@ -291,10 +291,11 @@ def _tool_dispatch_notifications(args: dict[str, Any], rt: ToolRuntime) -> dict[
             "reason": "dry_run=true, skipped real notification dispatch",
         }
 
-    dispatch(payload, rt.config)
+    dispatch_result = dispatch(payload, rt.config)
     return {
         "dry_run": False,
         "dispatched": True,
+        "dispatch_result": dispatch_result,
     }
 
 
