@@ -34,7 +34,7 @@ schedules:
     # - AI/科技：昨夜重要发布、开源项目、模型更新
     # - 金融：亚欧市场动态、美股期货、宏观政策信号
     # - 政治：重大外交/政策动向、地缘风险预警
-    focus: "AI大模型与科技产品最新动态（发布/开源/融资）；金融市场早盘信号、宏观经济政策与央行动向；全球重要政治外交事件与地缘风险；优先呈现时效性强、影响面广的突发与要闻"
+    focus: "AI大模型、科技产品、科技公司、研究人员最新动态（发布/开源/融资）；金融市场早盘信号、宏观经济政策与央行动向；全球重要政治外交事件与地缘风险；优先呈现时效性强、影响面广的突发与要闻"
     subject_prefix: "早安 | SignalNest"
 
   - name: "晚间日报"
@@ -133,6 +133,7 @@ collectors:
       - id: "simon-willison"
         name: "Simon Willison"
         url: "https://simonwillison.net/atom/everything/"
+        max_items_initial: 20  # 高频源，覆盖全局默认值
       # 金融 / 经济
       - id: "reuters-business"
         name: "Reuters Business"

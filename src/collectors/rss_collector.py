@@ -136,7 +136,8 @@ def collect_rss(config: dict, max_total: Optional[int] = None) -> list[dict]:
         feed_url = feed.get("url", "") if isinstance(feed, dict) else feed
         if not feed_url:
             continue
-        items = _fetch_feed(feed_url, days_back, max_per_feed_initial)
+        per_feed_initial = feed.get("max_items_initial", max_per_feed_initial) if isinstance(feed, dict) else max_per_feed_initial
+        items = _fetch_feed(feed_url, days_back, per_feed_initial)
         for item in items:
             if item["url"] not in seen_urls:
                 seen_urls.add(item["url"])
