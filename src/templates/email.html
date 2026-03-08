@@ -92,7 +92,7 @@
     color: #111827;
     margin-bottom: 6px;
   }
-  .soft-due {
+  .due {
     font-size: 11px;
     font-weight: 500;
     padding: 1px 7px;
@@ -101,9 +101,9 @@
     background: #fef3c7;
     color: #92400e;
   }
-  .soft-due.soft-due-overdue  { background: #fee2e2; color: #991b1b; }
-  .soft-due.soft-due-today    { background: #fef3c7; color: #92400e; }
-  .soft-due.soft-due-upcoming { background: #eff6ff; color: #1e40af; }
+  .due.due-overdue  { background: #fee2e2; color: #991b1b; }
+  .due.due-today    { background: #fef3c7; color: #92400e; }
+  .due.due-upcoming { background: #eff6ff; color: #1e40af; }
   .task-item {
     font-size: 13px;
     color: #374151;
@@ -119,6 +119,7 @@
   .task-item.task-overdue  .task-due { color: #ef4444; }
   .task-item.task-today    .task-due { color: #f59e0b; }
   .task-item.task-upcoming .task-due { color: #3b82f6; }
+  .task-due-ai { color: #9ca3af; font-style: italic; }
 
   /* ── 日程 ── */
   .schedule-table { width: 100%; border-collapse: collapse; }
@@ -260,11 +261,11 @@
   <div class="project-block">
     <div class="project-title">
       {{ proj.title }}
-      {% if proj.soft_due %}
-      <span class="soft-due {% if proj.soft_due_status %}soft-due-{{ proj.soft_due_status }}{% endif %}">
-        {% if proj.soft_due_status == "overdue" %}建议尽快完成
-        {% elif proj.soft_due_status == "today" %}今日建议完成
-        {% else %}软截止 {{ proj.soft_due }}
+      {% if proj.due %}
+      <span class="due {% if proj.due_status %}due-{{ proj.due_status }}{% endif %}">
+        {% if proj.due_status == "overdue" %}建议尽快完成
+        {% elif proj.due_status == "today" %}今日完成
+        {% else %}截止 {{ proj.due }}
         {% endif %}
       </span>
       {% endif %}
@@ -272,11 +273,11 @@
     {% for task in proj.tasks %}
     <div class="task-item {% if task.status %}task-{{ task.status }}{% endif %}">
       · {{ task.title }}
-      {% if task.soft_due %}
-      <span class="task-due">
-        {% if task.status == "overdue" %}（建议完成，已过 {{ task.days_until | abs }} 天）
-        {% elif task.status == "today" %}（今日建议完成）
-        {% elif task.status == "upcoming" %}（建议 {{ task.soft_due }}，还有 {{ task.days_until }} 天）
+      {% if task.due %}
+      <span class="task-due {% if task.due_source == 'ai' %}task-due-ai{% endif %}">
+        {% if task.status == "overdue" %}（已过 {{ task.days_until | abs }} 天）
+        {% elif task.status == "today" %}（今日完成）
+        {% elif task.status == "upcoming" %}（截止 {{ task.due }}，还有 {{ task.days_until }} 天）
         {% endif %}
       </span>
       {% endif %}

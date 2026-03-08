@@ -81,7 +81,7 @@ def read_active_projects(
     支持任意 Markdown 格式（checkbox、自然语言等）。
 
     Returns:
-        list of dict: {title, soft_due, soft_due_status, tasks}
+        list of dict: {title, due, due_status, tasks}
     """
     content = _read_file(projects_path)
     if content is None:
@@ -95,10 +95,13 @@ def read_active_projects(
 提取规则：
 - 只返回有未完成子任务的项目
 - 已完成的子任务不包含在内
-- soft_due 是建议完成日期（非强制），格式 YYYY-MM-DD，若无则为 null
+- 对每个子任务，按以下逻辑处理截止日期：
+  1. 若用户已明确写出日期（如注释 <!-- 2026-03-20 -->、"截止"、"due" 等任意格式），提取该日期，due_source 设为 "user"，due_reason 为 null
+  2. 若未写日期，根据任务描述关键词（如"紧急"、"本周"、"下周前"、"尽快"、"明天"）和项目整体上下文，推断一个合理的建议完成日期（格式 YYYY-MM-DD），due_source 设为 "ai"，due_reason 填写≤15字的判断理由
+  3. 若任务明显无时效性（长期规划、随时可做、无任何紧迫信号），due 和 due_source 均为 null
 
 输出格式（严格 JSON，不含注释或 markdown 代码块）：
-{{"projects": [{{"title": "项目名称", "soft_due": "YYYY-MM-DD 或 null", "tasks": [{{"title": "子任务名称", "soft_due": "YYYY-MM-DD 或 null"}}]}}]}}"""
+{{"projects": [{{"title": "项目名称", "due": "YYYY-MM-DD 或 null", "tasks": [{{"title": "子任务名称", "due": "YYYY-MM-DD 或 null", "due_source": "user 或 ai 或 null", "due_reason": "理由或 null"}}]}}]}}"""
 
     raw = _call_llm(system_prompt, content, config)
     if raw is None:
@@ -127,11 +130,11 @@ def read_active_projects(
         ]
         if not tasks:
             continue
-        soft_due = proj.get("soft_due") or None
+        due = proj.get("due") or None
         result.append({
             "title":           str(proj.get("title", "")).strip(),
-            "soft_due":        soft_due,
-            "soft_due_status": _due_status(soft_due, today, cutoff) if soft_due else None,
+            "due":        due,
+            "due_status": _due_status(due, today, cutoff) if due else None,
             "tasks":           tasks,
         })
 
@@ -188,21 +191,25 @@ def _normalize_entry(e: dict) -> dict:
 
 
 def _enrich_task(task: dict, today: date, cutoff: date) -> dict:
-    soft_due_str = task.get("soft_due") or None
+    due_str = task.get("due") or None
+    source = task.get("due_source") or None
+    reason = task.get("due_reason") or None
     status    = None
     days_until = None
-    if soft_due_str:
+    if due_str:
         try:
-            due_date   = date.fromisoformat(str(soft_due_str))
+            due_date   = date.fromisoformat(str(due_str))
             days_until = (due_date - today).days
             status     = _due_status_from_date(due_date, today, cutoff)
         except ValueError:
             pass
     return {
-        "title":     str(task.get("title", "")).strip(),
-        "soft_due":  soft_due_str,
-        "status":    status,
-        "days_until": days_until,
+        "title":           str(task.get("title", "")).strip(),
+        "due":        due_str,
+        "due_source": source,
+        "due_reason": reason,
+        "status":          status,
+        "days_until":      days_until,
     }
 
 

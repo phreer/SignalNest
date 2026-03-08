@@ -37,24 +37,24 @@ def _build_markdown(payload: dict) -> str:
         lines.append("**📋 项目进展**")
         for proj in projects:
             due_info = ""
-            if proj.get("soft_due"):
-                s = proj["soft_due_status"]
+            if proj.get("due"):
+                s = proj["due_status"]
                 if s == "overdue":
                     due_info = " `建议尽快完成`"
                 elif s == "today":
-                    due_info = " `今日建议完成`"
+                    due_info = " `今日完成`"
                 else:
-                    due_info = f" `软截止 {proj['soft_due']}`"
+                    due_info = f" `截止 {proj['due']}`"
             lines.append(f"> **{proj['title']}**{due_info}")
             for t in proj.get("tasks", []):
                 task_info = ""
-                if t.get("soft_due"):
+                if t.get("due"):
                     if t["status"] == "overdue":
-                        task_info = f" — 建议完成，已过 {abs(t['days_until'])} 天"
+                        task_info = f" — 已过 {abs(t['days_until'])} 天"
                     elif t["status"] == "today":
-                        task_info = " — 今日建议完成"
+                        task_info = f" — 今日完成"
                     elif t["status"] == "upcoming":
-                        task_info = f" — 建议 {t['soft_due']}"
+                        task_info = f" — 截止 {t['due']}"
                 lines.append(f">   · {t['title']}{task_info}")
         lines.append("")
 
