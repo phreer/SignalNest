@@ -65,6 +65,27 @@ Execution responsibilities:
 - Manual runs: started by the web app in a background worker/thread
 - Deep summary jobs: started by the web app in a background worker/thread
 
+## Current Status
+
+Implementation status as of now:
+- Phase 1 is completed
+- Phase 2 is completed
+- Phase 3 has not started
+
+Currently implemented:
+- FastAPI web app with server-rendered pages
+- `job_runs`, `job_logs`, `digests`, `collected_items`, and `deep_summaries` in `data/app.db`
+- Dashboard, jobs, digest history/detail, items, item detail, and deep summary detail pages
+- Manual schedule trigger with optional `dry_run`
+- Structured job logging for tracked runs
+- Item indexing from tracked run session state
+- Manual deep summary generation
+- Web article extraction using `trafilatura` with fallback extraction
+- Basic repository/service/API coverage for implemented web flows
+
+Current limitation:
+- `/items` only shows items collected by runs executed after Phase 2 was introduced, because historical digest archives do not contain full `raw_items` needed for backfilling the item index
+
 ## Data Model Plan
 
 Use a new database, recommended path: `data/app.db`.
@@ -415,6 +436,8 @@ Use mocked collectors and mocked AI responses to validate:
 
 ### Phase 1: Operational Console
 
+Status: Completed
+
 Scope:
 - App database bootstrap
 - `job_runs` and `job_logs`
@@ -434,6 +457,8 @@ Acceptance criteria:
 
 ### Phase 2: Item Center and Manual Deep Summary
 
+Status: Completed
+
 Scope:
 - `collected_items`
 - Item indexing from job outputs
@@ -450,6 +475,8 @@ Acceptance criteria:
 - User can see deep summary status and output
 
 ### Phase 3: Automatic Deep Summary and Config View
+
+Status: Pending
 
 Scope:
 - Auto-trigger deep summaries for high-scoring items
