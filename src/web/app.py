@@ -8,7 +8,7 @@ from typing import Any
 from zoneinfo import ZoneInfo
 
 from croniter import croniter
-from fastapi import FastAPI, Form, Request
+from fastapi import FastAPI, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
@@ -214,6 +214,8 @@ def create_app(config: dict | None = None) -> FastAPI:
 
     @app.post("/items/{item_id}/deep-summary")
     def trigger_deep_summary(item_id: int) -> RedirectResponse:
+        if app.state.store.get_item(item_id) is None:
+            raise HTTPException(status_code=404, detail="item not found")
         deep_summary_id, _future = enqueue_manual_deep_summary(
             executor=app.state.executor,
             config=app.state.config,
@@ -320,6 +322,8 @@ def create_app(config: dict | None = None) -> FastAPI:
 
     @app.post("/api/items/{item_id}/deep-summary")
     def api_trigger_deep_summary(item_id: int) -> dict[str, Any]:
+        if app.state.store.get_item(item_id) is None:
+            raise HTTPException(status_code=404, detail="item not found")
         deep_summary_id, _future = enqueue_manual_deep_summary(
             executor=app.state.executor,
             config=app.state.config,

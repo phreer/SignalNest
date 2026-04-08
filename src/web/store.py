@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
@@ -15,6 +15,10 @@ def _json_default(value: Any) -> str:
     if isinstance(value, (datetime, date)):
         return value.isoformat()
     return str(value)
+
+
+def _sqlite_datetime_range_expr(column: str) -> str:
+    return f"COALESCE(datetime({column}), datetime(collected_at))"
 
 
 class AppStateStore:
@@ -30,6 +34,7 @@ class AppStateStore:
     def _connect(self) -> sqlite3.Connection:
         conn = sqlite3.connect(self.db_path)
         conn.row_factory = sqlite3.Row
+        conn.execute("PRAGMA foreign_keys = ON")
         return conn
 
     def init_db(self) -> None:
@@ -526,6 +531,7 @@ class AppStateStore:
     ) -> list[dict[str, Any]]:
         clauses: list[str] = []
         params: list[Any] = []
+        time_expr = _sqlite_datetime_range_expr("published_at")
         if keyword:
             keyword_like = f"%{keyword}%"
             clauses.append("(title LIKE ? OR ai_summary LIKE ? OR feed_title LIKE ?)")
@@ -537,8 +543,11 @@ class AppStateStore:
             clauses.append("selected_for_digest=1")
         if time_range in {"1d", "7d", "30d"}:
             days = int(time_range[:-1])
-            clauses.append("COALESCE(published_at, collected_at) >= datetime('now', ?)")
-            params.append(f"-{days} days")
+            cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).replace(
+                microsecond=0
+            )
+            clauses.append(f"{time_expr} >= datetime(?)")
+            params.append(cutoff.isoformat())
         where_sql = f"WHERE {' AND '.join(clauses)}" if clauses else ""
 
         conn = self._connect()
@@ -547,7 +556,7 @@ class AppStateStore:
                 f"""
                 SELECT * FROM collected_items
                 {where_sql}
-                ORDER BY COALESCE(published_at, collected_at) DESC, id DESC
+                ORDER BY {time_expr} DESC, id DESC
                 LIMIT ?
                 """,
                 (*params, limit),

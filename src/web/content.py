@@ -177,6 +177,10 @@ def build_indexed_items(
         elif source == "github":
             external_id = url.rstrip("/").split("github.com/")[-1] if url else ""
 
+        merged_raw = dict(raw)
+        if selected:
+            merged_raw.update(selected)
+
         indexed.append(
             {
                 "source": source,
@@ -191,7 +195,7 @@ def build_indexed_items(
                 "ai_score": selected.get("ai_score") if selected else None,
                 "ai_summary": str(selected.get("ai_summary") or "") if selected else "",
                 "ai_reason": str(selected.get("ai_reason") or "") if selected else "",
-                "raw": dict(selected) if selected else dict(raw),
+                "raw": merged_raw,
             }
         )
     return indexed

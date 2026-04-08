@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import copy
 import json
+import sqlite3
 import tempfile
 import unittest
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest.mock import patch
 
@@ -175,6 +177,20 @@ class AppStateStoreTests(unittest.TestCase):
             self.assertEqual(len(store.list_job_logs(job_id)), 1)
             self.assertEqual(store.get_latest_digest()["summary_text"], "summary")
 
+    def test_deep_summary_requires_existing_item(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            config = _sample_config(tmp)
+            store = AppStateStore.from_config(config)
+            store.init_db()
+
+            with self.assertRaises(sqlite3.IntegrityError):
+                store.create_deep_summary(
+                    item_id=999,
+                    job_run_id=None,
+                    trigger_type="manual",
+                    status="queued",
+                )
+
 
 class RuntimeTests(unittest.TestCase):
     def test_tracked_schedule_persists_job_and_digest(self) -> None:
@@ -197,6 +213,8 @@ class RuntimeTests(unittest.TestCase):
             items = store.list_items(limit=20)
             self.assertEqual(len(items), 1)
             self.assertTrue(items[0]["selected_for_digest"])
+            self.assertEqual(items[0]["raw"]["content_snippet"], "content")
+            self.assertEqual(items[0]["raw"]["ai_summary"], "summary")
 
     def test_manual_deep_summary_flow(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -258,6 +276,59 @@ class RuntimeTests(unittest.TestCase):
 
 
 class ApiTests(unittest.TestCase):
+    def test_items_api_time_range_excludes_older_same_day_cutoff_item(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            config = _sample_config(tmp)
+            store = AppStateStore.from_config(config)
+            store.init_db()
+            job_id = store.create_job_run(
+                schedule_name="早间日报", trigger_type="manual", dry_run=True
+            )
+            now = datetime.now(timezone.utc).replace(microsecond=0)
+            store.replace_items_for_job(
+                job_run_id=job_id,
+                digest_id=None,
+                items=[
+                    {
+                        "source": "rss",
+                        "external_id": "",
+                        "title": "recent item",
+                        "url": "https://example.com/recent",
+                        "author": "",
+                        "feed_title": "Feed",
+                        "language": "",
+                        "published_at": (now - timedelta(hours=2)).isoformat(),
+                        "selected_for_digest": True,
+                        "ai_score": 8,
+                        "ai_summary": "recent",
+                        "ai_reason": "",
+                        "raw": {"source": "rss", "url": "https://example.com/recent"},
+                    },
+                    {
+                        "source": "rss",
+                        "external_id": "",
+                        "title": "old item",
+                        "url": "https://example.com/old",
+                        "author": "",
+                        "feed_title": "Feed",
+                        "language": "",
+                        "published_at": (now - timedelta(days=1, hours=1)).isoformat(),
+                        "selected_for_digest": False,
+                        "ai_score": None,
+                        "ai_summary": "",
+                        "ai_reason": "",
+                        "raw": {"source": "rss", "url": "https://example.com/old"},
+                    },
+                ],
+            )
+
+            app = create_app(copy.deepcopy(config))
+            client = TestClient(app)
+            resp = client.get("/api/items?time_range=1d")
+            self.assertEqual(resp.status_code, 200)
+            items = resp.json()["items"]
+            self.assertEqual([item["title"] for item in items], ["recent item"])
+
     def test_status_and_manual_run_api(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             config = _sample_config(tmp)
@@ -357,6 +428,16 @@ class ApiTests(unittest.TestCase):
                 resp = client.post(f"/api/items/{item['id']}/deep-summary")
             self.assertEqual(resp.status_code, 200)
             self.assertEqual(resp.json()["deep_summary_id"], 77)
+
+    def test_item_deep_summary_api_rejects_missing_item(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            config = _sample_config(tmp)
+            app = create_app(copy.deepcopy(config))
+            client = TestClient(app)
+
+            resp = client.post("/api/items/999/deep-summary")
+            self.assertEqual(resp.status_code, 404)
+            self.assertEqual(resp.json()["detail"], "item not found")
 
 
 if __name__ == "__main__":
