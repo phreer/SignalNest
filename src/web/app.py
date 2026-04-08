@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import os
+import re
 from contextlib import asynccontextmanager
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
@@ -13,8 +15,16 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
 from src.config_loader import load_config
-from src.web.runtime import enqueue_manual_deep_summary, enqueue_manual_run
+from src.web.runtime import (
+    ScheduleAlreadyRunningError,
+    enqueue_manual_deep_summary,
+    enqueue_manual_run,
+)
 from src.web.store import AppStateStore
+
+_SENSITIVE_ENV_PATTERNS = re.compile(
+    r"(key|password|secret|token|webhook|api_base)", re.IGNORECASE
+)
 
 
 def _template_dir() -> Path:
@@ -54,6 +64,121 @@ def _build_status(config: dict, store: AppStateStore) -> dict[str, Any]:
         "recent_jobs": store.list_jobs(limit=8),
         "next_runs": _compute_next_runs(config),
         "latest_digest": store.get_latest_digest(),
+    }
+
+
+def _mask_email(email: str) -> str:
+    """Partially mask an email address: p***e@example.com."""
+    if not email or "@" not in email:
+        return email
+    local, domain = email.split("@", 1)
+    if len(local) <= 2:
+        masked_local = "*" * len(local)
+    else:
+        masked_local = local[0] + "***" + local[-1]
+    return f"{masked_local}@{domain}"
+
+
+def _mask_value(key: str, value: Any) -> Any:
+    """Return a masked placeholder if the key looks sensitive, otherwise the value."""
+    if isinstance(value, str) and value and _SENSITIVE_ENV_PATTERNS.search(key):
+        return "configured"
+    return value
+
+
+def _build_config_view(config: dict) -> dict[str, Any]:
+    """Build a safe, masked representation of the active config for the UI."""
+
+    def _env_override(env_var: str, config_val: Any) -> dict[str, Any]:
+        env_val = os.environ.get(env_var)
+        if env_val is not None and env_val != str(config_val):
+            return {
+                "value": _mask_value(env_var, env_val),
+                "overridden_by_env": True,
+                "config_value": config_val,
+            }
+        return {"value": config_val, "overridden_by_env": False}
+
+    ai_cfg = config.get("ai", {})
+    agent_cfg = config.get("agent", {})
+    notif_cfg = config.get("notifications", {})
+    ds_cfg = {
+        **{
+            "auto_enabled": False,
+            "score_threshold": 8,
+            "max_per_run": 5,
+            "timeout_per_item": 120,
+            "exclude_sources": [],
+        },
+        **config.get("deep_summary", {}),
+    }
+
+    schedules = []
+    for s in config.get("schedules", []):
+        schedules.append(
+            {
+                "name": s.get("name", ""),
+                "cron": s.get("cron", ""),
+                "content": s.get("content", []),
+                "sources": s.get("sources", []),
+                "focus": s.get("focus", ""),
+                "subject_prefix": s.get("subject_prefix", ""),
+            }
+        )
+
+    email_cfg = notif_cfg.get("email", {})
+    recipients_raw = str(os.environ.get("EMAIL_TO") or email_cfg.get("to", "") or "")
+    recipients = [
+        _mask_email(r.strip()) for r in recipients_raw.split(",") if r.strip()
+    ]
+
+    channels = {}
+    for ch in ("email", "feishu", "wework", "file"):
+        ch_cfg = notif_cfg.get(ch, {})
+        enabled = bool(ch_cfg.get("enabled", False))
+        channels[ch] = {"enabled": enabled}
+        if ch == "email" and enabled:
+            channels[ch]["recipients"] = recipients
+            channels[ch]["smtp_server"] = email_cfg.get(
+                "smtp_server"
+            ) or os.environ.get("EMAIL_SMTP_SERVER", "")
+
+    rss_sources = config.get("rss", {}).get("feeds", [])
+    youtube_channels = config.get("youtube", {}).get("channels", [])
+    github_cfg = config.get("github", {})
+
+    return {
+        "schedules": schedules,
+        "ai": {
+            "backend": _env_override("AI_BACKEND", ai_cfg.get("backend", "litellm")),
+            "model": _env_override("AI_MODEL", ai_cfg.get("model", "")),
+            "api_base": _env_override("AI_API_BASE", ai_cfg.get("api_base", "")),
+            "api_key": {
+                "value": "configured" if os.environ.get("AI_API_KEY") else "not set",
+                "overridden_by_env": bool(os.environ.get("AI_API_KEY")),
+            },
+            "max_tokens": ai_cfg.get("max_tokens", 2048),
+            "max_workers": ai_cfg.get("max_workers", 5),
+            "min_relevance_score": ai_cfg.get("min_relevance_score", 5),
+            "max_items_per_digest": ai_cfg.get("max_items_per_digest", 20),
+        },
+        "agent": {
+            "max_steps": agent_cfg.get("max_steps", 6),
+            "schedule_max_steps": agent_cfg.get("schedule_max_steps", 8),
+            "schedule_allow_side_effects": agent_cfg.get(
+                "schedule_allow_side_effects", True
+            ),
+            "require_dispatch_tool_call": agent_cfg.get(
+                "require_dispatch_tool_call", True
+            ),
+        },
+        "deep_summary": ds_cfg,
+        "notifications": channels,
+        "sources": {
+            "rss_feed_count": len(rss_sources),
+            "youtube_channel_count": len(youtube_channels),
+            "github_since": github_cfg.get("since", "daily"),
+        },
     }
 
 
@@ -128,12 +253,15 @@ def create_app(config: dict | None = None) -> FastAPI:
         schedule_name: str = Form(...), dry_run: str = Form("false")
     ) -> RedirectResponse:
         dry_run_flag = str(dry_run).lower() in {"1", "true", "on", "yes"}
-        job_run_id, _future = enqueue_manual_run(
-            executor=app.state.executor,
-            config=app.state.config,
-            schedule_name=schedule_name,
-            dry_run=dry_run_flag,
-        )
+        try:
+            job_run_id, _future = enqueue_manual_run(
+                executor=app.state.executor,
+                config=app.state.config,
+                schedule_name=schedule_name,
+                dry_run=dry_run_flag,
+            )
+        except ScheduleAlreadyRunningError as exc:
+            raise HTTPException(status_code=409, detail=str(exc))
         return RedirectResponse(url=f"/jobs/{job_run_id}", status_code=303)
 
     @app.get("/jobs/{job_run_id}", response_class=HTMLResponse)
@@ -247,12 +375,15 @@ def create_app(config: dict | None = None) -> FastAPI:
 
     @app.post("/api/schedules/{schedule_name}/run")
     def api_run_schedule(schedule_name: str, dry_run: bool = False) -> dict[str, Any]:
-        job_run_id, _future = enqueue_manual_run(
-            executor=app.state.executor,
-            config=app.state.config,
-            schedule_name=schedule_name,
-            dry_run=dry_run,
-        )
+        try:
+            job_run_id, _future = enqueue_manual_run(
+                executor=app.state.executor,
+                config=app.state.config,
+                schedule_name=schedule_name,
+                dry_run=dry_run,
+            )
+        except ScheduleAlreadyRunningError as exc:
+            raise HTTPException(status_code=409, detail=str(exc))
         job = app.state.store.get_job(job_run_id)
         return {"job_run_id": job_run_id, "job": job}
 
@@ -337,5 +468,14 @@ def create_app(config: dict | None = None) -> FastAPI:
     @app.get("/api/deep-summaries/{deep_summary_id}")
     def api_deep_summary_detail(deep_summary_id: int) -> dict[str, Any]:
         return {"deep_summary": app.state.store.get_deep_summary(deep_summary_id)}
+
+    @app.get("/config", response_class=HTMLResponse)
+    def config_page(request: Request) -> HTMLResponse:
+        config_view = _build_config_view(app.state.config)
+        return render(request, "config.html", {"config_view": config_view})
+
+    @app.get("/api/config")
+    def api_config() -> dict[str, Any]:
+        return _build_config_view(app.state.config)
 
     return app

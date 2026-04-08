@@ -10,8 +10,11 @@ services:
     volumes:
       # 配置文件（只读）：config.yaml + personal/ 目录
       - ../config:/app/config:ro
-      # 数据目录（读写）：feedback.db 持久化
+      # 数据目录（读写）：db + digest 归档持久化
       - ../data:/app/data
+
+    ports:
+      - "${WEB_PORT:-8080}:${WEB_PORT:-8080}"
 
     environment:
       - TZ=Asia/Shanghai
@@ -44,47 +47,11 @@ services:
       - WEWORK_MSG_TYPE=${WEWORK_MSG_TYPE:-markdown}
 
       # ── 运行模式 ─────────────────────────────────────────────
-      # RUN_MODE: cron（持续运行）或 once（单次执行后退出）
-      - RUN_MODE=${RUN_MODE:-cron}
+      # RUN_MODE: all（cron + web，推荐）| cron | web | once
+      - RUN_MODE=${RUN_MODE:-all}
+      # Web UI 端口
+      - WEB_PORT=${WEB_PORT:-8080}
       # 启动时立即执行一次（true/false）
       - IMMEDIATE_RUN=${IMMEDIATE_RUN:-false}
       # RUN_MODE=once 时指定哪个 schedule（空则用第一个）
       - SCHEDULE_NAME=${SCHEDULE_NAME:-}
-
-  signalnest-web:
-    build:
-      context: ..
-      dockerfile: docker/Dockerfile
-    image: signalnest:latest
-    container_name: signalnest-web
-    restart: unless-stopped
-    depends_on:
-      - signalnest
-
-    volumes:
-      - ../config:/app/config:ro
-      - ../data:/app/data
-
-    environment:
-      - TZ=Asia/Shanghai
-      - AI_API_KEY=${AI_API_KEY:-}
-      - AI_MODEL=${AI_MODEL:-}
-      - AI_API_BASE=${AI_API_BASE:-}
-      - GITHUB_TOKEN=${GITHUB_TOKEN:-}
-      - YOUTUBE_API_KEY=${YOUTUBE_API_KEY:-}
-      - EMAIL_FROM=${EMAIL_FROM:-}
-      - EMAIL_PASSWORD=${EMAIL_PASSWORD:-}
-      - EMAIL_TO=${EMAIL_TO:-}
-      - EMAIL_SMTP_SERVER=${EMAIL_SMTP_SERVER:-smtp.qq.com}
-      - EMAIL_SMTP_PORT=${EMAIL_SMTP_PORT:-465}
-      - EMAIL_OPENING_AI_NAMES=${EMAIL_OPENING_AI_NAMES:-yy}
-      - EMAIL_OPENING_ME=${EMAIL_OPENING_ME:-}
-      - EMAIL_OPENING_YY=${EMAIL_OPENING_YY:-}
-      - FEISHU_WEBHOOK_URL=${FEISHU_WEBHOOK_URL:-}
-      - WEWORK_WEBHOOK_URL=${WEWORK_WEBHOOK_URL:-}
-      - WEWORK_MSG_TYPE=${WEWORK_MSG_TYPE:-markdown}
-      - RUN_MODE=web
-      - WEB_PORT=${WEB_PORT:-8080}
-
-    ports:
-      - "${WEB_PORT:-8080}:${WEB_PORT:-8080}"

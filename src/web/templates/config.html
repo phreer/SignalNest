@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+{% block content %}
+
+{# ── Schedules ─────────────────────────────────────────────────────────── #}
+<div class="card" style="margin-bottom:16px;">
+  <div class="section-title jobs">Schedules</div>
+  {% if config_view.schedules %}
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Cron</th>
+        <th>Content</th>
+        <th>Sources</th>
+        <th>Subject Prefix</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for s in config_view.schedules %}
+      <tr>
+        <td>{{ s.name }}</td>
+        <td><code>{{ s.cron }}</code></td>
+        <td>{{ s.content | join(", ") }}</td>
+        <td>{{ s.sources | join(", ") }}</td>
+        <td class="muted">{{ s.subject_prefix }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="muted">No schedules configured.</p>
+  {% endif %}
+</div>
+
+{# ── AI ────────────────────────────────────────────────────────────────── #}
+<div class="card" style="margin-bottom:16px;">
+  <div class="section-title status">AI</div>
+  <table>
+    <tbody>
+      <tr>
+        <th style="width:200px;">Backend</th>
+        <td>
+          {{ config_view.ai.backend.value }}
+          {% if config_view.ai.backend.overridden_by_env %}
+          <span class="pill">env override</span>
+          {% endif %}
+        </td>
+      </tr>
+      <tr>
+        <th>Model</th>
+        <td>
+          {{ config_view.ai.model.value }}
+          {% if config_view.ai.model.overridden_by_env %}
+          <span class="pill">env override</span>
+          {% endif %}
+        </td>
+      </tr>
+      <tr>
+        <th>API Key</th>
+        <td>
+          <span class="{% if config_view.ai.api_key.value == 'configured' %}status-ok{% else %}status-failed{% endif %}">
+            {{ config_view.ai.api_key.value }}
+          </span>
+          {% if config_view.ai.api_key.overridden_by_env %}
+          <span class="pill">env</span>
+          {% endif %}
+        </td>
+      </tr>
+      <tr>
+        <th>API Base</th>
+        <td>
+          {{ config_view.ai.api_base.value }}
+          {% if config_view.ai.api_base.overridden_by_env %}
+          <span class="pill">env override</span>
+          {% endif %}
+        </td>
+      </tr>
+      <tr><th>Max Tokens</th><td>{{ config_view.ai.max_tokens }}</td></tr>
+      <tr><th>Max Workers</th><td>{{ config_view.ai.max_workers }}</td></tr>
+      <tr><th>Min Relevance Score</th><td>{{ config_view.ai.min_relevance_score }}</td></tr>
+      <tr><th>Max Items / Digest</th><td>{{ config_view.ai.max_items_per_digest }}</td></tr>
+    </tbody>
+  </table>
+</div>
+
+{# ── Agent ─────────────────────────────────────────────────────────────── #}
+<div class="card" style="margin-bottom:16px;">
+  <div class="section-title status">Agent</div>
+  <table>
+    <tbody>
+      <tr><th style="width:240px;">Max Steps</th><td>{{ config_view.agent.max_steps }}</td></tr>
+      <tr><th>Schedule Max Steps</th><td>{{ config_view.agent.schedule_max_steps }}</td></tr>
+      <tr>
+        <th>Allow Side Effects (schedule)</th>
+        <td>{{ config_view.agent.schedule_allow_side_effects }}</td>
+      </tr>
+      <tr>
+        <th>Require Dispatch Tool Call</th>
+        <td>{{ config_view.agent.require_dispatch_tool_call }}</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+{# ── Deep Summary ─────────────────────────────────────────────────────── #}
+<div class="card" style="margin-bottom:16px;">
+  <div class="section-title digest">Deep Summary (Auto)</div>
+  <table>
+    <tbody>
+      <tr>
+        <th style="width:200px;">Auto Enabled</th>
+        <td>
+          <span class="{% if config_view.deep_summary.auto_enabled %}status-ok{% else %}muted{% endif %}">
+            {{ config_view.deep_summary.auto_enabled }}
+          </span>
+        </td>
+      </tr>
+      <tr><th>Score Threshold</th><td>{{ config_view.deep_summary.score_threshold }}</td></tr>
+      <tr><th>Max Per Run</th><td>{{ config_view.deep_summary.max_per_run }}</td></tr>
+      <tr><th>Timeout / Item (s)</th><td>{{ config_view.deep_summary.timeout_per_item }}</td></tr>
+      <tr>
+        <th>Exclude Sources</th>
+        <td>
+          {% if config_view.deep_summary.exclude_sources %}
+          {{ config_view.deep_summary.exclude_sources | join(", ") }}
+          {% else %}
+          <span class="muted">none</span>
+          {% endif %}
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+{# ── Notifications ─────────────────────────────────────────────────────── #}
+<div class="card" style="margin-bottom:16px;">
+  <div class="section-title news">Notifications</div>
+  <table>
+    <thead>
+      <tr>
+        <th>Channel</th>
+        <th>Enabled</th>
+        <th>Details</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for ch, info in config_view.notifications.items() %}
+      <tr>
+        <td>{{ ch }}</td>
+        <td>
+          <span class="{% if info.enabled %}status-ok{% else %}muted{% endif %}">
+            {{ info.enabled }}
+          </span>
+        </td>
+        <td class="muted">
+          {% if ch == "email" and info.enabled %}
+          SMTP: {{ info.smtp_server }} &nbsp;|&nbsp;
+          Recipients: {{ info.recipients | join(", ") if info.recipients else "—" }}
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{# ── Sources ──────────────────────────────────────────────────────────── #}
+<div class="card">
+  <div class="section-title news">Sources</div>
+  <table>
+    <tbody>
+      <tr><th style="width:200px;">RSS Feeds</th><td>{{ config_view.sources.rss_feed_count }} configured</td></tr>
+      <tr><th>YouTube Channels</th><td>{{ config_view.sources.youtube_channel_count }} configured</td></tr>
+      <tr><th>GitHub Trending Since</th><td>{{ config_view.sources.github_since }}</td></tr>
+    </tbody>
+  </table>
+</div>
+
+{% endblock %}

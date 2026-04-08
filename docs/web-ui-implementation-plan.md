@@ -65,12 +65,51 @@ Execution responsibilities:
 - Manual runs: started by the web app in a background worker/thread
 - Deep summary jobs: started by the web app in a background worker/thread
 
+### Single-Container Architecture
+
+The cron scheduler and web UI run in the **same container**. This eliminates cross-container SQLite coordination complexity and simplifies deployment.
+
+Deployment modes via `RUN_MODE` env var:
+
+- `RUN_MODE=all` (default): Start uvicorn in background, then supercronic in foreground. Both share the same process space and local SQLite files.
+- `RUN_MODE=cron`: Scheduler only, no web UI.
+- `RUN_MODE=web`: Web UI only, no scheduler. Useful for read-only inspection or separate deployments.
+- `RUN_MODE=once`: Single one-shot run then exit.
+
+`docker-compose.yml` should use a single `signalnest` service with `RUN_MODE=all`. The separate `signalnest-web` service is removed.
+
+SQLite prerequisite: `data/` must be on a local disk mount. WAL mode must be enabled on all connections (see Concurrency Safety below).
+
+## Concurrency Safety
+
+Two types of concurrent access must be handled:
+
+### 1. SQLite connection hardening
+
+All connections to `app.db` must be opened with:
+- `PRAGMA journal_mode=WAL` — allows concurrent reads and one writer without blocking
+- `PRAGMA busy_timeout=5000` — retry for up to 5 seconds on lock contention instead of immediately raising `SQLITE_BUSY`
+
+This applies to every `_connect()` call in `AppStateStore`. Without WAL, any two concurrent writes (e.g. a supercronic-triggered run and a manual web trigger) will frequently error.
+
+### 2. Schedule-level re-entrancy guard
+
+A schedule must not be allowed to run more than once at a time. Without a guard, a manual trigger overlapping a cron-triggered run for the same schedule will produce duplicate notifications, double-indexed items, and race conditions in shared state writes.
+
+Implementation:
+
+- Before creating or starting a `job_run`, query `job_runs` for any existing record with `status IN ('queued', 'running')` and the same `schedule_name`.
+- If one exists:
+  - Web path (`enqueue_manual_run`): return HTTP 409 with a message indicating the schedule is already running. Log a warning.
+  - Cron path (`run_tracked_schedule` called from `src/main.py`): skip the run, log a warning with the conflicting `job_run_id`, and exit cleanly.
+- The check and the new `INSERT` should be as close together as possible. A SQLite-level `INSERT ... WHERE NOT EXISTS` or a simple `SELECT` + conditional `INSERT` within the same serialized write is sufficient; no external lock is needed because SQLite's WAL serializes writers.
+
 ## Current Status
 
 Implementation status as of now:
 - Phase 1 is completed
 - Phase 2 is completed
-- Phase 3 has not started
+- Phase 3 is completed
 
 Currently implemented:
 - FastAPI web app with server-rendered pages
@@ -84,7 +123,7 @@ Currently implemented:
 - Basic repository/service/API coverage for implemented web flows
 
 Current limitation:
-- `/items` only shows items collected by runs executed after Phase 2 was introduced, because historical digest archives do not contain full `raw_items` needed for backfilling the item index
+- `/items` only shows items collected by runs executed after Phase 2 was introduced, because historical digest archives do not contain full `raw_items` needed for backfilling the item index. This gap is accepted; the UI should display the earliest available date to set user expectations. No backfill will be performed.
 
 ## Data Model Plan
 
@@ -189,6 +228,21 @@ Suggested fields:
 - `error_message`
 - `created_at`
 - `updated_at`
+
+## Deep Summary Configuration
+
+Add a `deep_summary` section to `config.yaml` to control automatic deep summary behavior:
+
+```yaml
+deep_summary:
+  auto_enabled: true          # Set to false to disable automatic triggering entirely
+  score_threshold: 8          # Only auto-summarize items with ai_score >= this value
+  max_per_run: 5              # Maximum number of auto deep summaries triggered per digest run
+  timeout_per_item: 120       # Seconds before a single deep summary attempt is abandoned
+  exclude_sources: []         # Optional: sources to skip for auto deep summary (e.g. ["youtube"])
+```
+
+Default values should be conservative. `auto_enabled: false` by default until the user has verified the feature works for their setup.
 
 ## Backend Module Plan
 
@@ -328,13 +382,21 @@ Show:
 
 ### 9. Config View `/config`
 
-Low priority.
+Routes: `GET /config` (HTML), `GET /api/config` (JSON).
 
-First version:
-- Read-only config inspection page
+Display config in labeled sections:
+- **Schedules** — name, cron expression, content blocks, sources, focus
+- **AI** — backend, model, max_workers, min_relevance_score, max_items_per_digest (api_base and api_key are masked)
+- **Agent** — max_steps, schedule_max_steps, side-effects policy
+- **Deep Summary** — auto_enabled, score_threshold, max_per_run, timeout_per_item
+- **Notifications** — enabled channels, recipient addresses (partially masked: `p***e@example.com`)
+- **Sources** — RSS feeds list, GitHub config, YouTube channels
 
-Later version:
-- Possibly editable subset with validation and explicit save/reload behavior
+Security rules:
+- `AI_API_KEY`, `EMAIL_PASSWORD`, `GITHUB_TOKEN`, `YOUTUBE_API_KEY`, and all webhook URLs are shown only as `"configured"` or `"not set"` — never the raw value
+- Fields whose effective value differs from the config.yaml value because of an environment variable override are annotated `(overridden by env)`
+
+This page is read-only. Editing config through the UI is out of scope.
 
 ## API Plan
 
@@ -432,6 +494,23 @@ Use mocked collectors and mocked AI responses to validate:
 - logs are written
 - failed jobs are marked correctly
 
+### 5. Phase 3 tests
+
+**Concurrency safety:**
+- `test_duplicate_schedule_submission_rejected` — second manual trigger for a running schedule returns 409; `job_runs` contains only one active record
+- `test_sqlite_wal_mode_enabled` — verify `_connect()` sets `journal_mode=WAL` and `busy_timeout`
+
+**Auto deep summary:**
+- `test_auto_deep_summary_triggers_for_high_score_items` — mock AI and content fetch; after `run_tracked_schedule`, items with `ai_score >= threshold` have a `deep_summary` record with `trigger_type="auto_high_score"` and `status="succeeded"`
+- `test_auto_deep_summary_respects_max_per_run` — when more eligible items exist than `max_per_run`, only the capped count are triggered
+- `test_auto_deep_summary_skips_existing_summaries` — items that already have a `succeeded` deep summary are not re-triggered
+- `test_auto_deep_summary_failure_does_not_fail_main_job` — when `run_deep_summary` raises, the main `job_run` status remains `"succeeded"` and a failure log entry is written
+- `test_auto_deep_summary_disabled` — when `auto_enabled: false`, no `deep_summaries` rows are created
+
+**Config view:**
+- `test_config_api_masks_sensitive_fields` — `GET /api/config` response contains no raw API keys, passwords, or webhook URLs; sensitive fields show `"configured"` or `"not set"`
+- `test_config_api_shows_env_overrides` — fields overridden by environment variables are annotated appropriately in the response
+
 ## Phased Delivery Plan
 
 ### Phase 1: Operational Console
@@ -474,20 +553,46 @@ Acceptance criteria:
 - User can open an item and trigger a deep summary
 - User can see deep summary status and output
 
-### Phase 3: Automatic Deep Summary and Config View
+### Phase 3: Automatic Deep Summary, Config View, and Single-Container Migration
 
-Status: Pending
+Status: Completed
 
 Scope:
-- Auto-trigger deep summaries for high-scoring items
-- Guardrails on count and timeout
-- Read-only config view
-- More detailed logging and coverage expansion
+
+**Concurrency hardening:**
+- Enable WAL mode + `busy_timeout` on all SQLite connections in `AppStateStore._connect()`
+- Add schedule-level re-entrancy guard to `enqueue_manual_run()` and `run_tracked_schedule()`
+
+**Single-container migration:**
+- Add `RUN_MODE=all` to `entrypoint.sh`: launch uvicorn in background, supercronic in foreground
+- Simplify `docker-compose.yml` to a single `signalnest` service with `RUN_MODE=all`
+- Remove the separate `signalnest-web` service
+
+**Automatic deep summary:**
+- Add `deep_summary` config section to `config.yaml` (`auto_enabled`, `score_threshold`, `max_per_run`, `timeout_per_item`, `exclude_sources`)
+- Add `_auto_deep_summaries(store, config, job_run_id, indexed_items)` step inside `run_tracked_schedule()`, called after `finish_job_run(status="succeeded")`
+- Query `collected_items` for `selected_for_digest=1 AND ai_score >= score_threshold`, excluding sources in `exclude_sources` and items that already have a successful `deep_summary`
+- Take the top `max_per_run` candidates; call `run_deep_summary()` for each serially with a per-item timeout
+- Failures are caught, logged as `event_type="auto_deep_summary_failed"`, and do not change the main job status
+- `deep_summaries.trigger_type` is set to `"auto_high_score"` for these records
+
+**Config view:**
+- `GET /config` (HTML) and `GET /api/config` (JSON)
+- Display config in labeled sections: Schedules, AI, Agent, Deep Summary, Notifications, Sources
+- Sensitive fields (`AI_API_KEY`, `EMAIL_PASSWORD`, `GITHUB_TOKEN`, `YOUTUBE_API_KEY`, webhook URLs) shown as `"configured"` or `"not set"` — never the raw value
+- Email addresses shown as `p***e@example.com` format
+- Fields overridden by environment variables are labeled `(overridden by env)` alongside the raw config.yaml value
+
+**Logging and test expansion:**
+- Add structured log events for auto deep summary lifecycle
+- See Phase 3 test cases in Test Plan
 
 Acceptance criteria:
-- High-scoring items can be deep-summarized automatically without breaking the main digest run
-- Config can be inspected from the UI
-- Logging and tests cover the main regression paths
+- High-scoring items are automatically deep-summarized after a digest run without breaking the main job status
+- Duplicate schedule runs are rejected by the re-entrancy guard
+- SQLite no longer emits `SQLITE_BUSY` errors under normal concurrent load
+- Config can be inspected from the UI with no sensitive values exposed
+- Container deployment requires only a single service
 
 ## Low-Priority Follow-Up
 
@@ -520,11 +625,14 @@ Resolved decisions:
 - UI style: practical first
 - Scheduler: keep `supercronic`
 - Deep-summary source scope: limited first version is acceptable
+- Container architecture: single container with `RUN_MODE=all`; separate `signalnest-web` service removed
+- SQLite concurrency: WAL mode + busy_timeout; no external lock needed at current scale
+- Config view: read-only, Phase 3, with sensitive field masking and env override annotation
+- Historical items gap: accepted; no backfill; UI displays earliest available date
 
-Still optional for later discussion:
-- Whether to expose a read-only config page in Phase 1 or Phase 3
-- Whether the web app runs in the same container or a second service/container
-- Whether to use plain server-rendered pages only or add `HTMX` for partial updates
+Still open:
+- Whether to add `HTMX` for partial page updates (live job log streaming, auto-refresh dashboard) — currently plain page-refresh polling
+- If future deployments require horizontal scaling of the web UI, SQLite would need to be replaced with PostgreSQL or the web layer made stateless with a shared store
 
 ## Recommended First Build Slice
 

@@ -32,8 +32,12 @@ class AppStateStore:
         return cls(data_dir / "app.db")
 
     def _connect(self) -> sqlite3.Connection:
+        # busy_timeout (set via PRAGMA below) handles lock contention at the
+        # SQLite C level; no need for the redundant Python-level timeout arg.
         conn = sqlite3.connect(self.db_path)
         conn.row_factory = sqlite3.Row
+        conn.execute("PRAGMA journal_mode=WAL")
+        conn.execute("PRAGMA busy_timeout=5000")
         conn.execute("PRAGMA foreign_keys = ON")
         return conn
 
@@ -394,6 +398,66 @@ class AppStateStore:
                 "SELECT * FROM job_runs WHERE status='running' ORDER BY started_at DESC, id DESC LIMIT 1"
             ).fetchone()
             return self._job_row_to_dict(row) if row else None
+        finally:
+            conn.close()
+
+    def get_running_job_for_schedule(self, schedule_name: str) -> dict[str, Any] | None:
+        """Return the most recent queued or running job for a given schedule, or None."""
+        conn = self._connect()
+        try:
+            row = conn.execute(
+                """
+                SELECT * FROM job_runs
+                WHERE schedule_name=? AND status IN ('queued', 'running')
+                ORDER BY created_at DESC, id DESC LIMIT 1
+                """,
+                (schedule_name,),
+            ).fetchone()
+            return self._job_row_to_dict(row) if row else None
+        finally:
+            conn.close()
+
+    def get_eligible_items_for_auto_deep_summary(
+        self,
+        *,
+        job_run_id: int,
+        score_threshold: int,
+        exclude_sources: list[str],
+        limit: int,
+    ) -> list[dict[str, Any]]:
+        """Return selected digest items from a run that qualify for auto deep summary.
+
+        Eligibility: selected_for_digest=1, ai_score >= threshold, not in exclude_sources,
+        and no existing succeeded deep_summary record for the same item.
+        """
+        placeholders = ",".join("?" * len(exclude_sources)) if exclude_sources else None
+        exclude_clause = (
+            f"AND ci.source NOT IN ({placeholders})" if placeholders else ""
+        )
+        conn = self._connect()
+        try:
+            rows = conn.execute(
+                f"""
+                SELECT ci.* FROM collected_items ci
+                WHERE ci.job_run_id = ?
+                  AND ci.selected_for_digest = 1
+                  AND ci.ai_score >= ?
+                  {exclude_clause}
+                  AND NOT EXISTS (
+                      SELECT 1 FROM deep_summaries ds
+                      WHERE ds.item_id = ci.id AND ds.status = 'succeeded'
+                  )
+                ORDER BY ci.ai_score DESC, ci.id ASC
+                LIMIT ?
+                """,
+                (
+                    job_run_id,
+                    score_threshold,
+                    *([s for s in exclude_sources] if exclude_sources else []),
+                    limit,
+                ),
+            ).fetchall()
+            return [self._item_row_to_dict(row) for row in rows]
         finally:
             conn.close()
 

@@ -21,6 +21,62 @@ case "${RUN_MODE:-cron}" in
     cd /app && exec python -m src.web_main
     ;;
 
+"all")
+    echo "🚀 All-in-one 模式: cron + web (port ${WEB_PORT:-8080})"
+
+    # 生成 crontab（复用 cron 模式逻辑）
+    python3 -c "
+import sys, yaml
+
+try:
+    with open('/app/config/config.yaml', encoding='utf-8') as f:
+        cfg = yaml.safe_load(f)
+except Exception as e:
+    print(f'ERROR: 读取 config.yaml 失败: {e}', file=sys.stderr)
+    sys.exit(1)
+
+schedules = cfg.get('schedules', [])
+if not schedules:
+    print('ERROR: config.yaml 中没有定义任何 schedules', file=sys.stderr)
+    sys.exit(1)
+
+arg = '${SCHEDULE_ARG}'
+for s in schedules:
+    cron = s.get('cron', '').strip()
+    name = s.get('name', '').strip()
+    if not cron or not name:
+        continue
+    print(f\"{cron} cd /app && python -m src.main {arg} '{name}'\")
+" > /tmp/crontab
+
+    if [ $? -ne 0 ]; then
+        echo "❌ crontab 生成失败"
+        exit 1
+    fi
+
+    if ! supercronic -test /tmp/crontab; then
+        echo "❌ crontab 格式验证失败"
+        exit 1
+    fi
+
+    echo "📅 生成的 crontab："
+    cat /tmp/crontab
+
+    # 立即执行一次（如果配置了）
+    if [ "${IMMEDIATE_RUN:-false}" = "true" ]; then
+        echo "▶ 立即执行一次: ${SCHEDULE_NAME:-（使用第一个 schedule）}"
+        cd /app && python -m src.main ${SCHEDULE_ARG} "${SCHEDULE_NAME:-}" || true
+    fi
+
+    # 启动 Web UI 后台进程
+    cd /app && python -m src.web_main &
+    WEB_PID=$!
+    echo "🌐 Web UI 已启动 (pid=$WEB_PID, port=${WEB_PORT:-8080})"
+
+    # 前台运行 supercronic
+    exec supercronic -passthrough-logs /tmp/crontab
+    ;;
+
 "once")
     echo "🔄 单次执行模式: ${SCHEDULE_NAME:-（使用第一个 schedule）}"
     cd /app && exec python -m src.main ${SCHEDULE_ARG} "${SCHEDULE_NAME:-}"

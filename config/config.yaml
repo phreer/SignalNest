@@ -256,3 +256,19 @@ storage:
   data_dir: "/app/data"         # 数据目录（容器内路径，通过 volume 持久化）
   todo_lookahead_days: 3        # TODO 提前提醒天数（未来 N 天内的 TODO 都会显示）
 
+
+# ──────────────────────────────────────────────────────────────
+# 8. 深度摘要（Deep Summary）自动触发
+# ──────────────────────────────────────────────────────────────
+deep_summary:
+  # 是否在每次 digest 完成后自动对高分条目触发深度摘要
+  auto_enabled: false
+  # AI 分数达到此阈值（含）的条目才会触发自动深度摘要
+  score_threshold: 8
+  # 每次 digest 最多自动触发的深度摘要数量
+  max_per_run: 5
+  # 每条深度摘要的超时时间（秒）
+  timeout_per_item: 120
+  # 不参与自动深度摘要的信息源（如只想对 rss 文章做深度阅读，可排除 github/youtube）
+  exclude_sources: []
+

@@ -1,7 +1,12 @@
 from __future__ import annotations
 
 import logging
-from concurrent.futures import Future, ThreadPoolExecutor
+import threading
+from concurrent.futures import (
+    Future,
+    ThreadPoolExecutor,
+    TimeoutError as FuturesTimeoutError,
+)
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -16,6 +21,18 @@ from src.web.content import (
 from src.web.store import AppStateStore
 
 logger = logging.getLogger(__name__)
+
+_DEFAULT_DEEP_SUMMARY_CONFIG = {
+    "auto_enabled": False,
+    "score_threshold": 8,
+    "max_per_run": 5,
+    "timeout_per_item": 120,
+    "exclude_sources": [],
+}
+
+
+class ScheduleAlreadyRunningError(RuntimeError):
+    """Raised when a manual run is requested for a schedule that is already active."""
 
 
 def _execute_schedule(
@@ -190,7 +207,23 @@ def run_tracked_schedule(
 
     effective_schedule = _resolve_schedule(schedule_name, config)
     effective_name = str(effective_schedule.get("name") or schedule_name or "(default)")
+
     if job_run_id is None:
+        # Re-entrancy guard for cron-triggered runs: skip if already running.
+        # Note: this check and the subsequent create_job_run use separate DB
+        # connections, so a narrow TOCTOU window exists under concurrent requests.
+        # At single-instance scale this is acceptable; the worst outcome is two
+        # overlapping jobs for the same schedule.
+        existing = store.get_running_job_for_schedule(effective_name)
+        if existing is not None:
+            logger.warning(
+                "Schedule '%s' already has an active job (id=%s, status=%s); skipping this run.",
+                effective_name,
+                existing["id"],
+                existing["status"],
+            )
+            return {"skipped": True, "existing_job_run_id": existing["id"]}
+
         job_run_id = store.create_job_run(
             schedule_name=effective_name,
             trigger_type=trigger_type,
@@ -243,6 +276,7 @@ def run_tracked_schedule(
         news_items = (
             state.get("news_items") if isinstance(state.get("news_items"), list) else []
         )
+        indexed_items: list = []
         if raw_items:
             indexed_items = build_indexed_items(
                 raw_items=raw_items, news_items=news_items
@@ -268,6 +302,12 @@ def run_tracked_schedule(
             message="Job finished successfully",
             extra={"session_id": session_id},
         )
+
+        # Auto deep summary for high-scoring items — runs after the job is marked
+        # succeeded so failures here do not change the main job outcome.
+        if indexed_items:
+            _auto_deep_summaries(store, config, job_run_id=job_run_id)
+
         enriched = dict(result)
         enriched["job_run_id"] = job_run_id
         return enriched
@@ -295,6 +335,18 @@ def enqueue_manual_run(
     store.init_db()
     effective_schedule = _resolve_schedule(schedule_name, config)
     effective_name = str(effective_schedule.get("name") or schedule_name or "(default)")
+
+    # Re-entrancy guard: reject if an active job exists for this schedule.
+    # Note: same TOCTOU caveat as in run_tracked_schedule — check and insert
+    # use separate connections. Duplicate jobs are unlikely at single-instance
+    # scale but possible under a burst of concurrent web requests.
+    existing = store.get_running_job_for_schedule(effective_name)
+    if existing is not None:
+        raise ScheduleAlreadyRunningError(
+            f"Schedule '{effective_name}' already has an active job "
+            f"(id={existing['id']}, status={existing['status']})"
+        )
+
     job_run_id = store.create_job_run(
         schedule_name=effective_name,
         trigger_type="manual",
@@ -378,3 +430,92 @@ def enqueue_manual_deep_summary(
         run_deep_summary, store, config, deep_summary_id=deep_summary_id
     )
     return deep_summary_id, future
+
+
+def _auto_deep_summaries(
+    store: AppStateStore,
+    config: dict,
+    *,
+    job_run_id: int,
+) -> None:
+    """Auto-trigger deep summaries for high-scoring items after a digest run.
+
+    Runs serially after the main job is marked succeeded. Failures per item are
+    caught and logged; they do not affect the parent job_run status.
+    """
+    ds_cfg = {**_DEFAULT_DEEP_SUMMARY_CONFIG, **config.get("deep_summary", {})}
+    if not ds_cfg.get("auto_enabled"):
+        return
+
+    score_threshold = int(ds_cfg.get("score_threshold", 8))
+    max_per_run = int(ds_cfg.get("max_per_run", 5))
+    timeout_per_item = int(ds_cfg.get("timeout_per_item", 120))
+    exclude_sources: list[str] = list(ds_cfg.get("exclude_sources") or [])
+
+    candidates = store.get_eligible_items_for_auto_deep_summary(
+        job_run_id=job_run_id,
+        score_threshold=score_threshold,
+        exclude_sources=exclude_sources,
+        limit=max_per_run,
+    )
+
+    if not candidates:
+        return
+
+    store.add_job_log(
+        job_run_id,
+        level="INFO",
+        component="runtime",
+        event_type="auto_deep_summary_started",
+        message=f"Auto deep summary: {len(candidates)} eligible items",
+        extra={"count": len(candidates), "score_threshold": score_threshold},
+    )
+
+    for item in candidates:
+        item_id = item["id"]
+        deep_summary_id = store.create_deep_summary(
+            item_id=item_id,
+            job_run_id=job_run_id,
+            trigger_type="auto_high_score",
+            status="queued",
+        )
+        try:
+            # Run in a sub-thread so we can enforce a wall-clock timeout safely
+            # regardless of whether the caller is the main thread or a worker.
+            with ThreadPoolExecutor(max_workers=1) as sub_executor:
+                fut = sub_executor.submit(
+                    run_deep_summary, store, config, deep_summary_id=deep_summary_id
+                )
+                try:
+                    fut.result(timeout=timeout_per_item)
+                except FuturesTimeoutError:
+                    raise TimeoutError(
+                        f"deep summary timed out after {timeout_per_item}s"
+                    )
+            store.add_job_log(
+                job_run_id,
+                level="INFO",
+                component="runtime",
+                event_type="auto_deep_summary_finished",
+                message=f"Auto deep summary succeeded for item {item_id}",
+                extra={"item_id": item_id, "deep_summary_id": deep_summary_id},
+            )
+        except Exception as exc:
+            logger.warning(
+                "Auto deep summary failed for item %s (deep_summary_id=%s): %s",
+                item_id,
+                deep_summary_id,
+                exc,
+            )
+            store.add_job_log(
+                job_run_id,
+                level="WARNING",
+                component="runtime",
+                event_type="auto_deep_summary_failed",
+                message=f"Auto deep summary failed for item {item_id}: {exc}",
+                extra={
+                    "item_id": item_id,
+                    "deep_summary_id": deep_summary_id,
+                    "error": str(exc),
+                },
+            )
