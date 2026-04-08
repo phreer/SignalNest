@@ -312,9 +312,10 @@ def _build_config_view(config: dict) -> dict[str, Any]:
                 "smtp_server"
             ) or os.environ.get("EMAIL_SMTP_SERVER", "")
 
-    rss_sources = config.get("rss", {}).get("feeds", [])
-    youtube_channels = config.get("youtube", {}).get("channels", [])
-    github_cfg = config.get("github", {})
+    collectors_cfg = config.get("collectors", {})
+    rss_sources = collectors_cfg.get("rss", {}).get("feeds", [])
+    youtube_channels = collectors_cfg.get("youtube", {}).get("channel_ids", [])
+    github_cfg = collectors_cfg.get("github", {})
 
     return {
         "schedules": schedules,
@@ -346,7 +347,7 @@ def _build_config_view(config: dict) -> dict[str, Any]:
         "sources": {
             "rss_feed_count": len(rss_sources),
             "youtube_channel_count": len(youtube_channels),
-            "github_since": github_cfg.get("since", "daily"),
+            "github_since": github_cfg.get("trending_since", "daily"),
         },
     }
 
