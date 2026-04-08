@@ -33,13 +33,16 @@ def dispatch(payload: dict, config: dict, *, require_success: bool = True) -> di
     if notif_cfg.get("email", {}).get("enabled", False):
         enabled_channels.append("email")
         from src.notifications.email_sender import send_email
+
         attempted_channels.append("email")
         try:
             if send_email(payload, config):
                 succeeded_channels.append("email")
             else:
                 logger.error("Email 发送失败")
-                failed_channels.append({"channel": "email", "error": "send_email returned False"})
+                failed_channels.append(
+                    {"channel": "email", "error": "send_email returned False"}
+                )
         except Exception as e:
             err = str(e)
             logger.exception(f"Email 发送异常: {err}")
@@ -48,13 +51,16 @@ def dispatch(payload: dict, config: dict, *, require_success: bool = True) -> di
     if notif_cfg.get("feishu", {}).get("enabled", False):
         enabled_channels.append("feishu")
         from src.notifications.feishu_sender import send_feishu
+
         attempted_channels.append("feishu")
         try:
             if send_feishu(payload, config):
                 succeeded_channels.append("feishu")
             else:
                 logger.error("飞书发送失败")
-                failed_channels.append({"channel": "feishu", "error": "send_feishu returned False"})
+                failed_channels.append(
+                    {"channel": "feishu", "error": "send_feishu returned False"}
+                )
         except Exception as e:
             err = str(e)
             logger.exception(f"飞书发送异常: {err}")
@@ -63,17 +69,38 @@ def dispatch(payload: dict, config: dict, *, require_success: bool = True) -> di
     if notif_cfg.get("wework", {}).get("enabled", False):
         enabled_channels.append("wework")
         from src.notifications.wework_sender import send_wework
+
         attempted_channels.append("wework")
         try:
             if send_wework(payload, config):
                 succeeded_channels.append("wework")
             else:
                 logger.error("企业微信发送失败")
-                failed_channels.append({"channel": "wework", "error": "send_wework returned False"})
+                failed_channels.append(
+                    {"channel": "wework", "error": "send_wework returned False"}
+                )
         except Exception as e:
             err = str(e)
             logger.exception(f"企业微信发送异常: {err}")
             failed_channels.append({"channel": "wework", "error": err})
+
+    if notif_cfg.get("file", {}).get("enabled", False):
+        enabled_channels.append("file")
+        from src.notifications.file_sender import send_file
+
+        attempted_channels.append("file")
+        try:
+            if send_file(payload, config):
+                succeeded_channels.append("file")
+            else:
+                logger.error("文件写出失败")
+                failed_channels.append(
+                    {"channel": "file", "error": "send_file returned False"}
+                )
+        except Exception as e:
+            err = str(e)
+            logger.exception(f"文件写出异常: {err}")
+            failed_channels.append({"channel": "file", "error": err})
 
     result = {
         "enabled_channels": enabled_channels,
@@ -91,17 +118,16 @@ def dispatch(payload: dict, config: dict, *, require_success: bool = True) -> di
         return result
 
     if not succeeded_channels:
-        msg = (
-            "所有启用的通知渠道均发送失败: "
-            + ", ".join(
-                f"{item.get('channel')}: {item.get('error', 'unknown error')}"
-                for item in failed_channels
-            )
+        msg = "所有启用的通知渠道均发送失败: " + ", ".join(
+            f"{item.get('channel')}: {item.get('error', 'unknown error')}"
+            for item in failed_channels
         )
         if require_success:
             raise RuntimeError(msg)
         logger.warning(msg)
     else:
-        logger.info(f"通知已发送至 {len(succeeded_channels)} 个渠道: {', '.join(succeeded_channels)}")
+        logger.info(
+            f"通知已发送至 {len(succeeded_channels)} 个渠道: {', '.join(succeeded_channels)}"
+        )
 
     return result

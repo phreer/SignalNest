@@ -237,6 +237,12 @@ notifications:
   feishu:
     enabled: false              # 改为 true 并配置 FEISHU_WEBHOOK_URL 即可启用
 
+  # ── 文件输出（本地调试/归档）──────────────────────────────────
+  file:
+    enabled: true
+    output_dir: "outputs"
+    archive: true
+
   # ── 企业微信群机器人 ─────────────────────────────────────────
   wework:
     enabled: false              # 改为 true 并配置 WEWORK_WEBHOOK_URL 即可启用
