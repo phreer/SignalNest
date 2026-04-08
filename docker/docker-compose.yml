@@ -51,3 +51,40 @@ services:
       # RUN_MODE=once 时指定哪个 schedule（空则用第一个）
       - SCHEDULE_NAME=${SCHEDULE_NAME:-}
 
+  signalnest-web:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    image: signalnest:latest
+    container_name: signalnest-web
+    restart: unless-stopped
+    depends_on:
+      - signalnest
+
+    volumes:
+      - ../config:/app/config:ro
+      - ../data:/app/data
+
+    environment:
+      - TZ=Asia/Shanghai
+      - AI_API_KEY=${AI_API_KEY:-}
+      - AI_MODEL=${AI_MODEL:-}
+      - AI_API_BASE=${AI_API_BASE:-}
+      - GITHUB_TOKEN=${GITHUB_TOKEN:-}
+      - YOUTUBE_API_KEY=${YOUTUBE_API_KEY:-}
+      - EMAIL_FROM=${EMAIL_FROM:-}
+      - EMAIL_PASSWORD=${EMAIL_PASSWORD:-}
+      - EMAIL_TO=${EMAIL_TO:-}
+      - EMAIL_SMTP_SERVER=${EMAIL_SMTP_SERVER:-smtp.qq.com}
+      - EMAIL_SMTP_PORT=${EMAIL_SMTP_PORT:-465}
+      - EMAIL_OPENING_AI_NAMES=${EMAIL_OPENING_AI_NAMES:-yy}
+      - EMAIL_OPENING_ME=${EMAIL_OPENING_ME:-}
+      - EMAIL_OPENING_YY=${EMAIL_OPENING_YY:-}
+      - FEISHU_WEBHOOK_URL=${FEISHU_WEBHOOK_URL:-}
+      - WEWORK_WEBHOOK_URL=${WEWORK_WEBHOOK_URL:-}
+      - WEWORK_MSG_TYPE=${WEWORK_MSG_TYPE:-markdown}
+      - RUN_MODE=web
+      - WEB_PORT=${WEB_PORT:-8080}
+
+    ports:
+      - "${WEB_PORT:-8080}:${WEB_PORT:-8080}"

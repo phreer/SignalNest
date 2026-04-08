@@ -10,10 +10,12 @@ import argparse
 import copy
 import json
 import logging
+import os
 import re
 import sys
 from datetime import date, datetime
 from pathlib import Path
+from typing import Any, Callable
 from zoneinfo import ZoneInfo
 
 from src.config_loader import load_config
@@ -41,7 +43,9 @@ def _resolve_schedule(schedule_name: str, config: dict) -> dict:
     schedules = config.get("schedules", [])
     if schedules:
         schedule = schedules[0]
-        logger.warning(f"Schedule '{schedule_name}' 未找到，使用第一个: '{schedule['name']}'")
+        logger.warning(
+            f"Schedule '{schedule_name}' 未找到，使用第一个: '{schedule['name']}'"
+        )
         return schedule
 
     logger.error("config.yaml 中没有定义任何 schedules")
@@ -98,7 +102,12 @@ def _render_session_title(template: str, schedule_name: str) -> str:
         return schedule_name
 
 
-def run_schedule(schedule_name: str, config: dict, dry_run: bool = False) -> dict:
+def run_schedule(
+    schedule_name: str,
+    config: dict,
+    dry_run: bool = False,
+    progress_callback: Callable[[dict[str, Any]], None] | None = None,
+) -> dict:
     """Run one scheduled task through the local agent kernel."""
     from src.agent.kernel import AgentRunOptions, run_agent_turn
     from src.agent.session_store import AgentSessionStore
@@ -127,6 +136,7 @@ def run_schedule(schedule_name: str, config: dict, dry_run: bool = False) -> dic
             max_steps=schedule_max_steps,
             dry_run=dry_run,
             session_title=session_title,
+            progress_callback=progress_callback,
         ),
     )
 
@@ -262,7 +272,9 @@ def _save_last_digest(
     with open(out_path, "w", encoding="utf-8") as f:
         json.dump(records, f, ensure_ascii=False, indent=2)
 
-    logger.info(f"📋 已保存 {len(records)} 条内容到 {out_path}（填写 user_score 后下次运行自动学习偏好）")
+    logger.info(
+        f"📋 已保存 {len(records)} 条内容到 {out_path}（填写 user_score 后下次运行自动学习偏好）"
+    )
 
     history_dir = data_dir / "history"
     history_dir.mkdir(parents=True, exist_ok=True)
@@ -297,7 +309,9 @@ def run_query(query: str, config: dict) -> dict:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="SignalNest - Agent-only 个人 AI 日报服务")
+    parser = argparse.ArgumentParser(
+        description="SignalNest - Agent-only 个人 AI 日报服务"
+    )
     parser.add_argument(
         "--schedule-name",
         default="",
@@ -330,10 +344,13 @@ def main():
         print(f"[agent session] {result['session_id']} | turn #{result['turn_index']}")
         print(result.get("response", ""))
     else:
-        result = run_schedule(
+        from src.web.runtime import run_tracked_schedule
+
+        result = run_tracked_schedule(
             schedule_name=args.schedule_name,
             config=config,
             dry_run=args.dry_run,
+            trigger_type=os.environ.get("SIGNALNEST_TRIGGER_TYPE", "cron"),
         )
         print(f"[schedule] {args.schedule_name or '(default)'}")
         print(f"[agent session] {result['session_id']} | turn #{result['turn_index']}")

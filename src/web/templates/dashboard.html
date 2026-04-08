@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="grid cards">
+  <div class="card">
+    <div class="section-title status">🛰️ Service</div>
+    <div class="status-ok">Online</div>
+    <p class="muted">Timezone: {{ timezone }}</p>
+  </div>
+  <div class="card">
+    <div class="section-title jobs">⚙️ Running Job</div>
+    {% if running_job %}
+    <div class="pill status-running">{{ running_job.status }}</div>
+    <p>{{ running_job.schedule_name }}</p>
+    <p class="muted">{{ running_job.current_stage }} · {{ running_job.current_message }}</p>
+    <p><a href="/jobs/{{ running_job.id }}">View job</a></p>
+    {% else %}
+    <p class="muted">No running jobs.</p>
+    {% endif %}
+  </div>
+  <div class="card">
+    <div class="section-title digest">💡 Latest Digest</div>
+    {% if latest_digest %}
+    <p>{{ latest_digest.schedule_name }}</p>
+    <p class="muted">{{ latest_digest.digest_datetime or latest_digest.created_at }}</p>
+    <p><a href="/digests/{{ latest_digest.id }}">Open latest digest</a></p>
+    {% else %}
+    <p class="muted">No digest yet.</p>
+    {% endif %}
+  </div>
+</div>
+
+<div class="card" style="margin-top: 16px;">
+  <div class="section-title jobs">▶ Manual Run</div>
+  <div class="soft-box" style="margin-bottom: 16px;">
+    手动触发沿用现有 schedule，支持 `dry-run`，适合临时验证采集和摘要流程。
+  </div>
+  <form class="actions" method="post" action="/jobs/run">
+    <div>
+      <label for="schedule_name">Schedule</label><br>
+      <select id="schedule_name" name="schedule_name">
+        {% for item in next_runs %}
+        <option value="{{ item.name }}">{{ item.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label for="dry_run">Dry run</label><br>
+      <select id="dry_run" name="dry_run">
+        <option value="false">false</option>
+        <option value="true">true</option>
+      </select>
+    </div>
+    <div>
+      <button type="submit">Trigger</button>
+    </div>
+  </form>
+</div>
+
+<div class="grid" style="grid-template-columns: 1.2fr 1fr; margin-top: 16px;">
+  <div class="card">
+    <div class="section-title status">📅 Next Runs</div>
+    <table>
+      <thead>
+        <tr>
+          <th>Schedule</th>
+          <th>Cron</th>
+          <th>Next Run</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in next_runs %}
+        <tr>
+          <td>{{ item.name }}</td>
+          <td><code>{{ item.cron }}</code></td>
+          <td>
+            {% if item.error %}
+            <span class="status-failed">{{ item.error }}</span>
+            {% else %}
+            {{ item.next_run }}
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="card">
+    <div class="section-title jobs">🧾 Recent Jobs</div>
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Schedule</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for job in recent_jobs %}
+        <tr>
+          <td><a href="/jobs/{{ job.id }}">#{{ job.id }}</a></td>
+          <td>{{ job.schedule_name }}</td>
+          <td class="status-{{ job.status }}">{{ job.status }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

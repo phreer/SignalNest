@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card">
+  <div class="section-title jobs">🧾 Jobs</div>
+  <form class="actions" method="get" action="/jobs">
+    <div>
+      <label for="status">Status</label><br>
+      <select id="status" name="status">
+        <option value="">All</option>
+        {% for value in ["queued", "running", "succeeded", "failed"] %}
+        <option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ value }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label for="trigger_type">Trigger</label><br>
+      <select id="trigger_type" name="trigger_type">
+        <option value="">All</option>
+        {% for value in ["cron", "manual"] %}
+        <option value="{{ value }}" {% if selected_trigger_type == value %}selected{% endif %}>{{ value }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label for="schedule_name">Schedule</label><br>
+      <select id="schedule_name" name="schedule_name">
+        <option value="">All</option>
+        {% for name in schedules %}
+        <option value="{{ name }}" {% if selected_schedule_name == name %}selected{% endif %}>{{ name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <button type="submit">Filter</button>
+    </div>
+  </form>
+
+  <table style="margin-top: 16px;">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Schedule</th>
+        <th>Trigger</th>
+        <th>Status</th>
+        <th>Progress</th>
+        <th>Updated</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for job in jobs %}
+      <tr>
+        <td><a href="/jobs/{{ job.id }}">#{{ job.id }}</a></td>
+        <td>{{ job.schedule_name }}</td>
+        <td>{{ job.trigger_type }}{% if job.dry_run %} · dry-run{% endif %}</td>
+        <td class="status-{{ job.status }}">{{ job.status }}</td>
+        <td>{{ job.current_stage }}<br><span class="muted">{{ job.current_message }}</span></td>
+        <td>{{ job.updated_at }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

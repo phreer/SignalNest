@@ -15,7 +15,7 @@ import re
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 from uuid import uuid4
 from zoneinfo import ZoneInfo
 
@@ -34,6 +34,18 @@ class AgentRunOptions:
     max_steps: int | None = None
     dry_run: bool = False
     session_title: str | None = None
+    progress_callback: Callable[[dict[str, Any]], None] | None = None
+
+
+def _emit_progress(
+    callback: Callable[[dict[str, Any]], None] | None, event: dict[str, Any]
+) -> None:
+    if callback is None:
+        return
+    try:
+        callback(event)
+    except Exception:
+        logger.debug("progress callback failed", exc_info=True)
 
 
 def _build_call_kwargs(config: dict) -> tuple[str, dict]:
@@ -59,6 +71,7 @@ def _build_call_kwargs(config: dict) -> tuple[str, dict]:
 
 # ── Tool spec builder ────────────────────────────────────────────────────────
 
+
 def _build_openai_tool_specs(tools: dict[str, ToolSpec]) -> list[dict[str, Any]]:
     """Convert ToolSpec dict to OpenAI function calling format."""
     return [
@@ -75,6 +88,7 @@ def _build_openai_tool_specs(tools: dict[str, ToolSpec]) -> list[dict[str, Any]]
 
 
 # ── Legacy helpers (for CLI backend fallback) ────────────────────────────────
+
 
 def _extract_json_objects(text: str) -> list[dict[str, Any]]:
     text = text.strip()
@@ -103,7 +117,9 @@ def _extract_json_objects(text: str) -> list[dict[str, Any]]:
     except json.JSONDecodeError:
         pass
 
-    for fence_match in re.finditer(r"```(?:json)?\s*([\s\S]*?)```", text, re.IGNORECASE):
+    for fence_match in re.finditer(
+        r"```(?:json)?\s*([\s\S]*?)```", text, re.IGNORECASE
+    ):
         try:
             obj = json.loads(fence_match.group(1).strip())
             _add_obj(obj)
@@ -146,6 +162,7 @@ def _format_tool_catalog(tools: dict[str, ToolSpec]) -> str:
 
 # ── Message builders ─────────────────────────────────────────────────────────
 
+
 def _truncate_text(text: str, max_chars: int = 1400) -> str:
     if len(text) <= max_chars:
         return text
@@ -162,7 +179,9 @@ def _state_overview(state: dict[str, Any]) -> dict[str, Any]:
     return {
         "raw_items_count": len(raw_items) if isinstance(raw_items, list) else 0,
         "news_items_count": len(news_items) if isinstance(news_items, list) else 0,
-        "schedule_entries_count": len(schedule_entries) if isinstance(schedule_entries, list) else 0,
+        "schedule_entries_count": len(schedule_entries)
+        if isinstance(schedule_entries, list)
+        else 0,
         "projects_count": len(projects) if isinstance(projects, list) else 0,
         "has_digest_summary": bool(digest_summary),
         "has_payload": bool(payload),
@@ -215,9 +234,15 @@ def _build_system_prompt(
     else:
         # CLI backend fallback — needs JSON format instructions and tool catalog
         allow_note = (
-            f"Allowlist: {sorted(policy.allow_tools)}" if policy.allow_tools else "Allowlist: (not set)"
+            f"Allowlist: {sorted(policy.allow_tools)}"
+            if policy.allow_tools
+            else "Allowlist: (not set)"
         )
-        deny_note = f"Denylist: {sorted(policy.deny_tools)}" if policy.deny_tools else "Denylist: (none)"
+        deny_note = (
+            f"Denylist: {sorted(policy.deny_tools)}"
+            if policy.deny_tools
+            else "Denylist: (none)"
+        )
         return f"""You are SignalNest local agent.
 You can call tools to solve the user's request step by step.
 
@@ -292,7 +317,9 @@ def _synthesize_fallback_response(
         },
     ]
     try:
-        text = _call_ai(synth_messages, backend, {**call_kwargs, "max_tokens": max_tokens})
+        text = _call_ai(
+            synth_messages, backend, {**call_kwargs, "max_tokens": max_tokens}
+        )
         return _normalize_final_text(text)
     except Exception:
         if not step_history:
@@ -367,7 +394,9 @@ def run_agent_turn(
         session_title = options.session_title
     else:
         try:
-            session_title = str(agent_cfg["session_title_template"]).format(schedule_name="")
+            session_title = str(agent_cfg["session_title_template"]).format(
+                schedule_name=""
+            )
         except Exception:
             session_title = str(agent_cfg["session_title_template"])
     store.ensure_session(session_id, title=session_title)
@@ -378,12 +407,24 @@ def run_agent_turn(
     default_max_steps = int(agent_cfg["max_steps"])
     hard_limit = max(1, int(agent_cfg["max_steps_hard_limit"]))
     fallback_max_tokens = int(agent_cfg["fallback_response_max_tokens"])
-    requested_max_steps = options.max_steps if options.max_steps is not None else default_max_steps
+    requested_max_steps = (
+        options.max_steps if options.max_steps is not None else default_max_steps
+    )
     max_steps = max(1, min(int(requested_max_steps), hard_limit))
 
     backend, call_kwargs = _build_call_kwargs(config)
     model_name = str(call_kwargs.get("model", ""))
     turn_ref = store.start_turn(session_id, message, backend=backend, model=model_name)
+    _emit_progress(
+        options.progress_callback,
+        {
+            "type": "turn_started",
+            "session_id": session_id,
+            "turn_index": turn_ref.turn_index,
+            "backend": backend,
+            "model": model_name,
+        },
+    )
 
     tz_name = config.get("app", {}).get("timezone", "Asia/Shanghai")
     rt = ToolRuntime(
@@ -413,12 +454,19 @@ def run_agent_turn(
             openai_tools = _build_openai_tool_specs(tools)
             messages: list[dict[str, Any]] = [
                 {"role": "system", "content": system_prompt},
-                {"role": "user", "content": _build_initial_user_message(message, state, recent_turns)},
+                {
+                    "role": "user",
+                    "content": _build_initial_user_message(
+                        message, state, recent_turns
+                    ),
+                },
             ]
 
             step_no = 1
             while step_no <= max_steps:
-                tool_calls, final_text = call_litellm_with_tools(messages, call_kwargs, openai_tools)
+                tool_calls, final_text = call_litellm_with_tools(
+                    messages, call_kwargs, openai_tools
+                )
 
                 if final_text is not None:
                     final_response = _normalize_final_text(final_text)
@@ -438,7 +486,9 @@ def run_agent_turn(
                                 "type": "function",
                                 "function": {
                                     "name": tc["tool"],
-                                    "arguments": json.dumps(tc["arguments"], ensure_ascii=False),
+                                    "arguments": json.dumps(
+                                        tc["arguments"], ensure_ascii=False
+                                    ),
                                 },
                             }
                             for tc in tool_calls
@@ -461,9 +511,24 @@ def run_agent_turn(
 
                     tool_name = tc["tool"]
                     args = tc["arguments"]
-                    result, success, error = _execute_tool(tool_name, args, tools, policy, rt)
+                    _emit_progress(
+                        options.progress_callback,
+                        {
+                            "type": "tool_start",
+                            "step_no": step_no,
+                            "tool_name": tool_name,
+                            "arguments": args,
+                        },
+                    )
+                    result, success, error = _execute_tool(
+                        tool_name, args, tools, policy, rt
+                    )
 
-                    step_item: dict[str, Any] = {"step": step_no, "tool": tool_name, "arguments": args}
+                    step_item: dict[str, Any] = {
+                        "step": step_no,
+                        "tool": tool_name,
+                        "arguments": args,
+                    }
                     if success:
                         step_item["result"] = result
                     else:
@@ -484,8 +549,22 @@ def run_agent_turn(
                         {
                             "role": "tool",
                             "tool_call_id": tc["call_id"],
-                            "content": json.dumps(result, ensure_ascii=False, default=str),
+                            "content": json.dumps(
+                                result, ensure_ascii=False, default=str
+                            ),
                         }
+                    )
+                    _emit_progress(
+                        options.progress_callback,
+                        {
+                            "type": "tool_finish",
+                            "step_no": step_no,
+                            "tool_name": tool_name,
+                            "arguments": args,
+                            "success": success,
+                            "error": error,
+                            "result": result,
+                        },
                     )
                     step_no += 1
 
@@ -515,12 +594,18 @@ def run_agent_turn(
                 action_obj = pending_actions.pop(0)
                 action = str(action_obj.get("action", "")).strip().lower()
                 if action == "final":
-                    final_response = _normalize_final_text(str(action_obj.get("response", "")))
+                    final_response = _normalize_final_text(
+                        str(action_obj.get("response", ""))
+                    )
                     break
 
                 if action != "tool":
                     step_history.append(
-                        {"step": step_no, "error": f"invalid action {action!r}", "raw_action_object": action_obj}
+                        {
+                            "step": step_no,
+                            "error": f"invalid action {action!r}",
+                            "raw_action_object": action_obj,
+                        }
                     )
                     step_no += 1
                     continue
@@ -530,7 +615,18 @@ def run_agent_turn(
                 if not isinstance(args, dict):
                     args = {}
 
-                result, success, error = _execute_tool(tool_name, args, tools, policy, rt)
+                _emit_progress(
+                    options.progress_callback,
+                    {
+                        "type": "tool_start",
+                        "step_no": step_no,
+                        "tool_name": tool_name,
+                        "arguments": args,
+                    },
+                )
+                result, success, error = _execute_tool(
+                    tool_name, args, tools, policy, rt
+                )
 
                 step_item = {"step": step_no, "tool": tool_name, "arguments": args}
                 if success:
@@ -547,6 +643,18 @@ def run_agent_turn(
                     result=result if success else None,
                     success=success,
                     error=error,
+                )
+                _emit_progress(
+                    options.progress_callback,
+                    {
+                        "type": "tool_finish",
+                        "step_no": step_no,
+                        "tool_name": tool_name,
+                        "arguments": args,
+                        "success": success,
+                        "error": error,
+                        "result": result,
+                    },
                 )
                 step_no += 1
 
@@ -566,6 +674,16 @@ def run_agent_turn(
     finally:
         store.save_state(session_id, state)
         store.finish_turn(turn_ref.turn_id, final_response or "", status)
+        _emit_progress(
+            options.progress_callback,
+            {
+                "type": "turn_finished",
+                "session_id": session_id,
+                "turn_index": turn_ref.turn_index,
+                "status": status,
+                "response": final_response or "",
+            },
+        )
 
     return {
         "session_id": session_id,
@@ -575,7 +693,9 @@ def run_agent_turn(
         "steps": step_history,
         "state_overview": _state_overview(state),
         "policy": {
-            "allow_tools": sorted(policy.allow_tools) if policy.allow_tools is not None else None,
+            "allow_tools": sorted(policy.allow_tools)
+            if policy.allow_tools is not None
+            else None,
             "deny_tools": sorted(policy.deny_tools),
             "allow_side_effects": policy.allow_side_effects,
         },

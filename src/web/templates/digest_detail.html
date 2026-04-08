@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% block content %}
+{% if digest %}
+{% set payload = digest.payload or {} %}
+{% set items = payload.get("news_items", []) %}
+{% set schedule_entries = payload.get("schedule_entries", []) %}
+{% set projects = payload.get("projects", []) %}
+{% set focus = payload.get("focus", "") %}
+<div class="card">
+  <div class="section-title digest">💡 {{ digest.schedule_name }}</div>
+  <p class="muted">{{ digest.digest_datetime or digest.created_at }}</p>
+  {% if focus %}
+  <div class="focus-box" style="margin-bottom: 14px;">
+    <div class="focus-label">🎯 AI 筛选方向</div>
+    {{ focus }}
+  </div>
+  {% endif %}
+  <div class="summary-box">{{ digest.summary_text or "(no digest summary)" }}</div>
+</div>
+
+{% if schedule_entries %}
+<div class="card" style="margin-top: 16px;">
+  <div class="section-title status">📅 今日日程</div>
+  <table class="schedule-table">
+    {% for entry in schedule_entries %}
+    <tr>
+      <td class="time-cell">{{ entry.time }}</td>
+      <td class="title-cell">
+        {{ entry.title }}
+        {% if entry.location %}<span class="location-tag">📍 {{ entry.location }}</span>{% endif %}
+        {% if entry.notes %}<span class="notes-text">{{ entry.notes }}</span>{% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+{% endif %}
+
+{% if projects %}
+<div class="card" style="margin-top: 16px;">
+  <div class="section-title jobs">📋 项目进展</div>
+  {% for proj in projects %}
+  <div class="project-block">
+    <div class="project-title">
+      {{ proj.title }}
+      {% if proj.due %}
+      <span class="due {% if proj.due_status %}due-{{ proj.due_status }}{% endif %}">
+        {% if proj.due_status == "overdue" %}建议尽快完成
+        {% elif proj.due_status == "today" %}今日完成
+        {% else %}截止 {{ proj.due }}
+        {% endif %}
+      </span>
+      {% endif %}
+    </div>
+    {% for task in proj.tasks %}
+    <div class="task-item {% if task.status %}task-{{ task.status }}{% endif %}">
+      · {{ task.title }}
+      {% if task.due %}
+      <span class="task-due {% if task.due_source == 'ai' %}task-due-ai{% endif %}">
+        {% if task.status == "overdue" %}（已过 {{ task.days_until | abs }} 天）
+        {% elif task.status == "today" %}（今日完成）
+        {% elif task.status == "upcoming" %}（截止 {{ task.due }}，还有 {{ task.days_until }} 天）
+        {% endif %}
+      </span>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<div class="card" style="margin-top: 16px;">
+  <div class="section-title news">📰 今日精选{% if items %} <span class="muted" style="font-weight:400;font-size:13px;">{{ items | length }} 条</span>{% endif %}</div>
+  {% if items %}
+    {% for item in items %}
+    <div class="news-item">
+      <div class="news-meta">
+        <span style="font-size:11px;color:#9ca3af;font-weight:600">{{ loop.index }}/{{ items|length }}</span>
+        {% set score = item.get("ai_score", 0) %}
+        <span class="score-badge {% if score >= 8 %}score-high{% elif score >= 6 %}score-medium{% else %}score-low{% endif %}">
+          ★ {{ score }}/10
+        </span>
+        <span class="source-tag source-{{ item.get('source', '') }}">{{ item.get("source", "") }}</span>
+        {% if item.get("source") == "github" and item.get("stars") %}
+        <span style="font-size:12px;color:#6b7280">⭐ {{ '{:,}'.format(item.get("stars")) }}</span>
+        {% endif %}
+        {% if item.get("source") == "rss" and item.get("feed_title") %}
+        <span style="font-size:12px;color:#6b7280">{{ item.get("feed_title") }}</span>
+        {% endif %}
+        {% if item.get("source") == "youtube" and item.get("channel") %}
+        <span style="font-size:12px;color:#6b7280">{{ item.get("channel") }}</span>
+        {% endif %}
+      </div>
+      <p class="news-title">
+        {% if item.get("url") %}
+        <a href="{{ item.get('url') }}" target="_blank" rel="noreferrer">{{ item.get("title", "") }}</a>
+        {% else %}
+        {{ item.get("title", "") }}
+        {% endif %}
+      </p>
+      {% if item.get("ai_summary") %}
+      <p class="news-summary">{{ item.get("ai_summary") }}</p>
+      {% endif %}
+      {% if item.get("ai_reason") %}
+      <p class="news-reason">{{ item.get("ai_reason") }}</p>
+      {% endif %}
+    </div>
+    {% endfor %}
+  {% else %}
+  <p class="muted">No items stored for this digest.</p>
+  {% endif %}
+</div>
+{% else %}
+<div class="card"><p>Digest not found.</p></div>
+{% endif %}
+{% endblock %}

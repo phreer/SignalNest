@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ app_name }}</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Noto Sans CJK SC", sans-serif;
+      background: #f8f9fa;
+      color: #1a1a1a;
+      line-height: 1.7;
+    }
+    a { color: #1d4ed8; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .layout { max-width: 980px; margin: 0 auto; padding: 24px 16px 40px; }
+    .header {
+      background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%);
+      color: white;
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 16px;
+    }
+    .header h1 {
+      margin: 0 0 8px 0;
+      font-size: 24px;
+      font-weight: 700;
+    }
+    .header .meta {
+      font-size: 13px;
+      opacity: 0.88;
+    }
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .brand { font-size: 22px; font-weight: 700; }
+    .nav { display: flex; gap: 14px; flex-wrap: wrap; }
+    .nav a {
+      color: rgba(255,255,255,0.92);
+      font-size: 14px;
+      font-weight: 500;
+    }
+    .grid { display: grid; gap: 16px; }
+    .grid.cards { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+    .card {
+      background: #ffffff;
+      border-radius: 16px;
+      padding: 16px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+    .card h2, .card h3 { margin-top: 0; }
+    .muted { color: #6b7280; }
+    .status-ok, .status-succeeded { color: #047857; }
+    .status-running, .status-queued { color: #b45309; }
+    .status-failed, .status-error { color: #dc2626; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid #f3f4f6; vertical-align: top; }
+    th { color: #6b7280; font-weight: 600; }
+    .actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: end; }
+    input, select, button {
+      background: #ffffff;
+      color: #111827;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      padding: 10px 12px;
+      font: inherit;
+    }
+    button {
+      cursor: pointer;
+      background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%);
+      color: #ffffff;
+      border-color: transparent;
+    }
+    .pill {
+      display: inline-block;
+      border: 1px solid #e5e7eb;
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-size: 12px;
+      color: #6b7280;
+      background: #f9fafb;
+    }
+    .pre {
+      white-space: pre-wrap;
+      word-break: break-word;
+      background: #f8fafc;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 12px;
+    }
+    .section-title {
+      font-size: 15px;
+      font-weight: 600;
+      margin: 0 0 14px 0;
+      padding-bottom: 8px;
+      border-bottom: 2px solid;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .section-title.status { border-color: #8b5cf6; color: #6d28d9; }
+    .section-title.jobs { border-color: #f59e0b; color: #b45309; }
+    .section-title.digest { border-color: #0ea5e9; color: #0369a1; }
+    .section-title.news { border-color: #10b981; color: #047857; }
+    .soft-box {
+      background: #eef6ff;
+      border-left: 4px solid #2563eb;
+      border-radius: 10px;
+      padding: 12px 14px;
+    }
+    .focus-box {
+      background: #f5f3ff;
+      border-left: 4px solid #8b5cf6;
+      border-radius: 6px;
+      padding: 10px 14px;
+      font-size: 14px;
+      color: #4c1d95;
+    }
+    .focus-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #7c3aed;
+      margin-bottom: 4px;
+    }
+    .score-badge {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 10px;
+      white-space: nowrap;
+    }
+    .score-high   { background: #d1fae5; color: #065f46; }
+    .score-medium { background: #fef3c7; color: #78350f; }
+    .score-low    { background: #f3f4f6; color: #6b7280; }
+    .source-tag {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 7px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+    .source-github  { background: #1f2937; color: #fff; }
+    .source-rss     { background: #ea580c; color: #fff; }
+    .source-youtube { background: #dc2626; color: #fff; }
+    .summary-box {
+      background: #f0f9ff;
+      border-radius: 8px;
+      padding: 14px 16px;
+      font-size: 14px;
+      color: #0c4a6e;
+      line-height: 1.8;
+      white-space: pre-line;
+    }
+    .news-item {
+      padding: 14px 0;
+      border-bottom: 1px solid #f3f4f6;
+    }
+    .news-item:last-child { border-bottom: none; }
+    .news-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 6px;
+      flex-wrap: wrap;
+    }
+    .news-title {
+      font-size: 15px;
+      font-weight: 600;
+      margin: 0 0 6px 0;
+    }
+    .news-summary {
+      font-size: 13px;
+      color: #374151;
+      margin: 0 0 4px 0;
+    }
+    .news-reason {
+      font-size: 12px;
+      color: #6b7280;
+      margin: 0;
+    }
+    .schedule-table { width: 100%; border-collapse: collapse; }
+    .schedule-table td { padding: 7px 10px; vertical-align: top; }
+    .schedule-table tr:not(:last-child) td { border-bottom: 1px solid #f3f4f6; }
+    .time-cell { white-space: nowrap; font-weight: 600; color: #374151; width: 60px; }
+    .title-cell { color: #111827; }
+    .location-tag {
+      font-size: 12px;
+      color: #6b7280;
+      background: #f3f4f6;
+      padding: 1px 6px;
+      border-radius: 4px;
+      margin-left: 6px;
+    }
+    .notes-text { font-size: 12px; color: #9ca3af; display: block; margin-top: 2px; }
+    .project-block {
+      padding: 10px 12px;
+      margin-bottom: 12px;
+      border-left: 3px solid #e5e7eb;
+    }
+    .project-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: #111827;
+      margin-bottom: 6px;
+    }
+    .due {
+      font-size: 11px;
+      font-weight: 500;
+      padding: 1px 7px;
+      border-radius: 10px;
+      margin-left: 8px;
+      background: #fef3c7;
+      color: #92400e;
+    }
+    .due.due-overdue  { background: #fee2e2; color: #991b1b; }
+    .due.due-today    { background: #fef3c7; color: #92400e; }
+    .due.due-upcoming { background: #eff6ff; color: #1e40af; }
+    .task-item {
+      font-size: 13px;
+      color: #374151;
+      padding: 3px 0 3px 12px;
+      border-left: 2px solid #f3f4f6;
+      margin-bottom: 3px;
+    }
+    .task-due {
+      font-size: 11px;
+      color: #9ca3af;
+      margin-left: 6px;
+    }
+    .task-item.task-overdue .task-due { color: #ef4444; }
+    .task-item.task-today .task-due { color: #f59e0b; }
+    .task-item.task-upcoming .task-due { color: #3b82f6; }
+    .task-due-ai { color: #9ca3af; font-style: italic; }
+    @media (max-width: 720px) {
+      .layout { padding: 18px 12px 28px; }
+      th:nth-child(4), td:nth-child(4), th:nth-child(5), td:nth-child(5) { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <div class="header">
+      <div class="topbar">
+        <div>
+          <h1>SignalNest Web</h1>
+          <div class="meta">管理台延续 digest HTML 的视觉风格，优先服务状态、任务日志与摘要浏览。</div>
+        </div>
+        <div class="nav">
+          <a href="/">Dashboard</a>
+          <a href="/jobs">Jobs</a>
+          <a href="/digests/latest">Latest Digest</a>
+          <a href="/digests">Digest History</a>
+        </div>
+      </div>
+    </div>
+    {% block content %}{% endblock %}
+  </div>
+</body>
+</html>

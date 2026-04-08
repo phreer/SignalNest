@@ -16,6 +16,11 @@ echo "🤖 调度执行器: agent-only"
 
 case "${RUN_MODE:-cron}" in
 
+"web")
+    echo "🌐 Web UI 模式: 0.0.0.0:${WEB_PORT:-8080}"
+    cd /app && exec python -m src.web_main
+    ;;
+
 "once")
     echo "🔄 单次执行模式: ${SCHEDULE_NAME:-（使用第一个 schedule）}"
     cd /app && exec python -m src.main ${SCHEDULE_ARG} "${SCHEDULE_NAME:-}"

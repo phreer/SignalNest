@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card">
+  <div class="section-title digest">🗂 Digest History</div>
+  <form class="actions" method="get" action="/digests">
+    <div>
+      <label for="schedule_name">Schedule</label><br>
+      <select id="schedule_name" name="schedule_name">
+        <option value="">All</option>
+        {% for name in schedules %}
+        <option value="{{ name }}" {% if selected_schedule_name == name %}selected{% endif %}>{{ name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <button type="submit">Filter</button>
+    </div>
+  </form>
+
+  <table style="margin-top: 16px;">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Schedule</th>
+        <th>Date</th>
+        <th>Summary</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for digest in digests %}
+      <tr>
+        <td><a href="/digests/{{ digest.id }}">#{{ digest.id }}</a></td>
+        <td>{{ digest.schedule_name }}</td>
+        <td>{{ digest.digest_datetime or digest.created_at }}</td>
+        <td>{{ digest.summary_text[:180] }}{% if digest.summary_text|length > 180 %}...{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block content %}
+{% if job %}
+<div class="grid cards">
+  <div class="card">
+    <div class="section-title jobs">⚙️ Job #{{ job.id }}</div>
+    <p><span class="pill">{{ job.schedule_name }}</span></p>
+    <p>Status: <span class="status-{{ job.status }}">{{ job.status }}</span></p>
+    <p class="muted">{{ job.trigger_type }}{% if job.dry_run %} · dry-run{% endif %}</p>
+    <p>Current: {{ job.current_stage }} · {{ job.current_message }}</p>
+    {% if job.error_message %}
+    <p class="status-failed">{{ job.error_message }}</p>
+    {% endif %}
+  </div>
+  <div class="card">
+    <div class="section-title status">⏱ Timing</div>
+    <p>Started: {{ job.started_at or "-" }}</p>
+    <p>Ended: {{ job.ended_at or "-" }}</p>
+    <p>Updated: {{ job.updated_at }}</p>
+    <p>Session: {% if job.session_id %}<code>{{ job.session_id }}</code>{% else %}-{% endif %}</p>
+    {% if digest %}
+    <p><a href="/digests/{{ digest.id }}">Open digest</a></p>
+    {% endif %}
+  </div>
+</div>
+
+<div class="card" style="margin-top: 16px;">
+  <div class="section-title digest">📜 Logs</div>
+  <table>
+    <thead>
+      <tr>
+        <th>Time</th>
+        <th>Level</th>
+        <th>Component</th>
+        <th>Event</th>
+        <th>Message</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for log in logs %}
+      <tr>
+        <td>{{ log.ts }}</td>
+        <td>{{ log.level }}</td>
+        <td>{{ log.component }}</td>
+        <td>{{ log.event_type }}</td>
+        <td>
+          {{ log.message }}
+          {% if log.extra %}
+          <div class="pre" style="margin-top: 8px;">{{ log.extra | tojson(indent=2) }}</div>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="card"><p>Job not found.</p></div>
+{% endif %}
+{% endblock %}
