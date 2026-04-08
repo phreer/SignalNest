@@ -472,7 +472,17 @@ def create_app(config: dict | None = None) -> FastAPI:
     @app.get("/digests/{digest_id}", response_class=HTMLResponse)
     def digest_detail(request: Request, digest_id: int) -> HTMLResponse:
         digest = app.state.store.get_digest(digest_id)
-        return render(request, "digest_detail.html", {"digest": digest})
+        # Build url→item_id map so templates can link to /items/{id}
+        url_to_item_id: dict[str, int] = {}
+        if digest and digest.get("job_run_id"):
+            url_to_item_id = app.state.store.get_url_to_item_id_map(
+                digest["job_run_id"]
+            )
+        return render(
+            request,
+            "digest_detail.html",
+            {"digest": digest, "url_to_item_id": url_to_item_id},
+        )
 
     @app.get("/items", response_class=HTMLResponse)
     def items_page(

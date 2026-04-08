@@ -50,7 +50,12 @@
         {% if item.feed_title %}<span class="muted">{{ item.feed_title }}</span>{% endif %}
         {% if item.author %}<span class="muted">{{ item.author }}</span>{% endif %}
       </div>
-      <p class="news-title"><a href="/items/{{ item.id }}">{{ item.title }}</a></p>
+      <p class="news-title">
+        <a href="/items/{{ item.id }}">{{ item.title }}</a>
+        {% if item.url %}
+        <a class="muted" style="font-size:12px;margin-left:8px" href="{{ item.url }}" target="_blank" rel="noreferrer">查看原文 ↗</a>
+        {% endif %}
+      </p>
       {% if item.ai_summary %}
       <p class="news-summary">{{ item.ai_summary }}</p>
       {% endif %}

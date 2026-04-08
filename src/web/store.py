@@ -629,6 +629,18 @@ class AppStateStore:
         finally:
             conn.close()
 
+    def get_url_to_item_id_map(self, job_run_id: int) -> dict[str, int]:
+        """Return {url: item_id} for all collected items in a job run."""
+        conn = self._connect()
+        try:
+            rows = conn.execute(
+                "SELECT id, url FROM collected_items WHERE job_run_id=?",
+                (job_run_id,),
+            ).fetchall()
+            return {row["url"]: int(row["id"]) for row in rows if row["url"]}
+        finally:
+            conn.close()
+
     def get_item(self, item_id: int) -> dict[str, Any] | None:
         conn = self._connect()
         try:
