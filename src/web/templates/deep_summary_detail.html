@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block content %}
+{% if deep_summary and item %}
+<div class="card">
+  <div class="section-title digest">🧠 Deep Summary #{{ deep_summary.id }}</div>
+  <p><a href="/items/{{ item.id }}">{{ item.title }}</a></p>
+  <p>Status: <span class="status-{{ deep_summary.status }}">{{ deep_summary.status }}</span></p>
+  <p class="muted">Model: {{ deep_summary.model or "-" }} · Source fetch: {{ deep_summary.source_fetch_status or "-" }}</p>
+  {% if deep_summary.error_message %}
+  <p class="status-failed">{{ deep_summary.error_message }}</p>
+  {% endif %}
+</div>
+
+<div class="card" style="margin-top: 16px;">
+  <div class="section-title digest">💡 Summary</div>
+  <div class="pre">{{ deep_summary.deep_summary or "(pending)" }}</div>
+</div>
+
+<div class="card" style="margin-top: 16px;">
+  <div class="section-title status">📚 Source Content</div>
+  <div class="pre">{{ deep_summary.source_content or "(pending)" }}</div>
+</div>
+{% else %}
+<div class="card"><p>Deep summary not found.</p></div>
+{% endif %}
+{% endblock %}

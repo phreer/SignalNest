@@ -94,6 +94,55 @@ class AppStateStore:
 
                 CREATE INDEX IF NOT EXISTS idx_digests_schedule_time
                     ON digests(schedule_name, digest_datetime DESC, created_at DESC);
+
+                CREATE TABLE IF NOT EXISTS collected_items (
+                    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+                    job_run_id          INTEGER,
+                    digest_id           INTEGER,
+                    source              TEXT NOT NULL,
+                    external_id         TEXT,
+                    title               TEXT NOT NULL,
+                    url                 TEXT NOT NULL,
+                    author              TEXT,
+                    feed_title          TEXT,
+                    language            TEXT,
+                    published_at        TEXT,
+                    collected_at        TEXT NOT NULL,
+                    selected_for_digest INTEGER NOT NULL DEFAULT 0,
+                    ai_score            INTEGER,
+                    ai_summary          TEXT,
+                    ai_reason           TEXT,
+                    raw_json            TEXT NOT NULL,
+                    FOREIGN KEY(job_run_id) REFERENCES job_runs(id),
+                    FOREIGN KEY(digest_id) REFERENCES digests(id)
+                );
+
+                CREATE INDEX IF NOT EXISTS idx_collected_items_source_time
+                    ON collected_items(source, collected_at DESC, id DESC);
+
+                CREATE INDEX IF NOT EXISTS idx_collected_items_selected
+                    ON collected_items(selected_for_digest, collected_at DESC);
+
+                CREATE TABLE IF NOT EXISTS deep_summaries (
+                    id                       INTEGER PRIMARY KEY AUTOINCREMENT,
+                    item_id                  INTEGER NOT NULL,
+                    job_run_id               INTEGER,
+                    trigger_type             TEXT NOT NULL,
+                    status                   TEXT NOT NULL,
+                    source_fetch_status      TEXT,
+                    source_content           TEXT,
+                    source_content_meta_json TEXT,
+                    deep_summary             TEXT,
+                    model                    TEXT,
+                    error_message            TEXT,
+                    created_at               TEXT NOT NULL,
+                    updated_at               TEXT NOT NULL,
+                    FOREIGN KEY(item_id) REFERENCES collected_items(id),
+                    FOREIGN KEY(job_run_id) REFERENCES job_runs(id)
+                );
+
+                CREATE INDEX IF NOT EXISTS idx_deep_summaries_item
+                    ON deep_summaries(item_id, created_at DESC);
                 """
             )
             conn.commit()
@@ -417,6 +466,193 @@ class AppStateStore:
         finally:
             conn.close()
 
+    def replace_items_for_job(
+        self,
+        *,
+        job_run_id: int,
+        digest_id: int | None,
+        items: list[dict[str, Any]],
+    ) -> None:
+        collected_at = _utcnow_iso()
+        conn = self._connect()
+        try:
+            conn.execute(
+                "DELETE FROM collected_items WHERE job_run_id=?", (job_run_id,)
+            )
+            for item in items:
+                conn.execute(
+                    """
+                    INSERT INTO collected_items (
+                        job_run_id, digest_id, source, external_id, title, url, author, feed_title,
+                        language, published_at, collected_at, selected_for_digest, ai_score,
+                        ai_summary, ai_reason, raw_json
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        job_run_id,
+                        digest_id,
+                        item.get("source", "unknown"),
+                        item.get("external_id", "") or None,
+                        item.get("title", ""),
+                        item.get("url", ""),
+                        item.get("author", "") or None,
+                        item.get("feed_title", "") or None,
+                        item.get("language", "") or None,
+                        item.get("published_at", "") or None,
+                        collected_at,
+                        1 if item.get("selected_for_digest") else 0,
+                        item.get("ai_score"),
+                        item.get("ai_summary", "") or None,
+                        item.get("ai_reason", "") or None,
+                        json.dumps(
+                            item.get("raw", item),
+                            ensure_ascii=False,
+                            default=_json_default,
+                        ),
+                    ),
+                )
+            conn.commit()
+        finally:
+            conn.close()
+
+    def list_items(
+        self,
+        *,
+        limit: int = 100,
+        keyword: str = "",
+        source: str = "",
+        time_range: str = "",
+        selected_only: bool = False,
+    ) -> list[dict[str, Any]]:
+        clauses: list[str] = []
+        params: list[Any] = []
+        if keyword:
+            keyword_like = f"%{keyword}%"
+            clauses.append("(title LIKE ? OR ai_summary LIKE ? OR feed_title LIKE ?)")
+            params.extend([keyword_like, keyword_like, keyword_like])
+        if source:
+            clauses.append("source=?")
+            params.append(source)
+        if selected_only:
+            clauses.append("selected_for_digest=1")
+        if time_range in {"1d", "7d", "30d"}:
+            days = int(time_range[:-1])
+            clauses.append("COALESCE(published_at, collected_at) >= datetime('now', ?)")
+            params.append(f"-{days} days")
+        where_sql = f"WHERE {' AND '.join(clauses)}" if clauses else ""
+
+        conn = self._connect()
+        try:
+            rows = conn.execute(
+                f"""
+                SELECT * FROM collected_items
+                {where_sql}
+                ORDER BY COALESCE(published_at, collected_at) DESC, id DESC
+                LIMIT ?
+                """,
+                (*params, limit),
+            ).fetchall()
+            return [self._item_row_to_dict(row) for row in rows]
+        finally:
+            conn.close()
+
+    def get_item(self, item_id: int) -> dict[str, Any] | None:
+        conn = self._connect()
+        try:
+            row = conn.execute(
+                "SELECT * FROM collected_items WHERE id=?", (item_id,)
+            ).fetchone()
+            return self._item_row_to_dict(row) if row else None
+        finally:
+            conn.close()
+
+    def create_deep_summary(
+        self,
+        *,
+        item_id: int,
+        job_run_id: int | None,
+        trigger_type: str,
+        status: str,
+    ) -> int:
+        now = _utcnow_iso()
+        conn = self._connect()
+        try:
+            cursor = conn.execute(
+                """
+                INSERT INTO deep_summaries (
+                    item_id, job_run_id, trigger_type, status, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?)
+                """,
+                (item_id, job_run_id, trigger_type, status, now, now),
+            )
+            conn.commit()
+            return int(cursor.lastrowid)
+        finally:
+            conn.close()
+
+    def update_deep_summary(
+        self,
+        deep_summary_id: int,
+        *,
+        status: str,
+        source_fetch_status: str = "",
+        source_content: str = "",
+        source_content_meta: dict[str, Any] | None = None,
+        deep_summary: str = "",
+        model: str = "",
+        error_message: str = "",
+    ) -> None:
+        now = _utcnow_iso()
+        conn = self._connect()
+        try:
+            conn.execute(
+                """
+                UPDATE deep_summaries
+                SET status=?, source_fetch_status=?, source_content=?, source_content_meta_json=?,
+                    deep_summary=?, model=?, error_message=?, updated_at=?
+                WHERE id=?
+                """,
+                (
+                    status,
+                    source_fetch_status or None,
+                    source_content or None,
+                    json.dumps(
+                        source_content_meta, ensure_ascii=False, default=_json_default
+                    )
+                    if source_content_meta is not None
+                    else None,
+                    deep_summary or None,
+                    model or None,
+                    error_message or None,
+                    now,
+                    deep_summary_id,
+                ),
+            )
+            conn.commit()
+        finally:
+            conn.close()
+
+    def get_deep_summary(self, deep_summary_id: int) -> dict[str, Any] | None:
+        conn = self._connect()
+        try:
+            row = conn.execute(
+                "SELECT * FROM deep_summaries WHERE id=?", (deep_summary_id,)
+            ).fetchone()
+            return self._deep_summary_row_to_dict(row) if row else None
+        finally:
+            conn.close()
+
+    def get_latest_deep_summary_for_item(self, item_id: int) -> dict[str, Any] | None:
+        conn = self._connect()
+        try:
+            row = conn.execute(
+                "SELECT * FROM deep_summaries WHERE item_id=? ORDER BY created_at DESC, id DESC LIMIT 1",
+                (item_id,),
+            ).fetchone()
+            return self._deep_summary_row_to_dict(row) if row else None
+        finally:
+            conn.close()
+
     def sync_output_archives(self, config: dict) -> int:
         notif_cfg = config.get("notifications", {}).get("file", {})
         data_dir = Path(config.get("storage", {}).get("data_dir", "data"))
@@ -504,6 +740,62 @@ class AppStateStore:
             "summary_text": row["summary_text"] or "",
             "payload": payload,
             "source_path": row["source_path"] or "",
+            "created_at": row["created_at"],
+            "updated_at": row["updated_at"],
+        }
+
+    def _item_row_to_dict(self, row: sqlite3.Row) -> dict[str, Any]:
+        raw: dict[str, Any] | None = None
+        try:
+            raw = json.loads(row["raw_json"])
+        except json.JSONDecodeError:
+            raw = None
+        return {
+            "id": int(row["id"]),
+            "job_run_id": int(row["job_run_id"])
+            if row["job_run_id"] is not None
+            else None,
+            "digest_id": int(row["digest_id"])
+            if row["digest_id"] is not None
+            else None,
+            "source": row["source"],
+            "external_id": row["external_id"] or "",
+            "title": row["title"],
+            "url": row["url"],
+            "author": row["author"] or "",
+            "feed_title": row["feed_title"] or "",
+            "language": row["language"] or "",
+            "published_at": row["published_at"] or "",
+            "collected_at": row["collected_at"],
+            "selected_for_digest": bool(row["selected_for_digest"]),
+            "ai_score": row["ai_score"],
+            "ai_summary": row["ai_summary"] or "",
+            "ai_reason": row["ai_reason"] or "",
+            "raw": raw,
+        }
+
+    def _deep_summary_row_to_dict(self, row: sqlite3.Row) -> dict[str, Any]:
+        meta: dict[str, Any] | None = None
+        raw_meta = row["source_content_meta_json"]
+        if raw_meta:
+            try:
+                meta = json.loads(raw_meta)
+            except json.JSONDecodeError:
+                meta = None
+        return {
+            "id": int(row["id"]),
+            "item_id": int(row["item_id"]),
+            "job_run_id": int(row["job_run_id"])
+            if row["job_run_id"] is not None
+            else None,
+            "trigger_type": row["trigger_type"],
+            "status": row["status"],
+            "source_fetch_status": row["source_fetch_status"] or "",
+            "source_content": row["source_content"] or "",
+            "source_content_meta": meta,
+            "deep_summary": row["deep_summary"] or "",
+            "model": row["model"] or "",
+            "error_message": row["error_message"] or "",
             "created_at": row["created_at"],
             "updated_at": row["updated_at"],
         }

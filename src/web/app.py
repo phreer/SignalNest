@@ -13,7 +13,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
 from src.config_loader import load_config
-from src.web.runtime import enqueue_manual_run
+from src.web.runtime import enqueue_manual_deep_summary, enqueue_manual_run
 from src.web.store import AppStateStore
 
 
@@ -175,6 +175,66 @@ def create_app(config: dict | None = None) -> FastAPI:
         digest = app.state.store.get_digest(digest_id)
         return render(request, "digest_detail.html", {"digest": digest})
 
+    @app.get("/items", response_class=HTMLResponse)
+    def items_page(
+        request: Request,
+        keyword: str = "",
+        source: str = "",
+        time_range: str = "",
+        selected_only: bool = False,
+    ) -> HTMLResponse:
+        items = app.state.store.list_items(
+            limit=200,
+            keyword=keyword,
+            source=source,
+            time_range=time_range,
+            selected_only=selected_only,
+        )
+        return render(
+            request,
+            "items.html",
+            {
+                "items": items,
+                "selected_keyword": keyword,
+                "selected_source": source,
+                "selected_time_range": time_range,
+                "selected_only": selected_only,
+            },
+        )
+
+    @app.get("/items/{item_id}", response_class=HTMLResponse)
+    def item_detail(request: Request, item_id: int) -> HTMLResponse:
+        item = app.state.store.get_item(item_id)
+        deep_summary = app.state.store.get_latest_deep_summary_for_item(item_id)
+        return render(
+            request,
+            "item_detail.html",
+            {"item": item, "deep_summary": deep_summary},
+        )
+
+    @app.post("/items/{item_id}/deep-summary")
+    def trigger_deep_summary(item_id: int) -> RedirectResponse:
+        deep_summary_id, _future = enqueue_manual_deep_summary(
+            executor=app.state.executor,
+            config=app.state.config,
+            item_id=item_id,
+        )
+        return RedirectResponse(
+            url=f"/deep-summaries/{deep_summary_id}", status_code=303
+        )
+
+    @app.get("/deep-summaries/{deep_summary_id}", response_class=HTMLResponse)
+    def deep_summary_detail(request: Request, deep_summary_id: int) -> HTMLResponse:
+        deep_summary = app.state.store.get_deep_summary(deep_summary_id)
+        item = None
+        if deep_summary is not None:
+            item = app.state.store.get_item(deep_summary["item_id"])
+        return render(
+            request,
+            "deep_summary_detail.html",
+            {"deep_summary": deep_summary, "item": item},
+        )
+
     @app.get("/api/status")
     def api_status() -> dict[str, Any]:
         return _build_status(app.state.config, app.state.store)
@@ -233,5 +293,45 @@ def create_app(config: dict | None = None) -> FastAPI:
     @app.get("/api/digests/{digest_id}")
     def api_digest_detail(digest_id: int) -> dict[str, Any]:
         return {"digest": app.state.store.get_digest(digest_id)}
+
+    @app.get("/api/items")
+    def api_items(
+        keyword: str = "",
+        source: str = "",
+        time_range: str = "",
+        selected_only: bool = False,
+    ) -> dict[str, Any]:
+        return {
+            "items": app.state.store.list_items(
+                limit=200,
+                keyword=keyword,
+                source=source,
+                time_range=time_range,
+                selected_only=selected_only,
+            )
+        }
+
+    @app.get("/api/items/{item_id}")
+    def api_item_detail(item_id: int) -> dict[str, Any]:
+        return {
+            "item": app.state.store.get_item(item_id),
+            "deep_summary": app.state.store.get_latest_deep_summary_for_item(item_id),
+        }
+
+    @app.post("/api/items/{item_id}/deep-summary")
+    def api_trigger_deep_summary(item_id: int) -> dict[str, Any]:
+        deep_summary_id, _future = enqueue_manual_deep_summary(
+            executor=app.state.executor,
+            config=app.state.config,
+            item_id=item_id,
+        )
+        return {
+            "deep_summary_id": deep_summary_id,
+            "deep_summary": app.state.store.get_deep_summary(deep_summary_id),
+        }
+
+    @app.get("/api/deep-summaries/{deep_summary_id}")
+    def api_deep_summary_detail(deep_summary_id: int) -> dict[str, Any]:
+        return {"deep_summary": app.state.store.get_deep_summary(deep_summary_id)}
 
     return app

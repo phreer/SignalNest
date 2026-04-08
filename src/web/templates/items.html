@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card">
+  <div class="section-title news">🗃 Collected Items</div>
+  <form class="actions" method="get" action="/items">
+    <div>
+      <label for="keyword">Keyword</label><br>
+      <input id="keyword" name="keyword" value="{{ selected_keyword }}" placeholder="title / summary / feed">
+    </div>
+    <div>
+      <label for="source">Source</label><br>
+      <select id="source" name="source">
+        <option value="">All</option>
+        {% for value in ["rss", "github", "youtube"] %}
+        <option value="{{ value }}" {% if selected_source == value %}selected{% endif %}>{{ value }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label for="time_range">Time</label><br>
+      <select id="time_range" name="time_range">
+        <option value="">All</option>
+        {% for value in ["1d", "7d", "30d"] %}
+        <option value="{{ value }}" {% if selected_time_range == value %}selected{% endif %}>{{ value }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label for="selected_only">Selected</label><br>
+      <select id="selected_only" name="selected_only">
+        <option value="false" {% if not selected_only %}selected{% endif %}>false</option>
+        <option value="true" {% if selected_only %}selected{% endif %}>true</option>
+      </select>
+    </div>
+    <div>
+      <button type="submit">Filter</button>
+    </div>
+  </form>
+
+  <div style="margin-top: 16px;">
+    {% for item in items %}
+    <div class="news-item">
+      <div class="news-meta">
+        {% if item.ai_score is not none %}
+        {% set score = item.ai_score %}
+        <span class="score-badge {% if score >= 8 %}score-high{% elif score >= 6 %}score-medium{% else %}score-low{% endif %}">★ {{ score }}/10</span>
+        {% endif %}
+        <span class="source-tag source-{{ item.source }}">{{ item.source }}</span>
+        {% if item.selected_for_digest %}<span class="pill">selected</span>{% endif %}
+        {% if item.feed_title %}<span class="muted">{{ item.feed_title }}</span>{% endif %}
+        {% if item.author %}<span class="muted">{{ item.author }}</span>{% endif %}
+      </div>
+      <p class="news-title"><a href="/items/{{ item.id }}">{{ item.title }}</a></p>
+      {% if item.ai_summary %}
+      <p class="news-summary">{{ item.ai_summary }}</p>
+      {% endif %}
+      <p class="muted">{{ item.published_at or item.collected_at }}</p>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

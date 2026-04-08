@@ -8,6 +8,11 @@ from typing import Any
 from zoneinfo import ZoneInfo
 
 from src.agent.session_store import AgentSessionStore
+from src.web.content import (
+    build_indexed_items,
+    fetch_original_content,
+    generate_deep_summary,
+)
 from src.web.store import AppStateStore
 
 logger = logging.getLogger(__name__)
@@ -220,8 +225,9 @@ def run_tracked_schedule(
         )
         state = _load_agent_state(config, session_id)
         payload = _build_payload_from_state(effective_name, state, config)
+        digest_id: int | None = None
         if payload is not None:
-            store.upsert_digest(job_run_id=job_run_id, payload=payload)
+            digest_id = store.upsert_digest(job_run_id=job_run_id, payload=payload)
             store.add_job_log(
                 job_run_id,
                 level="INFO",
@@ -229,6 +235,28 @@ def run_tracked_schedule(
                 event_type="digest_persisted",
                 message="Stored digest projection",
                 extra={"news_count": len(payload.get("news_items") or [])},
+            )
+
+        raw_items = (
+            state.get("raw_items") if isinstance(state.get("raw_items"), list) else []
+        )
+        news_items = (
+            state.get("news_items") if isinstance(state.get("news_items"), list) else []
+        )
+        if raw_items:
+            indexed_items = build_indexed_items(
+                raw_items=raw_items, news_items=news_items
+            )
+            store.replace_items_for_job(
+                job_run_id=job_run_id, digest_id=digest_id, items=indexed_items
+            )
+            store.add_job_log(
+                job_run_id,
+                level="INFO",
+                component="runtime",
+                event_type="items_indexed",
+                message="Indexed collected items",
+                extra={"count": len(indexed_items)},
             )
 
         store.finish_job_run(job_run_id, status="succeeded", session_id=session_id)
@@ -290,3 +318,63 @@ def enqueue_manual_run(
         job_run_id=job_run_id,
     )
     return job_run_id, future
+
+
+def run_deep_summary(
+    store: AppStateStore, config: dict, *, deep_summary_id: int
+) -> dict[str, Any]:
+    deep_summary = store.get_deep_summary(deep_summary_id)
+    if deep_summary is None:
+        raise ValueError(f"deep summary {deep_summary_id} not found")
+    item = store.get_item(deep_summary["item_id"])
+    if item is None:
+        raise ValueError(f"item {deep_summary['item_id']} not found")
+
+    store.update_deep_summary(deep_summary_id, status="running")
+    try:
+        source_content, meta = fetch_original_content(item, config)
+        store.update_deep_summary(
+            deep_summary_id,
+            status="running",
+            source_fetch_status=str(meta.get("status", "ok")),
+            source_content=source_content,
+            source_content_meta=meta,
+        )
+        summary, model = generate_deep_summary(item, source_content, config)
+        store.update_deep_summary(
+            deep_summary_id,
+            status="succeeded",
+            source_fetch_status=str(meta.get("status", "ok")),
+            source_content=source_content,
+            source_content_meta=meta,
+            deep_summary=summary,
+            model=model,
+        )
+        return store.get_deep_summary(deep_summary_id) or {}
+    except Exception as exc:
+        store.update_deep_summary(
+            deep_summary_id,
+            status="failed",
+            error_message=str(exc),
+        )
+        raise
+
+
+def enqueue_manual_deep_summary(
+    *,
+    executor: ThreadPoolExecutor,
+    config: dict,
+    item_id: int,
+) -> tuple[int, Future[Any]]:
+    store = AppStateStore.from_config(config)
+    store.init_db()
+    deep_summary_id = store.create_deep_summary(
+        item_id=item_id,
+        job_run_id=None,
+        trigger_type="manual",
+        status="queued",
+    )
+    future = executor.submit(
+        run_deep_summary, store, config, deep_summary_id=deep_summary_id
+    )
+    return deep_summary_id, future

@@ -10,7 +10,7 @@ from unittest.mock import patch
 from fastapi.testclient import TestClient
 
 from src.web.app import create_app
-from src.web.runtime import run_tracked_schedule
+from src.web.runtime import run_deep_summary, run_tracked_schedule
 from src.web.store import AppStateStore
 
 
@@ -118,6 +118,17 @@ def _fake_schedule_run(
         "session-1",
         {
             "payload": payload,
+            "raw_items": [
+                {
+                    "title": "Example item",
+                    "url": "https://example.com/item",
+                    "source": "rss",
+                    "feed_title": "Feed",
+                    "published_at": "2026-04-08T10:00:00+08:00",
+                    "description": "summary",
+                    "content_snippet": "content",
+                }
+            ],
             "news_items": payload["news_items"],
             "digest_summary": payload["digest_summary"],
         },
@@ -183,6 +194,67 @@ class RuntimeTests(unittest.TestCase):
             digest = store.get_digest_for_job(result["job_run_id"])
             self.assertIsNotNone(digest)
             self.assertEqual(digest["summary_text"], "digest summary")
+            items = store.list_items(limit=20)
+            self.assertEqual(len(items), 1)
+            self.assertTrue(items[0]["selected_for_digest"])
+
+    def test_manual_deep_summary_flow(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            config = _sample_config(tmp)
+            store = AppStateStore.from_config(config)
+            store.init_db()
+            job_id = store.create_job_run(
+                schedule_name="早间日报", trigger_type="manual", dry_run=True
+            )
+            store.replace_items_for_job(
+                job_run_id=job_id,
+                digest_id=None,
+                items=[
+                    {
+                        "source": "rss",
+                        "external_id": "",
+                        "title": "Example item",
+                        "url": "https://example.com/item",
+                        "author": "",
+                        "feed_title": "Feed",
+                        "language": "",
+                        "published_at": "2026-04-08T10:00:00+08:00",
+                        "selected_for_digest": True,
+                        "ai_score": 9,
+                        "ai_summary": "summary",
+                        "ai_reason": "reason",
+                        "raw": {
+                            "source": "rss",
+                            "url": "https://example.com/item",
+                            "title": "Example item",
+                        },
+                    }
+                ],
+            )
+            item = store.list_items(limit=10)[0]
+            deep_summary_id = store.create_deep_summary(
+                item_id=item["id"],
+                job_run_id=None,
+                trigger_type="manual",
+                status="queued",
+            )
+
+            with (
+                patch(
+                    "src.web.runtime.fetch_original_content",
+                    return_value=("source body", {"status": "ok"}),
+                ),
+                patch(
+                    "src.web.runtime.generate_deep_summary",
+                    return_value=("deep summary body", "mock-model"),
+                ),
+            ):
+                result = run_deep_summary(
+                    store, config, deep_summary_id=deep_summary_id
+                )
+
+            self.assertEqual(result["status"], "succeeded")
+            self.assertEqual(result["deep_summary"], "deep summary body")
 
 
 class ApiTests(unittest.TestCase):
@@ -223,6 +295,68 @@ class ApiTests(unittest.TestCase):
             resp = client.get("/api/digests/latest")
             self.assertEqual(resp.status_code, 200)
             self.assertEqual(resp.json()["digest"]["summary_text"], "from archive")
+
+    def test_items_api_filters(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            config = _sample_config(tmp)
+            with patch(
+                "src.web.runtime._execute_schedule", side_effect=_fake_schedule_run
+            ):
+                run_tracked_schedule(
+                    "早间日报", config, dry_run=True, trigger_type="manual"
+                )
+
+            app = create_app(copy.deepcopy(config))
+            client = TestClient(app)
+            resp = client.get("/api/items?source=rss&selected_only=true")
+            self.assertEqual(resp.status_code, 200)
+            items = resp.json()["items"]
+            self.assertEqual(len(items), 1)
+            self.assertEqual(items[0]["source"], "rss")
+
+    def test_item_deep_summary_api(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            config = _sample_config(tmp)
+            store = AppStateStore.from_config(config)
+            store.init_db()
+            job_id = store.create_job_run(
+                schedule_name="早间日报", trigger_type="manual", dry_run=True
+            )
+            store.replace_items_for_job(
+                job_run_id=job_id,
+                digest_id=None,
+                items=[
+                    {
+                        "source": "github",
+                        "external_id": "owner/repo",
+                        "title": "owner/repo",
+                        "url": "https://github.com/owner/repo",
+                        "author": "",
+                        "feed_title": "",
+                        "language": "Python",
+                        "published_at": "2026-04-08T10:00:00+08:00",
+                        "selected_for_digest": False,
+                        "ai_score": None,
+                        "ai_summary": "",
+                        "ai_reason": "",
+                        "raw": {
+                            "source": "github",
+                            "url": "https://github.com/owner/repo",
+                            "title": "owner/repo",
+                        },
+                    }
+                ],
+            )
+            item = store.list_items(limit=10)[0]
+
+            app = create_app(copy.deepcopy(config))
+            client = TestClient(app)
+            with patch(
+                "src.web.app.enqueue_manual_deep_summary", return_value=(77, None)
+            ):
+                resp = client.post(f"/api/items/{item['id']}/deep-summary")
+            self.assertEqual(resp.status_code, 200)
+            self.assertEqual(resp.json()["deep_summary_id"], 77)
 
 
 if __name__ == "__main__":
