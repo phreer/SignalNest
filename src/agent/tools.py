@@ -125,7 +125,6 @@ def _tool_collect_youtube(args: dict[str, Any], rt: ToolRuntime) -> dict[str, An
     }
 
 
-
 def _tool_summarize_news(args: dict[str, Any], rt: ToolRuntime) -> dict[str, Any]:
     raw_items = rt.state.get("raw_items", [])
     if not raw_items:
@@ -139,7 +138,9 @@ def _tool_summarize_news(args: dict[str, Any], rt: ToolRuntime) -> dict[str, Any
             raise ValueError("non-positive cap")
     except Exception:
         config_cap = 15
-        logger.warning("summarize_news: invalid ai.max_items_per_digest=%r, fallback=15", raw_cap)
+        logger.warning(
+            "summarize_news: invalid ai.max_items_per_digest=%r, fallback=15", raw_cap
+        )
 
     focus = args.get("focus", "")
 
@@ -149,6 +150,7 @@ def _tool_summarize_news(args: dict[str, Any], rt: ToolRuntime) -> dict[str, Any
         min_score=args.get("min_score"),
         max_output=None,
         focus=focus,
+        schedule_name=args.get("schedule_name", ""),
     )
     if len(news_items) > config_cap:
         logger.warning(
@@ -246,7 +248,9 @@ def _tool_build_digest_payload(args: dict[str, Any], rt: ToolRuntime) -> dict[st
     }
 
 
-def _tool_dispatch_notifications(args: dict[str, Any], rt: ToolRuntime) -> dict[str, Any]:
+def _tool_dispatch_notifications(
+    args: dict[str, Any], rt: ToolRuntime
+) -> dict[str, Any]:
     payload = rt.state.get("payload")
     if not payload:
         raise ValueError("state.payload is empty; run build_digest_payload first")
@@ -340,7 +344,8 @@ def build_agent_tools() -> dict[str, ToolSpec]:
                 "对 state.raw_items 中的原始数据进行两阶段 AI 筛选和评分，"
                 "输出高质量的 state.news_items 列表，并生成 state.digest_summary 摘要。"
                 "前置条件：至少调用过一次 collect_* 工具，state.raw_items 不为空。"
-                "参数：focus 影响筛选偏好，min_score 过滤低分内容（1-10，默认按配置）。"
+                "参数：focus 影响筛选偏好，min_score 过滤低分内容（1-10，默认按配置），"
+                "schedule_name 用于跨任务历史去重。"
                 "这一步耗时较长，每次日报只需调用一次。"
             ),
             side_effect=False,
@@ -349,6 +354,7 @@ def build_agent_tools() -> dict[str, ToolSpec]:
                 "properties": {
                     "focus": {"type": "string", "default": ""},
                     "min_score": {"type": "integer", "minimum": 1, "maximum": 10},
+                    "schedule_name": {"type": "string", "default": ""},
                 },
                 "additionalProperties": False,
             },

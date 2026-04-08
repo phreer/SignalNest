@@ -8,13 +8,15 @@ feedback.py - SQLite 偏好反馈读写
   - 读取近期历史标题用于去重
 """
 
+import logging
 import json
 import re
 import sqlite3
-import logging
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
+
+from src.ai.dedup import stable_history_key
 
 logger = logging.getLogger(__name__)
 
@@ -74,7 +76,9 @@ def load_taste_examples(config: dict, limit: int = 8) -> list[dict]:
     ]
 
 
-def _collect_recent_history_files(history_dir: Path, days: int) -> list[tuple[Path, datetime]]:
+def _collect_recent_history_files(
+    history_dir: Path, days: int
+) -> list[tuple[Path, datetime]]:
     """收集最近 N 天 history 文件，按文件名时间倒序（新→旧）。"""
     cutoff = datetime.now() - timedelta(days=days)
     matched: list[tuple[Path, datetime]] = []
@@ -101,7 +105,7 @@ def load_recent_history_records(
     limit: int = 500,
 ) -> list[dict[str, Any]]:
     """
-    读取最近 N 天历史摘要中的轻量记录，用于去重（title/url/source/date）。
+    读取最近 N 天历史摘要中的轻量记录，用于去重（title/url/source/date/...）。
 
     Returns:
         [
@@ -131,14 +135,27 @@ def load_recent_history_records(
                 if not title and not url:
                     continue
                 source = str(item.get("source", "")).strip().lower()
-                records.append(
-                    {
-                        "title": title,
-                        "url": url,
-                        "source": source,
-                        "date": file_date.strftime("%Y-%m-%d"),
-                    }
-                )
+                record = {
+                    "title": title,
+                    "url": url,
+                    "source": source,
+                    "date": str(item.get("date", "")).strip()
+                    or file_date.strftime("%Y-%m-%d"),
+                    "schedule_name": str(item.get("schedule_name", "")).strip(),
+                }
+
+                for field in ("video_id", "repo_full_name", "feed_title", "channel"):
+                    value = str(item.get(field, "")).strip()
+                    if value:
+                        record[field] = value
+
+                key = str(item.get("dedup_key", "")).strip()
+                if key:
+                    record["dedup_key"] = key
+                else:
+                    record["dedup_key"] = stable_history_key(record)
+
+                records.append(record)
                 if len(records) >= limit:
                     return records
         except Exception:
@@ -150,7 +167,11 @@ def load_recent_history_records(
 def load_recent_titles(config: dict, days: int = 30) -> list[str]:
     """读取最近 N 天历史摘要中出现过的标题（兼容旧调用）。"""
     records = load_recent_history_records(config, days=days, limit=2000)
-    titles = [str(r.get("title", "")).strip() for r in records if str(r.get("title", "")).strip()]
+    titles = [
+        str(r.get("title", "")).strip()
+        for r in records
+        if str(r.get("title", "")).strip()
+    ]
 
     # 去重并保留顺序
     seen: set[str] = set()
@@ -162,8 +183,16 @@ def load_recent_titles(config: dict, days: int = 30) -> list[str]:
     return unique
 
 
-def save_feedback(config: dict, date_str: str, source: str, title: str, url: str,
-                  score: int, ai_summary: str = "", notes: str = ""):
+def save_feedback(
+    config: dict,
+    date_str: str,
+    source: str,
+    title: str,
+    url: str,
+    score: int,
+    ai_summary: str = "",
+    notes: str = "",
+):
     """保存一条用户反馈。"""
     init_db(config)
     db_path = get_db_path(config)

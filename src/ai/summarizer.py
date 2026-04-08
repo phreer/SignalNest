@@ -51,6 +51,7 @@ def summarize_items(
     min_score: Optional[int] = None,
     max_output: Optional[int] = None,
     focus: str = "",
+    schedule_name: str = "",
 ) -> list[dict]:
     """
     两阶段处理：
@@ -65,6 +66,7 @@ def summarize_items(
         min_score: 低于此分数的条目被过滤（默认读 config）
         max_output: 最多返回条目数（默认读 config）
         focus:     本次筛选方向（来自 schedule.focus），传给 AI 做相关度评分
+        schedule_name: 当前任务名，用于历史归档和跨任务去重上下文
 
     Returns:
         过滤并排序后的列表，每项新增：
@@ -80,14 +82,18 @@ def summarize_items(
 
     min_score_default = _safe_positive_int(ai_cfg.get("min_relevance_score", 5), 5)
     min_score = (
-        _safe_positive_int(min_score, min_score_default) if min_score is not None else min_score_default
+        _safe_positive_int(min_score, min_score_default)
+        if min_score is not None
+        else min_score_default
     )
 
     default_cap = 15
     raw_config_cap = ai_cfg.get("max_items_per_digest", default_cap)
     config_cap = _safe_positive_int(raw_config_cap, default_cap)
     if config_cap != raw_config_cap:
-        logger.warning(f"ai.max_items_per_digest 非法({raw_config_cap!r})，回退默认值 {default_cap}")
+        logger.warning(
+            f"ai.max_items_per_digest 非法({raw_config_cap!r})，回退默认值 {default_cap}"
+        )
 
     if max_output is None:
         requested_max = config_cap
@@ -98,7 +104,8 @@ def summarize_items(
     logger.info(
         f"  新闻筛选开始: raw_count={len(raw_items)} "
         f"requested_max={requested_max} config_cap={config_cap} "
-        f"effective_cap={effective_max_output} min_score={min_score}"
+        f"effective_cap={effective_max_output} min_score={min_score} "
+        f"schedule={schedule_name or '(unknown)'}"
     )
 
     rss_per_feed_limit = _safe_positive_int(rss_cfg.get("max_items_per_feed", 3), 3)
@@ -111,7 +118,11 @@ def summarize_items(
         logger.error("AI_API_KEY 未配置，跳过 AI 摘要（backend=litellm 需要 API key）")
         return raw_items[:effective_max_output]
 
-    call_kwargs: dict = {"model": model, "api_key": api_key, "max_tokens": ai_cfg.get("max_tokens", 512)}
+    call_kwargs: dict = {
+        "model": model,
+        "api_key": api_key,
+        "max_tokens": ai_cfg.get("max_tokens", 512),
+    }
     if api_base:
         call_kwargs["api_base"] = api_base
 
@@ -136,19 +147,31 @@ def summarize_items(
 
     # ── 阶段 A：历史去重 ──────────────────────────────────────────────────────
     kept_indices = ai_dedup_against_history(
-        raw_items, history_records, call_kwargs=call_kwargs, language=language, backend=backend
+        raw_items,
+        history_records,
+        call_kwargs=call_kwargs,
+        language=language,
+        backend=backend,
     )
     items_after_history = [raw_items[i] for i in kept_indices]
     logger.info(f"  after_history_dedup_count={len(items_after_history)}")
     if not items_after_history:
-        logger.info(f"  新闻筛选完成: final_count=0 effective_cap={effective_max_output}")
+        logger.info(
+            f"  新闻筛选完成: final_count=0 effective_cap={effective_max_output}"
+        )
         return []
 
     # ── 阶段 1：标题批量筛选 ──────────────────────────────────────────────────
     max_keep = min(effective_max_output * 2, len(items_after_history))
     selected_indices = batch_select_by_titles(
-        items_after_history, focus, taste_examples, call_kwargs, language,
-        max_keep, backend=backend, history_titles=history_titles,
+        items_after_history,
+        focus,
+        taste_examples,
+        call_kwargs,
+        language,
+        max_keep,
+        backend=backend,
+        history_titles=history_titles,
     )
     selected_indices = ensure_source_candidates(
         items_after_history, selected_indices, source_minimums, max_keep
@@ -156,16 +179,24 @@ def summarize_items(
     candidates = [items_after_history[i] for i in selected_indices]
     logger.info(f"  after_stage1_select_count={len(candidates)}")
     if not candidates:
-        logger.info(f"  新闻筛选完成: final_count=0 effective_cap={effective_max_output}")
+        logger.info(
+            f"  新闻筛选完成: final_count=0 effective_cap={effective_max_output}"
+        )
         return []
 
     # ── 阶段 B：跨源去重 ──────────────────────────────────────────────────────
     candidates = ai_dedup_across_candidates(
-        candidates, focus=focus, call_kwargs=call_kwargs, language=language, backend=backend
+        candidates,
+        focus=focus,
+        call_kwargs=call_kwargs,
+        language=language,
+        backend=backend,
     )
     logger.info(f"  after_cross_source_dedup_count={len(candidates)}")
     if not candidates:
-        logger.info(f"  新闻筛选完成: final_count=0 effective_cap={effective_max_output}")
+        logger.info(
+            f"  新闻筛选完成: final_count=0 effective_cap={effective_max_output}"
+        )
         return []
 
     # ── RSS 每 feed 封顶 ──────────────────────────────────────────────────────
@@ -179,16 +210,26 @@ def summarize_items(
                 continue
         capped.append(item)
     if len(capped) < len(candidates):
-        logger.info(f"  RSS per-feed 封顶：{len(candidates)} → {len(capped)} 条进入摘要")
+        logger.info(
+            f"  RSS per-feed 封顶：{len(candidates)} → {len(capped)} 条进入摘要"
+        )
     candidates = capped
 
     # ── 候选不足时从剩余池补全 ────────────────────────────────────────────────
     if len(candidates) < effective_max_output:
         need_fill = effective_max_output - len(candidates)
         existing_keys = {item_key(item) for item in candidates}
-        remaining_pool = [item for item in items_after_history if item_key(item) not in existing_keys]
+        remaining_pool = [
+            item for item in items_after_history if item_key(item) not in existing_keys
+        ]
         fill_indices = ai_pick_fill_candidates(
-            candidates, remaining_pool, need_fill, focus, call_kwargs, language, backend=backend
+            candidates,
+            remaining_pool,
+            need_fill,
+            focus,
+            call_kwargs,
+            language,
+            backend=backend,
         )
         filled = 0
         for idx in fill_indices:
@@ -208,10 +249,14 @@ def summarize_items(
             filled += 1
             if len(candidates) >= effective_max_output:
                 break
-        logger.info(f"  after_fill_candidates_count={len(candidates)} (filled={filled}, need={need_fill})")
+        logger.info(
+            f"  after_fill_candidates_count={len(candidates)} (filled={filled}, need={need_fill})"
+        )
 
     if not candidates:
-        logger.info(f"  新闻筛选完成: final_count=0 effective_cap={effective_max_output}")
+        logger.info(
+            f"  新闻筛选完成: final_count=0 effective_cap={effective_max_output}"
+        )
         return []
 
     # ── 精读前：为 YouTube 视频补充字幕 ──────────────────────────────────────
@@ -220,6 +265,7 @@ def summarize_items(
         logger.info(f"  拉取 YouTube 字幕（{len(yt_candidates)} 个视频）...")
         try:
             from src.collectors.youtube_collector import _get_transcript
+
             for item in yt_candidates:
                 video_id = item.get("video_id", "")
                 if not video_id and "v=" in item.get("url", ""):
@@ -237,7 +283,16 @@ def summarize_items(
 
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         futures = {
-            executor.submit(score_single_item, item, system_prompt, backend, call_kwargs, min_score, i, total): item
+            executor.submit(
+                score_single_item,
+                item,
+                system_prompt,
+                backend,
+                call_kwargs,
+                min_score,
+                i,
+                total,
+            ): item
             for i, item in enumerate(candidates)
         }
         for future in as_completed(futures):
@@ -255,7 +310,11 @@ def summarize_items(
     for item in results:
         source_buckets.setdefault(item.get("source", "unknown"), []).append(item)
 
-    per_source_min = effective_max_output // len(source_buckets) if source_buckets else effective_max_output
+    per_source_min = (
+        effective_max_output // len(source_buckets)
+        if source_buckets
+        else effective_max_output
+    )
     selected: list[dict] = []
     leftover: list[dict] = []
     for items in source_buckets.values():

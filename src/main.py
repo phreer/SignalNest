@@ -18,6 +18,7 @@ from pathlib import Path
 from typing import Any, Callable
 from zoneinfo import ZoneInfo
 
+from src.ai.dedup import stable_history_key
 from src.config_loader import load_config
 
 logger = logging.getLogger("signalnest")
@@ -259,15 +260,22 @@ def _save_last_digest(
         records.append(
             {
                 "date": str(today),
+                "schedule_name": schedule_name,
                 "source": item.get("source", ""),
                 "title": item.get("title", ""),
                 "url": item.get("url", ""),
+                "video_id": item.get("video_id", ""),
+                "repo_full_name": item.get("repo_full_name", item.get("title", "")),
+                "feed_title": item.get("feed_title", ""),
+                "channel": item.get("channel", ""),
                 "ai_score": item.get("ai_score"),
                 "ai_summary": item.get("ai_summary", ""),
                 "user_score": None,
                 "user_notes": "",
             }
         )
+
+        records[-1]["dedup_key"] = stable_history_key(records[-1])
 
     with open(out_path, "w", encoding="utf-8") as f:
         json.dump(records, f, ensure_ascii=False, indent=2)

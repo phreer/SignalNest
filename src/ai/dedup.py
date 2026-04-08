@@ -15,12 +15,21 @@ from src.ai.cli_backend import _call_ai
 logger = logging.getLogger(__name__)
 
 _TRACKING_QUERY_KEYS = {
-    "spm", "from", "ref", "source", "fbclid",
-    "gclid", "si", "feature", "mc_cid", "mc_eid",
+    "spm",
+    "from",
+    "ref",
+    "source",
+    "fbclid",
+    "gclid",
+    "si",
+    "feature",
+    "mc_cid",
+    "mc_eid",
 }
 
 
 # ── URL / 标题归一化 ──────────────────────────────────────────────────────────
+
 
 def normalize_title(title: str) -> str:
     text = str(title or "").strip().lower()
@@ -101,7 +110,10 @@ def _item_completeness_score(item: dict) -> int:
         score += 2
     if str(item.get("published_at", "")).strip():
         score += 2
-    if str(item.get("description", "")).strip() or str(item.get("content_snippet", "")).strip():
+    if (
+        str(item.get("description", "")).strip()
+        or str(item.get("content_snippet", "")).strip()
+    ):
         score += 1
     if str(item.get("feed_title", "")).strip() or str(item.get("channel", "")).strip():
         score += 1
@@ -110,8 +122,16 @@ def _item_completeness_score(item: dict) -> int:
 
 def _pick_better_item_index(items: list[dict], idx_a: int, idx_b: int) -> int:
     a, b = items[idx_a], items[idx_b]
-    key_a = (_item_completeness_score(a), _parse_published_ts(str(a.get("published_at", ""))), -idx_a)
-    key_b = (_item_completeness_score(b), _parse_published_ts(str(b.get("published_at", ""))), -idx_b)
+    key_a = (
+        _item_completeness_score(a),
+        _parse_published_ts(str(a.get("published_at", ""))),
+        -idx_a,
+    )
+    key_b = (
+        _item_completeness_score(b),
+        _parse_published_ts(str(b.get("published_at", ""))),
+        -idx_b,
+    )
     return idx_a if key_a >= key_b else idx_b
 
 
@@ -122,6 +142,30 @@ def item_key(item: dict) -> str:
     source = str(item.get("source", "unknown")).strip().lower()
     title = normalize_title(str(item.get("title", "")))
     return f"{source}::{title}"
+
+
+def stable_history_key(item: dict) -> str:
+    """Return a stronger cross-run identity key for previously recommended items."""
+    source = str(item.get("source", "unknown")).strip().lower()
+
+    if source == "youtube":
+        video_id = str(item.get("video_id", "")).strip()
+        if not video_id:
+            nurl = normalize_url(str(item.get("url", "")))
+            match = re.search(r"(?:v=|youtu\.be/)([A-Za-z0-9_-]{6,})", nurl)
+            if match:
+                video_id = match.group(1)
+        if video_id:
+            return f"youtube::{video_id}"
+
+    if source == "github":
+        repo = (
+            str(item.get("repo_full_name", "") or item.get("title", "")).strip().lower()
+        )
+        if repo and "/" in repo:
+            return f"github::{repo}"
+
+    return item_key(item)
 
 
 def short_item_line(i: int, item: dict) -> str:
@@ -142,6 +186,7 @@ def short_item_line(i: int, item: dict) -> str:
 
 def parse_json_dict(raw_text: str) -> dict | None:
     import json
+
     json_match = re.search(r"\{[\s\S]*\}", raw_text or "")
     if not json_match:
         return None
@@ -154,12 +199,19 @@ def parse_json_dict(raw_text: str) -> dict | None:
 
 # ── Fallback 去重（不依赖 AI）────────────────────────────────────────────────
 
-def fallback_dedup_against_history(items: list[dict], history_records: list[dict]) -> list[int]:
+
+def fallback_dedup_against_history(
+    items: list[dict], history_records: list[dict]
+) -> list[int]:
+    history_keys: set[str] = set()
     history_urls: set[str] = set()
     history_titles: list[str] = []
     history_titles_set: set[str] = set()
 
     for rec in history_records:
+        stable_key = stable_history_key(rec)
+        if stable_key:
+            history_keys.add(stable_key)
         nurl = normalize_url(str(rec.get("url", "")))
         if nurl:
             history_urls.add(nurl)
@@ -171,11 +223,14 @@ def fallback_dedup_against_history(items: list[dict], history_records: list[dict
     kept: list[int] = []
     dropped = 0
     for idx, item in enumerate(items):
+        stable_key = stable_history_key(item)
         nurl = normalize_url(str(item.get("url", "")))
         ntitle = normalize_title(str(item.get("title", "")))
 
         is_dup = False
-        if nurl and nurl in history_urls:
+        if stable_key and stable_key in history_keys:
+            is_dup = True
+        elif nurl and nurl in history_urls:
             is_dup = True
         elif ntitle:
             if ntitle in history_titles_set:
@@ -223,7 +278,9 @@ def fallback_dedup_across_candidates(candidates: list[dict]) -> list[dict]:
         ntitle = normalize_title(str(candidate.get("title", "")))
         merged = False
         for pos, existing_idx in enumerate(deduped_indices):
-            existing_title = normalize_title(str(candidates[existing_idx].get("title", "")))
+            existing_title = normalize_title(
+                str(candidates[existing_idx].get("title", ""))
+            )
             if not _is_strict_title_duplicate(ntitle, existing_title):
                 continue
             better = _pick_better_item_index(candidates, existing_idx, idx)
@@ -239,7 +296,20 @@ def fallback_dedup_across_candidates(candidates: list[dict]) -> list[dict]:
     return result
 
 
+def _should_skip_ai_history_dedup(items: list[dict], kept_indices: list[int]) -> bool:
+    # 程序规则已经过滤掉明显重复时，优先相信确定性结果，避免模型误杀。
+    return len(kept_indices) < len(items)
+
+
+def _should_skip_ai_candidate_dedup(
+    candidates: list[dict], deduped: list[dict]
+) -> bool:
+    # 当前程序只做严格 URL/标题近似去重；一旦已经命中，说明重复很明确，无需再交给模型。
+    return len(deduped) < len(candidates)
+
+
 # ── AI 去重 ───────────────────────────────────────────────────────────────────
+
 
 def ai_dedup_against_history(
     items: list[dict],
@@ -253,13 +323,20 @@ def ai_dedup_against_history(
     if not history_records:
         return list(range(len(items)))
 
+    fallback_kept = fallback_dedup_against_history(items, history_records)
+    if _should_skip_ai_history_dedup(items, fallback_kept):
+        logger.info("  历史去重：程序规则已命中重复，跳过 AI 复判")
+        return fallback_kept
+
     capped_history = history_records[:200]
     lang_label = "中文" if language == "zh" else "English"
     items_text = "\n".join(short_item_line(i, item) for i, item in enumerate(items))
     history_text = "\n".join(
         f"- [{idx}] {str(rec.get('title', '')).strip()} | "
         f"url={str(rec.get('url', '')).strip()} | "
-        f"source={str(rec.get('source', '')).strip()}"
+        f"source={str(rec.get('source', '')).strip()} | "
+        f"key={stable_history_key(rec)} | "
+        f"schedule={str(rec.get('schedule_name', '')).strip()}"
         for idx, rec in enumerate(capped_history)
     )
 
@@ -267,8 +344,9 @@ def ai_dedup_against_history(
 
 规则：
 1) 优先以 URL 一致性判重：URL 规范化后相同则视为重复。
-2) URL 不同但标题几乎一致、且语义明显是同一条新闻时，才判重。
-3) 不要做主题级"泛化去重"（同主题不同新闻必须保留）。
+2) 若 source-specific key 一致，也视为重复，例如同一个 YouTube video_id、同一个 GitHub owner/repo。
+3) URL 不同但标题几乎一致、且语义明显是同一条新闻时，才判重。
+4) 不要做主题级"泛化去重"（同主题不同新闻必须保留）。
 
 当前候选（{len(items)} 条）：
 {items_text}
@@ -285,7 +363,10 @@ def ai_dedup_against_history(
 
     try:
         messages = [
-            {"role": "system", "content": f"你是严格去重助手，请用{lang_label}思考，只输出 JSON。"},
+            {
+                "role": "system",
+                "content": f"你是严格去重助手，请用{lang_label}思考，只输出 JSON。",
+            },
             {"role": "user", "content": user_message},
         ]
         raw_text = _call_ai(messages, backend, {**call_kwargs, "max_tokens": 700})
@@ -302,16 +383,24 @@ def ai_dedup_against_history(
                 kept.append(idx)
 
             dropped = parsed.get("dropped", [])
-            if not kept and items and not (isinstance(dropped, list) and len(dropped) >= len(items)):
-                logger.warning("  历史去重 AI 结果异常（kept 为空且无充分 dropped 信息），改用 fallback")
-                return fallback_dedup_against_history(items, capped_history)
+            if (
+                not kept
+                and items
+                and not (isinstance(dropped, list) and len(dropped) >= len(items))
+            ):
+                logger.warning(
+                    "  历史去重 AI 结果异常（kept 为空且无充分 dropped 信息），改用 fallback"
+                )
+                return fallback_kept
 
-            logger.info(f"  历史去重（AI）：{len(items)} → {len(kept)} (history={len(capped_history)})")
+            logger.info(
+                f"  历史去重（AI）：{len(items)} → {len(kept)} (history={len(capped_history)})"
+            )
             return kept
     except Exception as e:
         logger.warning(f"历史去重 AI 失败，改用 fallback: {e}")
 
-    return fallback_dedup_against_history(items, capped_history)
+    return fallback_kept
 
 
 def ai_dedup_across_candidates(
@@ -324,9 +413,16 @@ def ai_dedup_across_candidates(
     if len(candidates) <= 1:
         return candidates
 
+    fallback_result = fallback_dedup_across_candidates(candidates)
+    if _should_skip_ai_candidate_dedup(candidates, fallback_result):
+        logger.info("  跨源去重：程序规则已命中重复，跳过 AI 复判")
+        return fallback_result
+
     lang_label = "中文" if language == "zh" else "English"
     focus_line = f"用户关注方向：{focus}\n\n" if focus else ""
-    items_text = "\n".join(short_item_line(i, item) for i, item in enumerate(candidates))
+    items_text = "\n".join(
+        short_item_line(i, item) for i, item in enumerate(candidates)
+    )
 
     user_message = f"""{focus_line}请对以下候选做跨源去重，目标是去掉"同一新闻/同一事件"的重复条目。
 
@@ -350,7 +446,10 @@ def ai_dedup_across_candidates(
 
     try:
         messages = [
-            {"role": "system", "content": f"你是跨源去重助手，请用{lang_label}思考，只输出 JSON。"},
+            {
+                "role": "system",
+                "content": f"你是跨源去重助手，请用{lang_label}思考，只输出 JSON。",
+            },
             {"role": "user", "content": user_message},
         ]
         raw_text = _call_ai(messages, backend, {**call_kwargs, "max_tokens": 800})
@@ -366,10 +465,14 @@ def ai_dedup_across_candidates(
                 seen.add(idx)
                 keep.append(idx)
 
+            if len(keep) > len(fallback_result):
+                logger.warning("  跨源去重 AI 结果比程序规则更宽松，回退到程序结果")
+                return fallback_result
+
             groups = parsed.get("groups", [])
             if not keep and candidates:
                 logger.warning("  跨源去重 AI 结果异常（keep 为空），改用 fallback")
-                return fallback_dedup_across_candidates(candidates)
+                return fallback_result
 
             logger.info(
                 f"  跨源去重（AI）：{len(candidates)} → {len(keep)} "
@@ -379,4 +482,4 @@ def ai_dedup_across_candidates(
     except Exception as e:
         logger.warning(f"跨源去重 AI 失败，改用 fallback: {e}")
 
-    return fallback_dedup_across_candidates(candidates)
+    return fallback_result
