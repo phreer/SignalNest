@@ -28,14 +28,11 @@ def generate_digest_summary(
         return ""
 
     ai_cfg = config.get("ai", {})
-    model    = os.environ.get("AI_MODEL")    or ai_cfg.get("model", "openai/gpt-4o-mini")
+    model = os.environ.get("AI_MODEL") or ai_cfg.get("model", "openai/gpt-4o-mini")
     api_base = os.environ.get("AI_API_BASE") or ai_cfg.get("api_base") or None
-    backend  = os.environ.get("AI_BACKEND") or ai_cfg.get("backend", "litellm")
-    api_key  = os.environ.get("AI_API_KEY", "")
+    backend = os.environ.get("AI_BACKEND") or ai_cfg.get("backend", "litellm")
+    api_key = os.environ.get("AI_API_KEY", "")
     language = config.get("app", {}).get("language", "zh")
-
-    if backend == "litellm" and not api_key:
-        return ""
 
     call_kwargs: dict = dict(model=model, api_key=api_key, max_tokens=600)
     if api_base:
@@ -46,10 +43,10 @@ def generate_digest_summary(
 
     items_text = ""
     for i, item in enumerate(news_items, 1):
-        source  = item.get("source", "").upper()
-        title   = item.get("title", "")
+        source = item.get("source", "").upper()
+        title = item.get("title", "")
         summary = item.get("ai_summary", "")
-        score   = item.get("ai_score", "?")
+        score = item.get("ai_score", "?")
         items_text += f"{i}. [{source}][{score}/10] {title}\n"
         if summary:
             items_text += f"   {summary}\n"
@@ -66,7 +63,10 @@ def generate_digest_summary(
 
     try:
         messages = [
-            {"role": "system", "content": f"你是专业的信息分析师，擅长跨领域提炼要点，请用{lang_label}输出。"},
+            {
+                "role": "system",
+                "content": f"你是专业的信息分析师，擅长跨领域提炼要点，请用{lang_label}输出。",
+            },
             {"role": "user", "content": user_message},
         ]
         return _call_ai(messages, backend, call_kwargs)
