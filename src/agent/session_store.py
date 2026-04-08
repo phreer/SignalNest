@@ -71,6 +71,7 @@ class AgentSessionStore:
                     result_json      TEXT,
                     success          INTEGER NOT NULL,
                     error            TEXT,
+                    duration_ms      INTEGER,
                     created_at       TEXT NOT NULL,
                     FOREIGN KEY(turn_id) REFERENCES agent_turns(id)
                 );
@@ -86,7 +87,14 @@ class AgentSessionStore:
                 );
                 """
             )
-            conn.commit()
+            # Migrate existing databases: add duration_ms column if missing
+            try:
+                conn.execute(
+                    "ALTER TABLE agent_tool_calls ADD COLUMN duration_ms INTEGER"
+                )
+                conn.commit()
+            except Exception:
+                pass  # Column already exists
         finally:
             conn.close()
 
@@ -174,23 +182,28 @@ class AgentSessionStore:
         result: Any = None,
         success: bool,
         error: str = "",
+        duration_ms: int | None = None,
     ) -> None:
         conn = self._connect()
         try:
             conn.execute(
                 """
                 INSERT INTO agent_tool_calls (
-                    turn_id, step_no, tool_name, args_json, result_json, success, error, created_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    turn_id, step_no, tool_name, args_json, result_json,
+                    success, error, duration_ms, created_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     turn_id,
                     step_no,
                     tool_name,
                     json.dumps(args, ensure_ascii=False, default=str),
-                    json.dumps(result, ensure_ascii=False, default=str) if result is not None else None,
+                    json.dumps(result, ensure_ascii=False, default=str)
+                    if result is not None
+                    else None,
                     1 if success else 0,
                     error,
+                    duration_ms,
                     _utcnow_iso(),
                 ),
             )

@@ -12,6 +12,7 @@ import json
 import logging
 import os
 import re
+import time
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
@@ -464,22 +465,43 @@ def run_agent_turn(
 
             step_no = 1
             while step_no <= max_steps:
-                tool_calls, final_text = call_litellm_with_tools(
-                    messages, call_kwargs, openai_tools
-                )
+                llm_resp = call_litellm_with_tools(messages, call_kwargs, openai_tools)
 
-                if final_text is not None:
-                    final_response = _normalize_final_text(final_text)
+                # Emit token usage after every LLM call
+                if llm_resp.usage:
+                    _emit_progress(
+                        options.progress_callback,
+                        {
+                            "type": "llm_usage",
+                            "step_no": step_no,
+                            **llm_resp.usage,
+                        },
+                    )
+
+                if llm_resp.final_text is not None:
+                    final_response = _normalize_final_text(llm_resp.final_text)
                     break
 
+                tool_calls = llm_resp.tool_calls
                 if not tool_calls:
                     break
+
+                # Emit any chain-of-thought text the model produced alongside tool_calls
+                if llm_resp.reasoning:
+                    _emit_progress(
+                        options.progress_callback,
+                        {
+                            "type": "agent_reasoning",
+                            "step_no": step_no,
+                            "text": llm_resp.reasoning,
+                        },
+                    )
 
                 # Add assistant message with all tool_calls to history
                 messages.append(
                     {
                         "role": "assistant",
-                        "content": None,
+                        "content": llm_resp.reasoning or None,
                         "tool_calls": [
                             {
                                 "id": tc["call_id"],
@@ -520,14 +542,17 @@ def run_agent_turn(
                             "arguments": args,
                         },
                     )
+                    t0 = time.monotonic()
                     result, success, error = _execute_tool(
                         tool_name, args, tools, policy, rt
                     )
+                    duration_ms = round((time.monotonic() - t0) * 1000)
 
                     step_item: dict[str, Any] = {
                         "step": step_no,
                         "tool": tool_name,
                         "arguments": args,
+                        "duration_ms": duration_ms,
                     }
                     if success:
                         step_item["result"] = result
@@ -543,6 +568,7 @@ def run_agent_turn(
                         result=result if success else None,
                         success=success,
                         error=error,
+                        duration_ms=duration_ms,
                     )
 
                     messages.append(
@@ -564,6 +590,7 @@ def run_agent_turn(
                             "success": success,
                             "error": error,
                             "result": result,
+                            "duration_ms": duration_ms,
                         },
                     )
                     step_no += 1

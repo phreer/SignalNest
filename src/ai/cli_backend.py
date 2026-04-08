@@ -9,6 +9,8 @@ cli_backend.py - 本地 AI CLI 工具封装 + 统一调用入口
 _call_ai() 是统一入口，供 summarizer.py 和 ai_reader.py 共用。
 """
 
+from __future__ import annotations
+
 import logging
 import subprocess
 
@@ -18,6 +20,7 @@ _CLI_TIMEOUT = 120  # 秒
 
 class CLIBackendError(RuntimeError):
     """CLI 调用失败时抛出（非零退出码、超时、找不到可执行文件）"""
+
     pass
 
 
@@ -37,7 +40,9 @@ def call_claude_cli(messages: list[dict]) -> str:
     try:
         result = subprocess.run(
             ["claude", "--print", prompt],
-            capture_output=True, text=True, timeout=_CLI_TIMEOUT,
+            capture_output=True,
+            text=True,
+            timeout=_CLI_TIMEOUT,
         )
     except FileNotFoundError:
         raise CLIBackendError(
@@ -60,7 +65,9 @@ def call_codex_cli(messages: list[dict]) -> str:
     try:
         result = subprocess.run(
             ["codex", "-q", prompt],
-            capture_output=True, text=True, timeout=_CLI_TIMEOUT,
+            capture_output=True,
+            text=True,
+            timeout=_CLI_TIMEOUT,
         )
     except FileNotFoundError:
         raise CLIBackendError(
@@ -98,6 +105,7 @@ def _call_ai(messages: list[dict], backend: str, call_kwargs: dict) -> str:
     """
     if backend == "litellm":
         import litellm
+
         response = litellm.completion(messages=messages, **call_kwargs)
         return response.choices[0].message.content.strip()
     elif backend == "claude-cli":
@@ -110,35 +118,78 @@ def _call_ai(messages: list[dict], backend: str, call_kwargs: dict) -> str:
         )
 
 
+class LiteLLMResponse:
+    """Structured result from a single LiteLLM call with tool support."""
+
+    __slots__ = ("tool_calls", "final_text", "reasoning", "usage")
+
+    def __init__(
+        self,
+        tool_calls: list[dict] | None,
+        final_text: str | None,
+        reasoning: str | None,
+        usage: dict | None,
+    ):
+        self.tool_calls = tool_calls
+        self.final_text = final_text
+        # Text content present alongside tool_calls — the model's chain-of-thought
+        self.reasoning = reasoning
+        # {"prompt_tokens": int, "completion_tokens": int, "total_tokens": int}
+        self.usage = usage
+
+
 def call_litellm_with_tools(
     messages: list[dict],
     call_kwargs: dict,
     openai_tools: list[dict],
-) -> tuple[list[dict] | None, str | None]:
+) -> LiteLLMResponse:
     """
     使用原生 Tool Calling 调用 LiteLLM。仅支持 litellm 后端。
 
     Returns:
-        (tool_calls, final_text) — 二者恰好一个非 None。
-        tool_calls 列表中每个元素为:
-            {"tool": str, "arguments": dict, "call_id": str}
-        final_text: 无 tool_calls 时的纯文本最终回复。
+        LiteLLMResponse with:
+          - tool_calls: list of {"tool", "arguments", "call_id"} or None
+          - final_text: plain text reply when no tool_calls
+          - reasoning:  model content text emitted alongside tool_calls (chain-of-thought)
+          - usage:      {"prompt_tokens", "completion_tokens", "total_tokens"} or None
     """
+    import json as _json
     import litellm
 
     kw = {**call_kwargs, "tools": openai_tools, "tool_choice": "auto"}
     response = litellm.completion(messages=messages, **kw)
     msg = response.choices[0].message
 
+    # Extract token usage when available
+    usage: dict | None = None
+    if hasattr(response, "usage") and response.usage:
+        try:
+            u = response.usage
+            usage = {
+                "prompt_tokens": int(getattr(u, "prompt_tokens", 0) or 0),
+                "completion_tokens": int(getattr(u, "completion_tokens", 0) or 0),
+                "total_tokens": int(getattr(u, "total_tokens", 0) or 0),
+            }
+        except Exception:
+            pass
+
     if msg.tool_calls:
         calls = []
         for tc in msg.tool_calls:
             try:
-                import json
-                args = json.loads(tc.function.arguments or "{}")
+                args = _json.loads(tc.function.arguments or "{}")
             except Exception:
                 args = {}
-            calls.append({"tool": tc.function.name, "arguments": args, "call_id": tc.id})
-        return calls, None
+            calls.append(
+                {"tool": tc.function.name, "arguments": args, "call_id": tc.id}
+            )
+        # Capture any chain-of-thought text the model emitted alongside tool calls
+        reasoning = (msg.content or "").strip() or None
+        return LiteLLMResponse(
+            tool_calls=calls, final_text=None, reasoning=reasoning, usage=usage
+        )
 
-    return None, (msg.content or "").strip() or "Done."
+    final_text = (msg.content or "").strip() or "Done."
+    return LiteLLMResponse(
+        tool_calls=None, final_text=final_text, reasoning=None, usage=usage
+    )

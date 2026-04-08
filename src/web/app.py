@@ -79,6 +79,175 @@ def _mask_email(email: str) -> str:
     return f"{masked_local}@{domain}"
 
 
+# Tool name -> (display label, emoji)
+_TOOL_META: dict[str, tuple[str, str]] = {
+    "collect_github": ("Collect GitHub", "🐙"),
+    "collect_rss": ("Collect RSS", "📡"),
+    "collect_youtube": ("Collect YouTube", "▶️"),
+    "summarize_news": ("Summarize News", "🧠"),
+    "read_today_schedule": ("Read Schedule", "📅"),
+    "read_active_projects": ("Read Projects", "📋"),
+    "build_digest_payload": ("Build Digest", "📦"),
+    "dispatch_notifications": ("Dispatch", "📬"),
+}
+
+# Pipeline stage order for the timeline (tool_name or sentinel stage names)
+_PIPELINE_STAGES = [
+    ("job_started", "Boot", "🚀"),
+    ("collect_github", "GitHub", "🐙"),
+    ("collect_rss", "RSS", "📡"),
+    ("collect_youtube", "YouTube", "▶️"),
+    ("summarize_news", "Summarize", "🧠"),
+    ("read_today_schedule", "Schedule", "📅"),
+    ("read_active_projects", "Projects", "📋"),
+    ("build_digest_payload", "Build", "📦"),
+    ("dispatch_notifications", "Dispatch", "📬"),
+    ("items_indexed", "Index", "🗂️"),
+    ("job_finished", "Done", "✅"),
+]
+
+
+def _build_job_view(logs: list[dict]) -> dict[str, Any]:
+    """Derive structured view data from raw job_logs for the job detail template."""
+    # --- Pipeline timeline ---
+    seen_stages: set[str] = set()
+    for log in logs:
+        et = log.get("event_type", "")
+        if et == "tool_finish":
+            extra = log.get("extra") or {}
+            seen_stages.add(str(extra.get("tool_name", "")))
+        elif et in ("job_started", "items_indexed", "job_finished"):
+            seen_stages.add(et)
+
+    timeline = []
+    for stage_key, label, icon in _PIPELINE_STAGES:
+        timeline.append(
+            {
+                "key": stage_key,
+                "label": label,
+                "icon": icon,
+                "done": stage_key in seen_stages,
+            }
+        )
+
+    # --- Tool call cards (pair tool_start + tool_finish) ---
+    starts: dict[int, dict] = {}  # step_no -> log
+    finishes: dict[int, dict] = {}
+    reasoning_entries: list[dict] = []
+    usage_entries: list[dict] = []
+
+    for log in logs:
+        et = log.get("event_type", "")
+        extra = log.get("extra") or {}
+        step_no = int(extra.get("step_no") or 0)
+        if et == "tool_start":
+            starts[step_no] = log
+        elif et == "tool_finish":
+            finishes[step_no] = log
+        elif et == "agent_reasoning":
+            reasoning_entries.append(
+                {
+                    "step_no": step_no,
+                    "text": extra.get("text", ""),
+                    "ts": log.get("ts", ""),
+                }
+            )
+        elif et == "llm_usage":
+            usage_entries.append(
+                {
+                    "step_no": step_no,
+                    "prompt_tokens": extra.get("prompt_tokens", 0),
+                    "completion_tokens": extra.get("completion_tokens", 0),
+                    "total_tokens": extra.get("total_tokens", 0),
+                    "ts": log.get("ts", ""),
+                }
+            )
+
+    tool_cards = []
+    all_steps = sorted(set(list(starts.keys()) + list(finishes.keys())))
+    for step in all_steps:
+        if step == 0:
+            continue
+        start_log = starts.get(step, {})
+        finish_log = finishes.get(step, {})
+        start_extra = start_log.get("extra") or {}
+        finish_extra = finish_log.get("extra") or {}
+        tool_name = str(
+            start_extra.get("tool_name") or finish_extra.get("tool_name") or ""
+        )
+        label, icon = _TOOL_META.get(tool_name, (tool_name, "🔧"))
+        success = finish_extra.get("success", None)
+        duration_ms = finish_extra.get("duration_ms")
+        result = finish_extra.get("result") or {}
+        error = finish_extra.get("error") or ""
+        arguments = start_extra.get("arguments") or {}
+
+        # Find reasoning emitted just before this step
+        reasoning = next(
+            (r["text"] for r in reasoning_entries if r["step_no"] == step),
+            None,
+        )
+
+        tool_cards.append(
+            {
+                "step": step,
+                "tool_name": tool_name,
+                "label": label,
+                "icon": icon,
+                "success": success,
+                "duration_ms": duration_ms,
+                "arguments": arguments,
+                "result": result,
+                "error": error,
+                "ts": start_log.get("ts") or finish_log.get("ts", ""),
+                "reasoning": reasoning,
+            }
+        )
+
+    # --- Cumulative token totals ---
+    total_tokens = sum(u["total_tokens"] for u in usage_entries)
+    total_prompt = sum(u["prompt_tokens"] for u in usage_entries)
+    total_completion = sum(u["completion_tokens"] for u in usage_entries)
+
+    # --- Job summary stats extracted from tool results ---
+    stats: dict[str, Any] = {}
+    for card in tool_cards:
+        r = card["result"]
+        tn = card["tool_name"]
+        if (
+            tn in ("collect_github", "collect_rss", "collect_youtube")
+            and card["success"]
+        ):
+            stats.setdefault("collected", 0)
+            stats["collected"] += int(r.get("fetched_count") or 0)
+        elif tn == "summarize_news" and card["success"]:
+            stats["news_count"] = int(r.get("news_count") or 0)
+            stats["top_titles"] = r.get("top_titles") or []
+        elif tn == "dispatch_notifications" and card["success"]:
+            stats["dispatched"] = bool(r.get("dispatched"))
+            stats["dry_run"] = bool(r.get("dry_run"))
+
+    # --- Lifecycle logs (non-tool events for the raw log section) ---
+    lifecycle_logs = [
+        log
+        for log in logs
+        if log.get("event_type")
+        not in ("tool_start", "tool_finish", "agent_reasoning", "llm_usage")
+    ]
+
+    return {
+        "timeline": timeline,
+        "tool_cards": tool_cards,
+        "reasoning_entries": reasoning_entries,
+        "usage_entries": usage_entries,
+        "total_tokens": total_tokens,
+        "total_prompt_tokens": total_prompt,
+        "total_completion_tokens": total_completion,
+        "stats": stats,
+        "lifecycle_logs": lifecycle_logs,
+    }
+
+
 def _mask_value(key: str, value: Any) -> Any:
     """Return a masked placeholder if the key looks sensitive, otherwise the value."""
     if isinstance(value, str) and value and _SENSITIVE_ENV_PATTERNS.search(key):
@@ -269,10 +438,11 @@ def create_app(config: dict | None = None) -> FastAPI:
         job = app.state.store.get_job(job_run_id)
         logs = app.state.store.list_job_logs(job_run_id)
         digest = app.state.store.get_digest_for_job(job_run_id)
+        view = _build_job_view(logs)
         return render(
             request,
             "job_detail.html",
-            {"job": job, "logs": logs, "digest": digest},
+            {"job": job, "logs": logs, "digest": digest, "view": view},
         )
 
     @app.get("/digests", response_class=HTMLResponse)

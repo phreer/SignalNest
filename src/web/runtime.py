@@ -181,6 +181,36 @@ def _make_progress_callback(store: AppStateStore, job_run_id: int):
             )
             return
 
+        if event_type == "agent_reasoning":
+            text = str(event.get("text", ""))
+            if text:
+                store.add_job_log(
+                    job_run_id,
+                    level="INFO",
+                    component="agent",
+                    event_type="agent_reasoning",
+                    message=text[:120] + ("…" if len(text) > 120 else ""),
+                    extra={"step_no": event.get("step_no"), "text": text},
+                )
+            return
+
+        if event_type == "llm_usage":
+            total = event.get("total_tokens", 0)
+            store.add_job_log(
+                job_run_id,
+                level="INFO",
+                component="agent",
+                event_type="llm_usage",
+                message=f"LLM tokens: {total} total ({event.get('prompt_tokens', 0)} prompt + {event.get('completion_tokens', 0)} completion)",
+                extra={
+                    "step_no": event.get("step_no"),
+                    "prompt_tokens": event.get("prompt_tokens", 0),
+                    "completion_tokens": event.get("completion_tokens", 0),
+                    "total_tokens": total,
+                },
+            )
+            return
+
         if event_type == "turn_finished":
             store.add_job_log(
                 job_run_id,

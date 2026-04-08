@@ -1,52 +1,415 @@
 {% extends "base.html" %}
 {% block content %}
-{% if job %}
+{% if not job %}
+<div class="card"><p>Job not found.</p></div>
+{% else %}
+
+{# ── Inline styles for this page ───────────────────────────────────────────── #}
+<style>
+  /* Pipeline timeline */
+  .pipeline { display: flex; flex-wrap: wrap; gap: 4px; margin: 0 0 16px; align-items: center; }
+  .pipeline-stage {
+    display: flex; align-items: center; gap: 5px;
+    padding: 5px 10px; border-radius: 20px; font-size: 12px; font-weight: 600;
+    background: #f3f4f6; color: #9ca3af; border: 1px solid #e5e7eb;
+  }
+  .pipeline-stage.done { background: #d1fae5; color: #065f46; border-color: #a7f3d0; }
+  .pipeline-sep { color: #d1d5db; font-size: 14px; }
+
+  /* Job overview card */
+  .overview-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; }
+  .stat-box { background: #f8fafc; border-radius: 10px; padding: 10px 12px; text-align: center; }
+  .stat-val { font-size: 22px; font-weight: 700; color: #1d4ed8; line-height: 1.2; }
+  .stat-lbl { font-size: 11px; color: #6b7280; margin-top: 2px; }
+  .dispatch-ok  { color: #047857; }
+  .dispatch-dry { color: #b45309; }
+  .dispatch-no  { color: #6b7280; }
+
+  /* Tool call cards */
+  .tool-card {
+    border: 1px solid #e5e7eb; border-radius: 12px;
+    margin-bottom: 10px; overflow: hidden;
+  }
+  .tool-card-header {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 14px; cursor: pointer;
+    background: #f9fafb; border-bottom: 1px solid transparent;
+    user-select: none;
+  }
+  .tool-card-header:hover { background: #f3f4f6; }
+  .tool-card.open .tool-card-header { border-bottom-color: #e5e7eb; }
+  .tool-icon { font-size: 18px; }
+  .tool-label { font-weight: 700; font-size: 14px; flex: 1; }
+  .tool-step  { font-size: 11px; color: #9ca3af; }
+  .tool-ts    { font-size: 11px; color: #9ca3af; }
+  .tool-dur   { font-size: 12px; font-weight: 600; color: #6b7280; white-space: nowrap; }
+  .tool-badge {
+    font-size: 11px; font-weight: 700; padding: 2px 8px;
+    border-radius: 10px; white-space: nowrap;
+  }
+  .badge-ok   { background: #d1fae5; color: #065f46; }
+  .badge-fail { background: #fee2e2; color: #991b1b; }
+  .badge-pend { background: #fef3c7; color: #92400e; }
+  .tool-card-body { padding: 12px 14px; display: none; }
+  .tool-card.open .tool-card-body { display: block; }
+  .expand-arrow { font-size: 11px; color: #9ca3af; transition: transform .15s; }
+  .tool-card.open .expand-arrow { transform: rotate(90deg); }
+
+  /* Reasoning block */
+  .reasoning-block {
+    background: #fefce8; border-left: 3px solid #fbbf24; border-radius: 8px;
+    padding: 10px 12px; font-size: 13px; color: #78350f;
+    margin-bottom: 10px; white-space: pre-wrap; word-break: break-word;
+  }
+  .reasoning-label { font-size: 10px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .5px; color: #d97706; margin-bottom: 4px; }
+
+  /* Result fields */
+  .result-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+  .result-field { background: #f8fafc; border-radius: 6px; padding: 8px 10px; }
+  .result-key { font-size: 10px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .4px; color: #6b7280; margin-bottom: 2px; }
+  .result-val { font-size: 13px; color: #111827; word-break: break-word; }
+  .result-list { font-size: 12px; color: #374151; padding-left: 14px; margin: 4px 0 0; }
+  .error-box {
+    background: #fee2e2; border-radius: 6px; padding: 10px;
+    font-size: 13px; color: #991b1b; margin-top: 8px;
+    white-space: pre-wrap; word-break: break-word;
+  }
+  .args-section { margin-bottom: 10px; }
+  .args-label { font-size: 11px; font-weight: 600; color: #9ca3af;
+    text-transform: uppercase; letter-spacing: .4px; margin-bottom: 4px; }
+
+  /* Log filter pills */
+  .log-filter { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+  .filter-pill {
+    padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;
+    cursor: pointer; border: 1px solid #e5e7eb; background: #f9fafb; color: #6b7280;
+  }
+  .filter-pill.active { background: #1d4ed8; color: #fff; border-color: transparent; }
+
+  /* Token usage bar */
+  .token-bar { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #6b7280; flex-wrap: wrap; }
+  .token-seg { padding: 2px 8px; border-radius: 4px; font-weight: 600; }
+  .token-prompt     { background: #eff6ff; color: #1d4ed8; }
+  .token-completion { background: #f0fdf4; color: #047857; }
+  .token-total      { background: #f3f4f6; color: #374151; }
+
+  /* Live badge */
+  .live-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: #fee2e2; color: #991b1b; padding: 2px 8px;
+    border-radius: 10px; font-size: 11px; font-weight: 700; animation: pulse 1.5s infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
+
+  @media(max-width:600px){
+    .result-grid { grid-template-columns: 1fr; }
+    .overview-grid { grid-template-columns: repeat(3, 1fr); }
+  }
+</style>
+
+{# ── Top meta + timing cards ────────────────────────────────────────────────── #}
 <div class="grid cards">
   <div class="card">
-    <div class="section-title jobs">⚙️ Job #{{ job.id }}</div>
+    <div class="section-title jobs">⚙️ Job #{{ job.id }}
+      {% if job.status in ("running", "queued") %}
+      <span class="live-badge">● LIVE</span>
+      {% endif %}
+    </div>
     <p><span class="pill">{{ job.schedule_name }}</span></p>
-    <p>Status: <span class="status-{{ job.status }}">{{ job.status }}</span></p>
-    <p class="muted">{{ job.trigger_type }}{% if job.dry_run %} · dry-run{% endif %}</p>
-    <p>Current: {{ job.current_stage }} · {{ job.current_message }}</p>
+    <p>Status: <span class="status-{{ job.status }}">{{ job.status }}</span>
+      {% if job.dry_run %}<span class="pill" style="margin-left:6px">dry-run</span>{% endif %}
+    </p>
+    <p class="muted">{{ job.trigger_type }}</p>
+    <p class="muted" style="font-size:13px">{{ job.current_stage }} · {{ job.current_message }}</p>
     {% if job.error_message %}
     <p class="status-failed">{{ job.error_message }}</p>
     {% endif %}
   </div>
   <div class="card">
     <div class="section-title status">⏱ Timing</div>
-    <p>Started: {{ job.started_at or "-" }}</p>
-    <p>Ended: {{ job.ended_at or "-" }}</p>
+    <p>Started: {{ job.started_at or "—" }}</p>
+    <p>Ended: {{ job.ended_at or "—" }}</p>
     <p>Updated: {{ job.updated_at }}</p>
-    <p>Session: {% if job.session_id %}<code>{{ job.session_id }}</code>{% else %}-{% endif %}</p>
+    <p style="font-size:13px">Session: {% if job.session_id %}<code>{{ job.session_id[:16] }}…</code>{% else %}—{% endif %}</p>
     {% if digest %}
-    <p><a href="/digests/{{ digest.id }}">Open digest</a></p>
+    <p><a href="/digests/{{ digest.id }}">Open digest →</a></p>
+    {% endif %}
+    {% if view.total_tokens %}
+    <div class="token-bar" style="margin-top:8px">
+      <span>Tokens:</span>
+      <span class="token-seg token-prompt">↑{{ view.total_prompt_tokens }}</span>
+      <span class="token-seg token-completion">↓{{ view.total_completion_tokens }}</span>
+      <span class="token-seg token-total">= {{ view.total_tokens }}</span>
+    </div>
     {% endif %}
   </div>
 </div>
 
-<div class="card" style="margin-top: 16px;">
-  <div class="section-title digest">📜 Logs</div>
-  <table>
+{# ── Pipeline timeline ───────────────────────────────────────────────────────── #}
+{% if view.timeline %}
+<div class="card" style="margin-top:12px; padding:12px 16px;">
+  <div class="pipeline">
+    {% for stage in view.timeline %}
+    <span class="pipeline-stage {{ 'done' if stage.done else '' }}">{{ stage.icon }} {{ stage.label }}</span>
+    {% if not loop.last %}<span class="pipeline-sep">›</span>{% endif %}
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+{# ── Job overview stats ──────────────────────────────────────────────────────── #}
+{% if view.stats %}
+<div class="card" style="margin-top:12px;">
+  <div class="section-title news" style="margin-bottom:12px;">📊 Overview</div>
+  <div class="overview-grid">
+    {% if view.stats.collected is defined %}
+    <div class="stat-box">
+      <div class="stat-val">{{ view.stats.collected }}</div>
+      <div class="stat-lbl">Items collected</div>
+    </div>
+    {% endif %}
+    {% if view.stats.news_count is defined %}
+    <div class="stat-box">
+      <div class="stat-val">{{ view.stats.news_count }}</div>
+      <div class="stat-lbl">Selected for digest</div>
+    </div>
+    {% endif %}
+    {% if view.total_tokens %}
+    <div class="stat-box">
+      <div class="stat-val">{{ view.total_tokens }}</div>
+      <div class="stat-lbl">Total tokens</div>
+    </div>
+    {% endif %}
+    {% if view.stats.dispatched is defined %}
+    <div class="stat-box">
+      {% if view.stats.dry_run %}
+      <div class="stat-val dispatch-dry">DRY</div>
+      <div class="stat-lbl">Dry-run (not sent)</div>
+      {% elif view.stats.dispatched %}
+      <div class="stat-val dispatch-ok">✓</div>
+      <div class="stat-lbl">Dispatched</div>
+      {% else %}
+      <div class="stat-val dispatch-no">—</div>
+      <div class="stat-lbl">Not dispatched</div>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+  {% if view.stats.top_titles %}
+  <div style="margin-top:12px; font-size:13px; color:#374151;">
+    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:#9ca3af;margin-bottom:6px;">Top selected items</div>
+    {% for t in view.stats.top_titles[:5] %}
+    <div style="padding:3px 0;border-bottom:1px solid #f3f4f6;">{{ t }}</div>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+{% endif %}
+
+{# ── Tool call cards ─────────────────────────────────────────────────────────── #}
+{% if view.tool_cards %}
+<div class="card" style="margin-top:12px;">
+  <div class="section-title jobs" style="margin-bottom:12px;">🔧 Tool Calls ({{ view.tool_cards | length }})</div>
+
+  {% for card in view.tool_cards %}
+
+  {# Agent reasoning before this tool call #}
+  {% if card.reasoning %}
+  <div class="reasoning-block">
+    <div class="reasoning-label">🤔 Agent reasoning (before step {{ card.step }})</div>{{ card.reasoning }}
+  </div>
+  {% endif %}
+
+  <div class="tool-card" id="tool-card-{{ card.step }}">
+    <div class="tool-card-header" onclick="toggleCard('tool-card-{{ card.step }}')">
+      <span class="tool-icon">{{ card.icon }}</span>
+      <span class="tool-label">{{ card.label }}</span>
+      <span class="tool-step">Step {{ card.step }}</span>
+      {% if card.duration_ms is not none %}
+      <span class="tool-dur">{{ card.duration_ms }}ms</span>
+      {% endif %}
+      {% if card.ts %}
+      <span class="tool-ts">{{ card.ts[11:19] if card.ts|length > 10 else card.ts }}</span>
+      {% endif %}
+      {% if card.success is none %}
+      <span class="tool-badge badge-pend">running</span>
+      {% elif card.success %}
+      <span class="tool-badge badge-ok">✓ ok</span>
+      {% else %}
+      <span class="tool-badge badge-fail">✗ failed</span>
+      {% endif %}
+      <span class="expand-arrow">›</span>
+    </div>
+    <div class="tool-card-body">
+
+      {# Arguments #}
+      {% if card.arguments %}
+      <div class="args-section">
+        <div class="args-label">Arguments</div>
+        <div class="result-grid">
+          {% for k, v in card.arguments.items() %}
+          <div class="result-field">
+            <div class="result-key">{{ k }}</div>
+            <div class="result-val">
+              {% if v is iterable and v is not string %}
+                {{ v | join(", ") if v | length <= 5 else (v[:5] | join(", ") ~ " …+") }}
+              {% else %}{{ v }}{% endif %}
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      {# Error #}
+      {% if card.error %}
+      <div class="error-box">{{ card.error }}</div>
+      {% endif %}
+
+      {# Structured result display per tool type #}
+      {% if card.success and card.result %}
+        {% set r = card.result %}
+        {% set tn = card.tool_name %}
+
+        {% if tn in ("collect_github", "collect_rss", "collect_youtube") %}
+        <div class="result-grid">
+          <div class="result-field">
+            <div class="result-key">Source</div>
+            <div class="result-val">{{ r.get("source", "—") }}</div>
+          </div>
+          <div class="result-field">
+            <div class="result-key">Fetched</div>
+            <div class="result-val">{{ r.get("fetched_count", "—") }}</div>
+          </div>
+          <div class="result-field">
+            <div class="result-key">Total in state</div>
+            <div class="result-val">{{ r.get("raw_items_total", "—") }}</div>
+          </div>
+        </div>
+        {% if r.get("sample_titles") %}
+        <div style="margin-top:8px">
+          <div class="result-key" style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:#6b7280;margin-bottom:4px;">Sample titles</div>
+          <ul class="result-list">{% for t in r.get("sample_titles", []) %}<li>{{ t }}</li>{% endfor %}</ul>
+        </div>
+        {% endif %}
+
+        {% elif tn == "summarize_news" %}
+        <div class="result-grid">
+          <div class="result-field">
+            <div class="result-key">Selected</div>
+            <div class="result-val">{{ r.get("news_count", "—") }}</div>
+          </div>
+        </div>
+        {% if r.get("digest_summary") %}
+        <div class="summary-box" style="margin-top:8px; font-size:13px;">{{ r.get("digest_summary", "") }}</div>
+        {% endif %}
+        {% if r.get("top_titles") %}
+        <div style="margin-top:8px">
+          <div class="result-key" style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:#6b7280;margin-bottom:4px;">Top items</div>
+          <ul class="result-list">{% for t in r.get("top_titles", []) %}<li>{{ t }}</li>{% endfor %}</ul>
+        </div>
+        {% endif %}
+
+        {% elif tn == "read_today_schedule" %}
+        <div class="result-grid">
+          <div class="result-field"><div class="result-key">Date</div><div class="result-val">{{ r.get("date", "—") }}</div></div>
+          <div class="result-field"><div class="result-key">Entries</div><div class="result-val">{{ r.get("entry_count", "—") }}</div></div>
+        </div>
+
+        {% elif tn == "read_active_projects" %}
+        <div class="result-grid">
+          <div class="result-field"><div class="result-key">Date</div><div class="result-val">{{ r.get("date", "—") }}</div></div>
+          <div class="result-field"><div class="result-key">Projects</div><div class="result-val">{{ r.get("project_count", "—") }}</div></div>
+        </div>
+
+        {% elif tn == "build_digest_payload" %}
+        <div class="result-grid">
+          <div class="result-field"><div class="result-key">Schedule</div><div class="result-val">{{ r.get("schedule_name", "—") }}</div></div>
+          <div class="result-field"><div class="result-key">Content blocks</div><div class="result-val">{{ r.get("content_blocks", []) | join(", ") }}</div></div>
+          <div class="result-field"><div class="result-key">News items</div><div class="result-val">{{ r.get("news_items_count", "—") }}</div></div>
+          <div class="result-field"><div class="result-key">Schedule entries</div><div class="result-val">{{ r.get("schedule_entries_count", "—") }}</div></div>
+        </div>
+
+        {% elif tn == "dispatch_notifications" %}
+        <div class="result-grid">
+          <div class="result-field">
+            <div class="result-key">Result</div>
+            <div class="result-val">
+              {% if r.get("dry_run") %}
+              <span style="color:#b45309;font-weight:600;">Dry-run — not sent</span>
+              {% elif r.get("dispatched") %}
+              <span style="color:#047857;font-weight:600;">Dispatched ✓</span>
+              {% else %}
+              <span style="color:#6b7280;">Not dispatched</span>
+              {% endif %}
+            </div>
+          </div>
+          {% if r.get("reason") %}
+          <div class="result-field"><div class="result-key">Reason</div><div class="result-val">{{ r.get("reason") }}</div></div>
+          {% endif %}
+        </div>
+
+        {% else %}
+        {# Fallback: generic key-value grid for unknown tools #}
+        <div class="result-grid">
+          {% for k, v in r.items() if k not in ("sample_titles",) %}
+          <div class="result-field">
+            <div class="result-key">{{ k }}</div>
+            <div class="result-val">{{ v }}</div>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+
+      {% endif %}{# end card.success and result #}
+    </div>{# end tool-card-body #}
+  </div>{# end tool-card #}
+  {% endfor %}
+</div>
+{% endif %}
+
+{# ── Lifecycle / system logs ─────────────────────────────────────────────────── #}
+<div class="card" style="margin-top:12px;" id="log-section">
+  <div class="section-title digest" style="margin-bottom:10px;">
+    📜 System Logs ({{ view.lifecycle_logs | length }})
+  </div>
+
+  {# Filter pills #}
+  <div class="log-filter">
+    <span class="filter-pill active" data-level="ALL" onclick="filterLogs(this)">All</span>
+    <span class="filter-pill" data-level="INFO" onclick="filterLogs(this)">INFO</span>
+    <span class="filter-pill" data-level="WARNING" onclick="filterLogs(this)">WARNING</span>
+    <span class="filter-pill" data-level="ERROR" onclick="filterLogs(this)">ERROR</span>
+  </div>
+
+  <table id="log-table">
     <thead>
       <tr>
         <th>Time</th>
         <th>Level</th>
-        <th>Component</th>
         <th>Event</th>
         <th>Message</th>
       </tr>
     </thead>
     <tbody>
-      {% for log in logs %}
-      <tr>
-        <td>{{ log.ts }}</td>
-        <td>{{ log.level }}</td>
-        <td>{{ log.component }}</td>
-        <td>{{ log.event_type }}</td>
+      {% for log in view.lifecycle_logs %}
+      <tr data-level="{{ log.level }}">
+        <td style="white-space:nowrap;font-size:12px;">{{ log.ts[11:19] if log.ts|length > 10 else log.ts }}</td>
         <td>
-          {{ log.message }}
+          <span style="font-size:11px;font-weight:700;padding:1px 6px;border-radius:4px;
+            {% if log.level == 'ERROR' %}background:#fee2e2;color:#991b1b;
+            {% elif log.level == 'WARNING' %}background:#fef3c7;color:#92400e;
+            {% else %}background:#f0fdf4;color:#065f46;{% endif %}">
+            {{ log.level }}
+          </span>
+        </td>
+        <td style="font-size:12px;color:#6b7280;">{{ log.event_type }}</td>
+        <td>
+          <span style="font-size:13px;">{{ log.message }}</span>
           {% if log.extra %}
-          <div class="pre" style="margin-top: 8px;">{{ log.extra | tojson(indent=2) }}</div>
+          <div class="pre" style="margin-top:6px;font-size:12px;">{{ log.extra | tojson(indent=2) }}</div>
           {% endif %}
         </td>
       </tr>
@@ -54,7 +417,56 @@
     </tbody>
   </table>
 </div>
-{% else %}
-<div class="card"><p>Job not found.</p></div>
+
+{# ── Scripts ─────────────────────────────────────────────────────────────────── #}
+<script>
+// Toggle tool call card expand/collapse
+function toggleCard(id) {
+  document.getElementById(id).classList.toggle('open');
+}
+
+// Auto-open failed tool cards
+document.querySelectorAll('.tool-card').forEach(function(card) {
+  if (card.querySelector('.badge-fail')) card.classList.add('open');
+});
+
+// Log level filter
+function filterLogs(pill) {
+  document.querySelectorAll('.filter-pill').forEach(function(p) { p.classList.remove('active'); });
+  pill.classList.add('active');
+  var level = pill.dataset.level;
+  document.querySelectorAll('#log-table tbody tr').forEach(function(row) {
+    row.style.display = (level === 'ALL' || row.dataset.level === level) ? '' : 'none';
+  });
+}
+
+{% if job.status in ("running", "queued") %}
+// Auto-refresh for running jobs
+(function() {
+  var jobRunId = {{ job.id }};
+  var interval = setInterval(function() {
+    fetch('/api/jobs/' + jobRunId)
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        var job = data.job;
+        if (!job) return;
+        // Stop polling once terminal
+        if (job.status === 'succeeded' || job.status === 'failed') {
+          clearInterval(interval);
+          // Full page reload to show final state
+          window.location.reload();
+        } else {
+          // Update live progress message
+          var msg = (job.current_stage || '') + ' · ' + (job.current_message || '');
+          var el = document.querySelector('.status-' + job.status);
+          if (el) el.textContent = job.status;
+        }
+      })
+      .catch(function() {});
+  }, 4000);
+})();
 {% endif %}
+</script>
+
+{% endif %}{# end if job #}
 {% endblock %}
