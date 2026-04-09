@@ -76,13 +76,6 @@ class AppStateStore:
                 CREATE INDEX IF NOT EXISTS idx_job_runs_schedule
                     ON job_runs(schedule_name, created_at DESC);
 
-                CREATE INDEX IF NOT EXISTS idx_job_runs_lease
-                    ON job_runs(status, lease_expires_at DESC);
-
-                CREATE UNIQUE INDEX IF NOT EXISTS idx_job_runs_idempotency
-                    ON job_runs(idempotency_key)
-                    WHERE idempotency_key IS NOT NULL AND idempotency_key != '';
-
                 CREATE TABLE IF NOT EXISTS job_logs (
                     id          INTEGER PRIMARY KEY AUTOINCREMENT,
                     job_run_id  INTEGER NOT NULL,
@@ -170,6 +163,16 @@ class AppStateStore:
                 """
             )
             self._ensure_job_runs_columns(conn)
+            conn.executescript(
+                """
+                CREATE INDEX IF NOT EXISTS idx_job_runs_lease
+                    ON job_runs(status, lease_expires_at DESC);
+
+                CREATE UNIQUE INDEX IF NOT EXISTS idx_job_runs_idempotency
+                    ON job_runs(idempotency_key)
+                    WHERE idempotency_key IS NOT NULL AND idempotency_key != '';
+                """
+            )
             conn.commit()
         finally:
             conn.close()
