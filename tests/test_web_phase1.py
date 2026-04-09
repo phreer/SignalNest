@@ -177,6 +177,59 @@ class AppStateStoreTests(unittest.TestCase):
             self.assertEqual(len(store.list_job_logs(job_id)), 1)
             self.assertEqual(store.get_latest_digest()["summary_text"], "summary")
 
+    def test_stale_running_job_is_recovered_as_lost(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            config = _sample_config(tmp)
+            store = AppStateStore.from_config(config)
+            store.init_db()
+            job_id = store.create_job_run(
+                schedule_name="早间日报", trigger_type="manual", dry_run=True
+            )
+            store.mark_job_running(job_id, stage="boot", message="starting")
+
+            conn = store._connect()
+            try:
+                stale = (datetime.now(timezone.utc) - timedelta(minutes=5)).isoformat()
+                conn.execute(
+                    """
+                    UPDATE job_runs
+                    SET lease_expires_at=?, heartbeat_at=?, updated_at=?
+                    WHERE id=?
+                    """,
+                    (stale, stale, stale, job_id),
+                )
+                conn.commit()
+            finally:
+                conn.close()
+
+            job = store.get_job(job_id)
+            self.assertEqual(job["status"], "lost")
+            self.assertEqual(job["final_reason"], "worker_lost")
+            self.assertTrue(job["ended_at"])
+
+    def test_expired_running_job_does_not_block_schedule_guard(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            config = _sample_config(tmp)
+            store = AppStateStore.from_config(config)
+            store.init_db()
+            job_id = store.create_job_run(
+                schedule_name="早间日报", trigger_type="cron", dry_run=False
+            )
+            store.mark_job_running(job_id, stage="boot", message="starting")
+
+            conn = store._connect()
+            try:
+                stale = (datetime.now(timezone.utc) - timedelta(minutes=5)).isoformat()
+                conn.execute(
+                    "UPDATE job_runs SET lease_expires_at=?, updated_at=? WHERE id=?",
+                    (stale, stale, job_id),
+                )
+                conn.commit()
+            finally:
+                conn.close()
+
+            self.assertIsNone(store.get_running_job_for_schedule("早间日报"))
+
     def test_deep_summary_requires_existing_item(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             config = _sample_config(tmp)
@@ -207,6 +260,9 @@ class RuntimeTests(unittest.TestCase):
             store = AppStateStore.from_config(config)
             job = store.get_job(result["job_run_id"])
             self.assertEqual(job["status"], "succeeded")
+            self.assertTrue(job["worker_id"])
+            self.assertEqual(job["final_reason"], "completed")
+            self.assertEqual(job["lease_expires_at"], "")
             digest = store.get_digest_for_job(result["job_run_id"])
             self.assertIsNotNone(digest)
             self.assertEqual(digest["summary_text"], "digest summary")

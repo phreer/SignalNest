@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import threading
+import uuid
 from concurrent.futures import (
     Future,
     ThreadPoolExecutor,
@@ -21,6 +22,9 @@ from src.web.content import (
 from src.web.store import AppStateStore
 
 logger = logging.getLogger(__name__)
+
+_JOB_LEASE_SECONDS = 45
+_JOB_HEARTBEAT_INTERVAL_SECONDS = 10
 
 _DEFAULT_DEEP_SUMMARY_CONFIG = {
     "auto_enabled": False,
@@ -224,6 +228,47 @@ def _make_progress_callback(store: AppStateStore, job_run_id: int):
     return _callback
 
 
+class _JobHeartbeat:
+    def __init__(
+        self,
+        store: AppStateStore,
+        *,
+        job_run_id: int,
+        lease_seconds: int,
+        interval_seconds: int,
+    ) -> None:
+        self._store = store
+        self._job_run_id = job_run_id
+        self._lease_seconds = lease_seconds
+        self._interval_seconds = interval_seconds
+        self._stop = threading.Event()
+        self._thread = threading.Thread(
+            target=self._run,
+            name=f"job-heartbeat-{job_run_id}",
+            daemon=True,
+        )
+
+    def start(self) -> None:
+        self._thread.start()
+
+    def stop(self) -> None:
+        self._stop.set()
+        self._thread.join(timeout=self._interval_seconds + 1)
+
+    def _run(self) -> None:
+        while not self._stop.wait(self._interval_seconds):
+            try:
+                self._store.heartbeat_job_run(
+                    self._job_run_id, lease_seconds=self._lease_seconds
+                )
+            except Exception:
+                logger.warning(
+                    "failed to refresh job heartbeat",
+                    exc_info=True,
+                    extra={"job_run_id": self._job_run_id},
+                )
+
+
 def run_tracked_schedule(
     schedule_name: str,
     config: dict,
@@ -234,6 +279,7 @@ def run_tracked_schedule(
 ) -> dict[str, Any]:
     store = AppStateStore.from_config(config)
     store.init_db()
+    store.recover_stale_job_runs()
 
     effective_schedule = _resolve_schedule(schedule_name, config)
     effective_name = str(effective_schedule.get("name") or schedule_name or "(default)")
@@ -260,17 +306,31 @@ def run_tracked_schedule(
             dry_run=dry_run,
         )
 
-    store.mark_job_running(job_run_id, stage="boot", message="Preparing job execution")
+    worker_id = f"local-{uuid.uuid4().hex[:12]}"
+    store.mark_job_running(
+        job_run_id,
+        stage="boot",
+        message="Preparing job execution",
+        worker_id=worker_id,
+        lease_seconds=_JOB_LEASE_SECONDS,
+    )
     store.add_job_log(
         job_run_id,
         level="INFO",
         component="runtime",
         event_type="job_started",
         message=f"Started {trigger_type} run for {effective_name}",
-        extra={"dry_run": dry_run},
+        extra={"dry_run": dry_run, "worker_id": worker_id},
     )
 
     progress_callback = _make_progress_callback(store, job_run_id)
+    heartbeat = _JobHeartbeat(
+        store,
+        job_run_id=job_run_id,
+        lease_seconds=_JOB_LEASE_SECONDS,
+        interval_seconds=_JOB_HEARTBEAT_INTERVAL_SECONDS,
+    )
+    heartbeat.start()
 
     try:
         result = _execute_schedule(
@@ -323,7 +383,12 @@ def run_tracked_schedule(
                 extra={"count": len(indexed_items)},
             )
 
-        store.finish_job_run(job_run_id, status="succeeded", session_id=session_id)
+        store.finish_job_run(
+            job_run_id,
+            status="succeeded",
+            session_id=session_id,
+            final_reason="completed",
+        )
         store.add_job_log(
             job_run_id,
             level="INFO",
@@ -343,7 +408,12 @@ def run_tracked_schedule(
         return enriched
     except Exception as exc:
         logger.exception("tracked schedule run failed")
-        store.finish_job_run(job_run_id, status="failed", error_message=str(exc))
+        store.finish_job_run(
+            job_run_id,
+            status="failed",
+            error_message=str(exc),
+            final_reason="execution_failed",
+        )
         store.add_job_log(
             job_run_id,
             level="ERROR",
@@ -352,6 +422,8 @@ def run_tracked_schedule(
             message=str(exc),
         )
         raise
+    finally:
+        heartbeat.stop()
 
 
 def enqueue_manual_run(

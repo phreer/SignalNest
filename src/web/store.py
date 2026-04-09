@@ -56,6 +56,14 @@ class AppStateStore:
                     current_stage   TEXT,
                     current_message TEXT,
                     error_message   TEXT,
+                    worker_id       TEXT,
+                    claimed_at      TEXT,
+                    heartbeat_at    TEXT,
+                    lease_expires_at TEXT,
+                    scheduled_for   TEXT,
+                    attempt         INTEGER NOT NULL DEFAULT 1,
+                    idempotency_key TEXT,
+                    final_reason    TEXT,
                     started_at      TEXT,
                     ended_at        TEXT,
                     created_at      TEXT NOT NULL,
@@ -67,6 +75,13 @@ class AppStateStore:
 
                 CREATE INDEX IF NOT EXISTS idx_job_runs_schedule
                     ON job_runs(schedule_name, created_at DESC);
+
+                CREATE INDEX IF NOT EXISTS idx_job_runs_lease
+                    ON job_runs(status, lease_expires_at DESC);
+
+                CREATE UNIQUE INDEX IF NOT EXISTS idx_job_runs_idempotency
+                    ON job_runs(idempotency_key)
+                    WHERE idempotency_key IS NOT NULL AND idempotency_key != '';
 
                 CREATE TABLE IF NOT EXISTS job_logs (
                     id          INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -154,9 +169,27 @@ class AppStateStore:
                     ON deep_summaries(item_id, created_at DESC);
                 """
             )
+            self._ensure_job_runs_columns(conn)
             conn.commit()
         finally:
             conn.close()
+
+    def _ensure_job_runs_columns(self, conn: sqlite3.Connection) -> None:
+        migrations = [
+            "ALTER TABLE job_runs ADD COLUMN worker_id TEXT",
+            "ALTER TABLE job_runs ADD COLUMN claimed_at TEXT",
+            "ALTER TABLE job_runs ADD COLUMN heartbeat_at TEXT",
+            "ALTER TABLE job_runs ADD COLUMN lease_expires_at TEXT",
+            "ALTER TABLE job_runs ADD COLUMN scheduled_for TEXT",
+            "ALTER TABLE job_runs ADD COLUMN attempt INTEGER NOT NULL DEFAULT 1",
+            "ALTER TABLE job_runs ADD COLUMN idempotency_key TEXT",
+            "ALTER TABLE job_runs ADD COLUMN final_reason TEXT",
+        ]
+        for sql in migrations:
+            try:
+                conn.execute(sql)
+            except sqlite3.OperationalError:
+                pass
 
     def create_job_run(
         self,
@@ -165,6 +198,8 @@ class AppStateStore:
         trigger_type: str,
         dry_run: bool,
         status: str = "queued",
+        scheduled_for: str = "",
+        idempotency_key: str = "",
     ) -> int:
         now = _utcnow_iso()
         conn = self._connect()
@@ -172,27 +207,81 @@ class AppStateStore:
             cursor = conn.execute(
                 """
                 INSERT INTO job_runs (
-                    schedule_name, trigger_type, status, dry_run, created_at, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?)
+                    schedule_name, trigger_type, status, dry_run, scheduled_for,
+                    idempotency_key, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 """,
-                (schedule_name, trigger_type, status, 1 if dry_run else 0, now, now),
+                (
+                    schedule_name,
+                    trigger_type,
+                    status,
+                    1 if dry_run else 0,
+                    scheduled_for or None,
+                    idempotency_key or None,
+                    now,
+                    now,
+                ),
             )
             conn.commit()
             return int(cursor.lastrowid)
         finally:
             conn.close()
 
-    def mark_job_running(self, job_run_id: int, *, stage: str, message: str) -> None:
+    def mark_job_running(
+        self,
+        job_run_id: int,
+        *,
+        stage: str,
+        message: str,
+        worker_id: str = "",
+        lease_seconds: int = 45,
+    ) -> None:
         now = _utcnow_iso()
+        lease_expires_at = (
+            datetime.now(timezone.utc) + timedelta(seconds=max(int(lease_seconds), 1))
+        ).isoformat()
         conn = self._connect()
         try:
             conn.execute(
                 """
                 UPDATE job_runs
-                SET status='running', current_stage=?, current_message=?, started_at=COALESCE(started_at, ?), updated_at=?
+                SET status='running', current_stage=?, current_message=?,
+                    worker_id=COALESCE(NULLIF(?, ''), worker_id),
+                    claimed_at=COALESCE(claimed_at, ?),
+                    heartbeat_at=?, lease_expires_at=?,
+                    started_at=COALESCE(started_at, ?), updated_at=?
                 WHERE id=?
                 """,
-                (stage, message, now, now, job_run_id),
+                (
+                    stage,
+                    message,
+                    worker_id,
+                    now,
+                    now,
+                    lease_expires_at,
+                    now,
+                    now,
+                    job_run_id,
+                ),
+            )
+            conn.commit()
+        finally:
+            conn.close()
+
+    def heartbeat_job_run(self, job_run_id: int, *, lease_seconds: int = 45) -> None:
+        now = _utcnow_iso()
+        lease_expires_at = (
+            datetime.now(timezone.utc) + timedelta(seconds=max(int(lease_seconds), 1))
+        ).isoformat()
+        conn = self._connect()
+        try:
+            conn.execute(
+                """
+                UPDATE job_runs
+                SET heartbeat_at=?, lease_expires_at=?, updated_at=?
+                WHERE id=? AND status='running'
+                """,
+                (now, lease_expires_at, now, job_run_id),
             )
             conn.commit()
         finally:
@@ -233,6 +322,7 @@ class AppStateStore:
         status: str,
         error_message: str = "",
         session_id: str = "",
+        final_reason: str = "",
     ) -> None:
         now = _utcnow_iso()
         conn = self._connect()
@@ -241,12 +331,37 @@ class AppStateStore:
                 """
                 UPDATE job_runs
                 SET status=?, error_message=?, session_id=COALESCE(NULLIF(?, ''), session_id),
+                    lease_expires_at=NULL,
+                    final_reason=COALESCE(NULLIF(?, ''), final_reason),
                     ended_at=?, updated_at=?
                 WHERE id=?
                 """,
-                (status, error_message, session_id, now, now, job_run_id),
+                (status, error_message, session_id, final_reason, now, now, job_run_id),
             )
             conn.commit()
+        finally:
+            conn.close()
+
+    def recover_stale_job_runs(self) -> int:
+        now = _utcnow_iso()
+        conn = self._connect()
+        try:
+            cursor = conn.execute(
+                """
+                UPDATE job_runs
+                SET status='lost',
+                    error_message=COALESCE(NULLIF(error_message, ''), 'Worker heartbeat expired before the job finished.'),
+                    current_message=COALESCE(NULLIF(current_message, ''), 'Worker heartbeat expired'),
+                    lease_expires_at=NULL,
+                    final_reason=COALESCE(NULLIF(final_reason, ''), 'worker_lost'),
+                    ended_at=COALESCE(ended_at, ?),
+                    updated_at=?
+                WHERE status='running' AND (lease_expires_at IS NULL OR lease_expires_at <= ?)
+                """,
+                (now, now, now),
+            )
+            conn.commit()
+            return max(int(cursor.rowcount), 0)
         finally:
             conn.close()
 
@@ -351,6 +466,7 @@ class AppStateStore:
             conn.close()
 
     def get_job(self, job_run_id: int) -> dict[str, Any] | None:
+        self.recover_stale_job_runs()
         conn = self._connect()
         try:
             row = conn.execute(
@@ -368,6 +484,7 @@ class AppStateStore:
         trigger_type: str = "",
         schedule_name: str = "",
     ) -> list[dict[str, Any]]:
+        self.recover_stale_job_runs()
         clauses = []
         params: list[Any] = []
         if status:
@@ -392,10 +509,13 @@ class AppStateStore:
             conn.close()
 
     def get_latest_running_job(self) -> dict[str, Any] | None:
+        self.recover_stale_job_runs()
+        now = _utcnow_iso()
         conn = self._connect()
         try:
             row = conn.execute(
-                "SELECT * FROM job_runs WHERE status='running' ORDER BY started_at DESC, id DESC LIMIT 1"
+                "SELECT * FROM job_runs WHERE status='running' AND lease_expires_at > ? ORDER BY started_at DESC, id DESC LIMIT 1",
+                (now,),
             ).fetchone()
             return self._job_row_to_dict(row) if row else None
         finally:
@@ -403,15 +523,21 @@ class AppStateStore:
 
     def get_running_job_for_schedule(self, schedule_name: str) -> dict[str, Any] | None:
         """Return the most recent queued or running job for a given schedule, or None."""
+        self.recover_stale_job_runs()
+        now = _utcnow_iso()
         conn = self._connect()
         try:
             row = conn.execute(
                 """
                 SELECT * FROM job_runs
-                WHERE schedule_name=? AND status IN ('queued', 'running')
+                WHERE schedule_name=?
+                  AND (
+                    status='queued'
+                    OR (status='running' AND lease_expires_at > ?)
+                  )
                 ORDER BY created_at DESC, id DESC LIMIT 1
                 """,
-                (schedule_name,),
+                (schedule_name, now),
             ).fetchone()
             return self._job_row_to_dict(row) if row else None
         finally:
@@ -780,6 +906,14 @@ class AppStateStore:
             "current_stage": row["current_stage"] or "",
             "current_message": row["current_message"] or "",
             "error_message": row["error_message"] or "",
+            "worker_id": row["worker_id"] or "",
+            "claimed_at": row["claimed_at"] or "",
+            "heartbeat_at": row["heartbeat_at"] or "",
+            "lease_expires_at": row["lease_expires_at"] or "",
+            "scheduled_for": row["scheduled_for"] or "",
+            "attempt": int(row["attempt"] or 1),
+            "idempotency_key": row["idempotency_key"] or "",
+            "final_reason": row["final_reason"] or "",
             "started_at": row["started_at"] or "",
             "ended_at": row["ended_at"] or "",
             "created_at": row["created_at"],

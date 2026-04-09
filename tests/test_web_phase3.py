@@ -162,12 +162,13 @@ class ReentrancyTests(unittest.TestCase):
             store = AppStateStore.from_config(config)
             store.init_db()
             # Pre-seed an active job
-            store.create_job_run(
+            job_id = store.create_job_run(
                 schedule_name="早间日报",
                 trigger_type="cron",
                 dry_run=False,
-                status="running",
+                status="queued",
             )
+            store.mark_job_running(job_id, stage="boot", message="starting")
 
             # job_run_id=None triggers the cron re-entrancy guard
             result = run_tracked_schedule(
@@ -429,6 +430,35 @@ class ConfigApiTests(unittest.TestCase):
             resp = client.get("/config")
             self.assertEqual(resp.status_code, 200)
             self.assertIn(b"Config", resp.content)
+
+
+class LeaseAwareStatusTests(unittest.TestCase):
+    def test_status_api_ignores_stale_running_job(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            config = _sample_config(tmp)
+            store = AppStateStore.from_config(config)
+            store.init_db()
+            job_id = store.create_job_run(
+                schedule_name="早间日报", trigger_type="cron", dry_run=False
+            )
+            store.mark_job_running(job_id, stage="boot", message="starting")
+
+            conn = sqlite3.connect(store.db_path)
+            try:
+                stale = "2000-01-01T00:00:00+00:00"
+                conn.execute(
+                    "UPDATE job_runs SET lease_expires_at=?, heartbeat_at=?, updated_at=? WHERE id=?",
+                    (stale, stale, stale, job_id),
+                )
+                conn.commit()
+            finally:
+                conn.close()
+
+            app = create_app(copy.deepcopy(config))
+            client = TestClient(app)
+            resp = client.get("/api/status")
+            self.assertEqual(resp.status_code, 200)
+            self.assertIsNone(resp.json()["running_job"])
 
 
 if __name__ == "__main__":
