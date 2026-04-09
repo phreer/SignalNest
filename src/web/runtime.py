@@ -381,8 +381,26 @@ def run_tracked_schedule(
             indexed_items = build_indexed_items(
                 raw_items=raw_items, news_items=news_items
             )
-            store.replace_items_for_job(
-                job_run_id=job_run_id, digest_id=digest_id, items=indexed_items
+            # Upsert all collected items into the persistent raw_items table
+            raw_ids = store.upsert_raw_items(indexed_items)
+
+            # Build per-run AI annotations and store them
+            annotations = []
+            for item, raw_id in zip(indexed_items, raw_ids):
+                if raw_id:
+                    annotations.append(
+                        {
+                            "raw_item_id": raw_id,
+                            "selected_for_digest": item.get(
+                                "selected_for_digest", False
+                            ),
+                            "ai_score": item.get("ai_score"),
+                            "ai_summary": item.get("ai_summary", ""),
+                            "ai_reason": item.get("ai_reason", ""),
+                        }
+                    )
+            store.replace_annotations_for_job(
+                job_run_id=job_run_id, digest_id=digest_id, annotations=annotations
             )
             store.add_job_log(
                 job_run_id,

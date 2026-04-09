@@ -21,6 +21,14 @@ def _sqlite_datetime_range_expr(column: str) -> str:
     return f"COALESCE(datetime({column}), datetime(collected_at))"
 
 
+def _make_dedup_key(source: str, url: str, title: str = "") -> str:
+    s = source.strip().lower()
+    u = url.strip().lower()
+    if u:
+        return f"{s}:{u}"
+    return f"{s}:{title.strip().lower()}"
+
+
 class AppStateStore:
     def __init__(self, db_path: Path):
         self.db_path = Path(db_path)
@@ -112,33 +120,49 @@ class AppStateStore:
                 CREATE INDEX IF NOT EXISTS idx_digests_schedule_time
                     ON digests(schedule_name, digest_datetime DESC, created_at DESC);
 
-                CREATE TABLE IF NOT EXISTS collected_items (
+                CREATE TABLE IF NOT EXISTS raw_items (
+                    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+                    source          TEXT NOT NULL,
+                    url             TEXT NOT NULL,
+                    title           TEXT NOT NULL,
+                    dedup_key       TEXT NOT NULL,
+                    external_id     TEXT,
+                    author          TEXT,
+                    feed_title      TEXT,
+                    language        TEXT,
+                    published_at    TEXT,
+                    first_seen_at   TEXT NOT NULL,
+                    last_seen_at    TEXT NOT NULL,
+                    seen_count      INTEGER NOT NULL DEFAULT 1,
+                    raw_json        TEXT NOT NULL
+                );
+
+                CREATE UNIQUE INDEX IF NOT EXISTS idx_raw_items_dedup
+                    ON raw_items(dedup_key);
+
+                CREATE INDEX IF NOT EXISTS idx_raw_items_source_time
+                    ON raw_items(source, published_at DESC, id DESC);
+
+                CREATE TABLE IF NOT EXISTS item_annotations (
                     id                  INTEGER PRIMARY KEY AUTOINCREMENT,
-                    job_run_id          INTEGER,
+                    raw_item_id         INTEGER NOT NULL,
+                    job_run_id          INTEGER NOT NULL,
                     digest_id           INTEGER,
-                    source              TEXT NOT NULL,
-                    external_id         TEXT,
-                    title               TEXT NOT NULL,
-                    url                 TEXT NOT NULL,
-                    author              TEXT,
-                    feed_title          TEXT,
-                    language            TEXT,
-                    published_at        TEXT,
-                    collected_at        TEXT NOT NULL,
                     selected_for_digest INTEGER NOT NULL DEFAULT 0,
                     ai_score            INTEGER,
                     ai_summary          TEXT,
                     ai_reason           TEXT,
-                    raw_json            TEXT NOT NULL,
+                    created_at          TEXT NOT NULL,
+                    FOREIGN KEY(raw_item_id) REFERENCES raw_items(id),
                     FOREIGN KEY(job_run_id) REFERENCES job_runs(id),
                     FOREIGN KEY(digest_id) REFERENCES digests(id)
                 );
 
-                CREATE INDEX IF NOT EXISTS idx_collected_items_source_time
-                    ON collected_items(source, collected_at DESC, id DESC);
+                CREATE INDEX IF NOT EXISTS idx_item_annotations_raw
+                    ON item_annotations(raw_item_id, job_run_id);
 
-                CREATE INDEX IF NOT EXISTS idx_collected_items_selected
-                    ON collected_items(selected_for_digest, collected_at DESC);
+                CREATE INDEX IF NOT EXISTS idx_item_annotations_job
+                    ON item_annotations(job_run_id);
 
                 CREATE TABLE IF NOT EXISTS deep_summaries (
                     id                       INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -154,7 +178,7 @@ class AppStateStore:
                     error_message            TEXT,
                     created_at               TEXT NOT NULL,
                     updated_at               TEXT NOT NULL,
-                    FOREIGN KEY(item_id) REFERENCES collected_items(id),
+                    FOREIGN KEY(item_id) REFERENCES raw_items(id),
                     FOREIGN KEY(job_run_id) REFERENCES job_runs(id)
                 );
 
@@ -163,6 +187,7 @@ class AppStateStore:
                 """
             )
             self._ensure_job_runs_columns(conn)
+            self._migrate_collected_items_to_raw(conn)
             conn.executescript(
                 """
                 CREATE INDEX IF NOT EXISTS idx_job_runs_lease
@@ -193,6 +218,110 @@ class AppStateStore:
                 conn.execute(sql)
             except sqlite3.OperationalError:
                 pass
+
+    def _migrate_collected_items_to_raw(self, conn: sqlite3.Connection) -> None:
+        """One-time migration: move collected_items data into raw_items + item_annotations.
+
+        This is idempotent: it checks whether collected_items exists and has rows
+        that haven't been migrated yet. After migration the old table is renamed to
+        _collected_items_backup and deep_summaries.item_id is updated to point at
+        the new raw_items rows.
+        """
+        # Check if collected_items still exists (migration not yet done)
+        row = conn.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='collected_items'"
+        ).fetchone()
+        if row is None:
+            return  # already migrated
+
+        now = _utcnow_iso()
+
+        # Migrate raw_items: one row per unique dedup_key, oldest first_seen_at wins
+        conn.execute(
+            """
+            INSERT OR IGNORE INTO raw_items (
+                source, url, title, dedup_key, external_id, author, feed_title,
+                language, published_at, first_seen_at, last_seen_at, seen_count, raw_json
+            )
+            SELECT
+                source, url, title,
+                lower(source) || ':' || lower(url) AS dedup_key,
+                external_id, author, feed_title, language, published_at,
+                MIN(collected_at) AS first_seen_at,
+                MAX(collected_at) AS last_seen_at,
+                COUNT(*) AS seen_count,
+                raw_json
+            FROM collected_items
+            GROUP BY lower(source) || ':' || lower(url)
+            """
+        )
+
+        # Migrate item_annotations: one row per collected_items row
+        conn.execute(
+            """
+            INSERT INTO item_annotations (
+                raw_item_id, job_run_id, digest_id,
+                selected_for_digest, ai_score, ai_summary, ai_reason, created_at
+            )
+            SELECT
+                r.id, c.job_run_id, c.digest_id,
+                c.selected_for_digest, c.ai_score, c.ai_summary, c.ai_reason, c.collected_at
+            FROM collected_items c
+            JOIN raw_items r
+              ON r.dedup_key = lower(c.source) || ':' || lower(c.url)
+            WHERE NOT EXISTS (
+                SELECT 1 FROM item_annotations ia
+                WHERE ia.raw_item_id = r.id AND ia.job_run_id = c.job_run_id
+            )
+            """
+        )
+
+        # Migrate deep_summaries.item_id: old collected_items.id → new raw_items.id
+        # We rebuild deep_summaries into a new table because SQLite can't ALTER FK.
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS deep_summaries_new (
+                id                       INTEGER PRIMARY KEY AUTOINCREMENT,
+                item_id                  INTEGER NOT NULL,
+                job_run_id               INTEGER,
+                trigger_type             TEXT NOT NULL,
+                status                   TEXT NOT NULL,
+                source_fetch_status      TEXT,
+                source_content           TEXT,
+                source_content_meta_json TEXT,
+                deep_summary             TEXT,
+                model                    TEXT,
+                error_message            TEXT,
+                created_at               TEXT NOT NULL,
+                updated_at               TEXT NOT NULL,
+                FOREIGN KEY(item_id) REFERENCES raw_items(id),
+                FOREIGN KEY(job_run_id) REFERENCES job_runs(id)
+            )
+            """
+        )
+        conn.execute(
+            """
+            INSERT INTO deep_summaries_new
+            SELECT
+                ds.id,
+                COALESCE(r.id, ds.item_id),
+                ds.job_run_id, ds.trigger_type, ds.status,
+                ds.source_fetch_status, ds.source_content, ds.source_content_meta_json,
+                ds.deep_summary, ds.model, ds.error_message,
+                ds.created_at, ds.updated_at
+            FROM deep_summaries ds
+            LEFT JOIN collected_items c ON c.id = ds.item_id
+            LEFT JOIN raw_items r ON r.dedup_key = lower(c.source) || ':' || lower(c.url)
+            """
+        )
+        conn.execute("DROP TABLE deep_summaries")
+        conn.execute("ALTER TABLE deep_summaries_new RENAME TO deep_summaries")
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_deep_summaries_item ON deep_summaries(item_id, created_at DESC)"
+        )
+
+        # Backup old table
+        conn.execute("ALTER TABLE collected_items RENAME TO _collected_items_backup")
 
     def create_job_run(
         self,
@@ -651,23 +780,32 @@ class AppStateStore:
         and no existing succeeded deep_summary record for the same item.
         """
         placeholders = ",".join("?" * len(exclude_sources)) if exclude_sources else None
-        exclude_clause = (
-            f"AND ci.source NOT IN ({placeholders})" if placeholders else ""
-        )
+        exclude_clause = f"AND r.source NOT IN ({placeholders})" if placeholders else ""
         conn = self._connect()
         try:
             rows = conn.execute(
                 f"""
-                SELECT ci.* FROM collected_items ci
-                WHERE ci.job_run_id = ?
-                  AND ci.selected_for_digest = 1
-                  AND ci.ai_score >= ?
+                SELECT
+                    r.*,
+                    ia.id         AS ann_id,
+                    ia.job_run_id AS ann_job_run_id,
+                    ia.digest_id  AS ann_digest_id,
+                    ia.selected_for_digest,
+                    ia.ai_score,
+                    ia.ai_summary,
+                    ia.ai_reason,
+                    ia.created_at AS ann_created_at
+                FROM item_annotations ia
+                JOIN raw_items r ON r.id = ia.raw_item_id
+                WHERE ia.job_run_id = ?
+                  AND ia.selected_for_digest = 1
+                  AND ia.ai_score >= ?
                   {exclude_clause}
                   AND NOT EXISTS (
                       SELECT 1 FROM deep_summaries ds
-                      WHERE ds.item_id = ci.id AND ds.status = 'succeeded'
+                      WHERE ds.item_id = r.id AND ds.status = 'succeeded'
                   )
-                ORDER BY ci.ai_score DESC, ci.id ASC
+                ORDER BY ia.ai_score DESC, r.id ASC
                 LIMIT ?
                 """,
                 (
@@ -677,7 +815,7 @@ class AppStateStore:
                     limit,
                 ),
             ).fetchall()
-            return [self._item_row_to_dict(row) for row in rows]
+            return [self._raw_item_row_to_dict(row) for row in rows]
         finally:
             conn.close()
 
@@ -755,6 +893,108 @@ class AppStateStore:
         finally:
             conn.close()
 
+    def upsert_raw_items(self, items: list[dict[str, Any]]) -> list[int]:
+        """Insert or update raw_items by dedup_key. Returns list of raw_item ids in input order."""
+        now = _utcnow_iso()
+        conn = self._connect()
+        ids: list[int] = []
+        try:
+            for item in items:
+                source = str(item.get("source", "unknown")).strip().lower()
+                url = str(item.get("url", "")).strip()
+                title = str(item.get("title", "")).strip()
+                dedup_key = _make_dedup_key(source, url, title)
+                raw_json = json.dumps(
+                    item.get("raw", item), ensure_ascii=False, default=_json_default
+                )
+                conn.execute(
+                    """
+                    INSERT INTO raw_items (
+                        source, url, title, dedup_key, external_id, author, feed_title,
+                        language, published_at, first_seen_at, last_seen_at, seen_count, raw_json
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)
+                    ON CONFLICT(dedup_key) DO UPDATE SET
+                        last_seen_at = excluded.last_seen_at,
+                        seen_count   = seen_count + 1,
+                        raw_json     = excluded.raw_json
+                    """,
+                    (
+                        source,
+                        url,
+                        title,
+                        dedup_key,
+                        item.get("external_id", "") or None,
+                        item.get("author", "") or None,
+                        item.get("feed_title", "") or None,
+                        item.get("language", "") or None,
+                        item.get("published_at", "") or None,
+                        now,
+                        now,
+                        raw_json,
+                    ),
+                )
+                row = conn.execute(
+                    "SELECT id FROM raw_items WHERE dedup_key=?", (dedup_key,)
+                ).fetchone()
+                ids.append(int(row["id"]) if row else 0)
+            conn.commit()
+        finally:
+            conn.close()
+        return ids
+
+    def replace_annotations_for_job(
+        self,
+        *,
+        job_run_id: int,
+        digest_id: int | None,
+        annotations: list[dict[str, Any]],
+    ) -> None:
+        """Store per-run AI annotations. Replaces any existing annotations for this job_run_id."""
+        now = _utcnow_iso()
+        conn = self._connect()
+        try:
+            conn.execute(
+                "DELETE FROM item_annotations WHERE job_run_id=?", (job_run_id,)
+            )
+            for ann in annotations:
+                conn.execute(
+                    """
+                    INSERT INTO item_annotations (
+                        raw_item_id, job_run_id, digest_id,
+                        selected_for_digest, ai_score, ai_summary, ai_reason, created_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        ann["raw_item_id"],
+                        job_run_id,
+                        digest_id,
+                        1 if ann.get("selected_for_digest") else 0,
+                        ann.get("ai_score"),
+                        ann.get("ai_summary", "") or None,
+                        ann.get("ai_reason", "") or None,
+                        now,
+                    ),
+                )
+            conn.commit()
+        finally:
+            conn.close()
+
+    def get_annotated_dedup_keys(self) -> set[str]:
+        """Return dedup_keys for all raw_items that have at least one AI annotation (ai_score IS NOT NULL)."""
+        conn = self._connect()
+        try:
+            rows = conn.execute(
+                """
+                SELECT DISTINCT r.dedup_key
+                FROM raw_items r
+                JOIN item_annotations ia ON ia.raw_item_id = r.id
+                WHERE ia.ai_score IS NOT NULL
+                """
+            ).fetchall()
+            return {row["dedup_key"] for row in rows}
+        finally:
+            conn.close()
+
     def replace_items_for_job(
         self,
         *,
@@ -762,47 +1002,26 @@ class AppStateStore:
         digest_id: int | None,
         items: list[dict[str, Any]],
     ) -> None:
-        collected_at = _utcnow_iso()
-        conn = self._connect()
-        try:
-            conn.execute(
-                "DELETE FROM collected_items WHERE job_run_id=?", (job_run_id,)
-            )
-            for item in items:
-                conn.execute(
-                    """
-                    INSERT INTO collected_items (
-                        job_run_id, digest_id, source, external_id, title, url, author, feed_title,
-                        language, published_at, collected_at, selected_for_digest, ai_score,
-                        ai_summary, ai_reason, raw_json
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    """,
-                    (
-                        job_run_id,
-                        digest_id,
-                        item.get("source", "unknown"),
-                        item.get("external_id", "") or None,
-                        item.get("title", ""),
-                        item.get("url", ""),
-                        item.get("author", "") or None,
-                        item.get("feed_title", "") or None,
-                        item.get("language", "") or None,
-                        item.get("published_at", "") or None,
-                        collected_at,
-                        1 if item.get("selected_for_digest") else 0,
-                        item.get("ai_score"),
-                        item.get("ai_summary", "") or None,
-                        item.get("ai_reason", "") or None,
-                        json.dumps(
-                            item.get("raw", item),
-                            ensure_ascii=False,
-                            default=_json_default,
-                        ),
-                    ),
+        """Compatibility shim: upserts raw_items and replaces annotations for this job run.
+
+        Callers (tests, older code paths) can keep using this signature unchanged.
+        """
+        raw_ids = self.upsert_raw_items(items)
+        annotations = []
+        for item, raw_id in zip(items, raw_ids):
+            if raw_id:
+                annotations.append(
+                    {
+                        "raw_item_id": raw_id,
+                        "selected_for_digest": item.get("selected_for_digest", False),
+                        "ai_score": item.get("ai_score"),
+                        "ai_summary": item.get("ai_summary", ""),
+                        "ai_reason": item.get("ai_reason", ""),
+                    }
                 )
-            conn.commit()
-        finally:
-            conn.close()
+        self.replace_annotations_for_job(
+            job_run_id=job_run_id, digest_id=digest_id, annotations=annotations
+        )
 
     def list_items(
         self,
@@ -813,18 +1032,22 @@ class AppStateStore:
         time_range: str = "",
         selected_only: bool = False,
     ) -> list[dict[str, Any]]:
+        """List raw_items joined with their most recent annotation."""
         clauses: list[str] = []
         params: list[Any] = []
-        time_expr = _sqlite_datetime_range_expr("published_at")
+        # Time expression falls back to first_seen_at when published_at is missing
+        time_expr = "COALESCE(datetime(r.published_at), datetime(r.first_seen_at))"
         if keyword:
             keyword_like = f"%{keyword}%"
-            clauses.append("(title LIKE ? OR ai_summary LIKE ? OR feed_title LIKE ?)")
+            clauses.append(
+                "(r.title LIKE ? OR ia.ai_summary LIKE ? OR r.feed_title LIKE ?)"
+            )
             params.extend([keyword_like, keyword_like, keyword_like])
         if source:
-            clauses.append("source=?")
+            clauses.append("r.source=?")
             params.append(source)
         if selected_only:
-            clauses.append("selected_for_digest=1")
+            clauses.append("ia.selected_for_digest=1")
         if time_range in {"1d", "7d", "30d"}:
             days = int(time_range[:-1])
             cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).replace(
@@ -838,23 +1061,44 @@ class AppStateStore:
         try:
             rows = conn.execute(
                 f"""
-                SELECT * FROM collected_items
+                SELECT
+                    r.*,
+                    ia.id         AS ann_id,
+                    ia.job_run_id AS ann_job_run_id,
+                    ia.digest_id  AS ann_digest_id,
+                    ia.selected_for_digest,
+                    ia.ai_score,
+                    ia.ai_summary,
+                    ia.ai_reason,
+                    ia.created_at AS ann_created_at
+                FROM raw_items r
+                LEFT JOIN item_annotations ia ON ia.id = (
+                    SELECT id FROM item_annotations
+                    WHERE raw_item_id = r.id
+                    ORDER BY created_at DESC, id DESC
+                    LIMIT 1
+                )
                 {where_sql}
-                ORDER BY {time_expr} DESC, id DESC
+                ORDER BY {time_expr} DESC, r.id DESC
                 LIMIT ?
                 """,
                 (*params, limit),
             ).fetchall()
-            return [self._item_row_to_dict(row) for row in rows]
+            return [self._raw_item_row_to_dict(row) for row in rows]
         finally:
             conn.close()
 
     def get_url_to_item_id_map(self, job_run_id: int) -> dict[str, int]:
-        """Return {url: item_id} for all collected items in a job run."""
+        """Return {url: raw_item_id} for all items annotated in a given job run."""
         conn = self._connect()
         try:
             rows = conn.execute(
-                "SELECT id, url FROM collected_items WHERE job_run_id=?",
+                """
+                SELECT r.id, r.url
+                FROM raw_items r
+                JOIN item_annotations ia ON ia.raw_item_id = r.id
+                WHERE ia.job_run_id=?
+                """,
                 (job_run_id,),
             ).fetchall()
             return {row["url"]: int(row["id"]) for row in rows if row["url"]}
@@ -862,12 +1106,33 @@ class AppStateStore:
             conn.close()
 
     def get_item(self, item_id: int) -> dict[str, Any] | None:
+        """Fetch a raw_item with its latest annotation by raw_items.id."""
         conn = self._connect()
         try:
             row = conn.execute(
-                "SELECT * FROM collected_items WHERE id=?", (item_id,)
+                """
+                SELECT
+                    r.*,
+                    ia.id         AS ann_id,
+                    ia.job_run_id AS ann_job_run_id,
+                    ia.digest_id  AS ann_digest_id,
+                    ia.selected_for_digest,
+                    ia.ai_score,
+                    ia.ai_summary,
+                    ia.ai_reason,
+                    ia.created_at AS ann_created_at
+                FROM raw_items r
+                LEFT JOIN item_annotations ia ON ia.id = (
+                    SELECT id FROM item_annotations
+                    WHERE raw_item_id = r.id
+                    ORDER BY created_at DESC, id DESC
+                    LIMIT 1
+                )
+                WHERE r.id=?
+                """,
+                (item_id,),
             ).fetchone()
-            return self._item_row_to_dict(row) if row else None
+            return self._raw_item_row_to_dict(row) if row else None
         finally:
             conn.close()
 
@@ -1057,20 +1322,32 @@ class AppStateStore:
             "updated_at": row["updated_at"],
         }
 
-    def _item_row_to_dict(self, row: sqlite3.Row) -> dict[str, Any]:
+    def _raw_item_row_to_dict(self, row: sqlite3.Row) -> dict[str, Any]:
+        """Convert a raw_items row (optionally joined with item_annotations) to dict.
+
+        The output shape is kept compatible with the old _item_row_to_dict so that
+        templates and callers don't need changes.
+        """
         raw: dict[str, Any] | None = None
         try:
             raw = json.loads(row["raw_json"])
-        except json.JSONDecodeError:
+        except (json.JSONDecodeError, IndexError):
             raw = None
+
+        # Safely read annotation columns that may not be present in every query
+        def _col(name: str, default: Any = None) -> Any:
+            try:
+                return row[name]
+            except IndexError:
+                return default
+
+        job_run_id = _col("ann_job_run_id") or _col("job_run_id")
+        digest_id = _col("ann_digest_id") or _col("digest_id")
+
         return {
             "id": int(row["id"]),
-            "job_run_id": int(row["job_run_id"])
-            if row["job_run_id"] is not None
-            else None,
-            "digest_id": int(row["digest_id"])
-            if row["digest_id"] is not None
-            else None,
+            "job_run_id": int(job_run_id) if job_run_id is not None else None,
+            "digest_id": int(digest_id) if digest_id is not None else None,
             "source": row["source"],
             "external_id": row["external_id"] or "",
             "title": row["title"],
@@ -1079,13 +1356,17 @@ class AppStateStore:
             "feed_title": row["feed_title"] or "",
             "language": row["language"] or "",
             "published_at": row["published_at"] or "",
-            "collected_at": row["collected_at"],
-            "selected_for_digest": bool(row["selected_for_digest"]),
-            "ai_score": row["ai_score"],
-            "ai_summary": row["ai_summary"] or "",
-            "ai_reason": row["ai_reason"] or "",
+            # Expose first_seen_at as collected_at for template compatibility
+            "collected_at": row["first_seen_at"],
+            "selected_for_digest": bool(_col("selected_for_digest") or 0),
+            "ai_score": _col("ai_score"),
+            "ai_summary": _col("ai_summary") or "",
+            "ai_reason": _col("ai_reason") or "",
             "raw": raw,
         }
+
+    # Keep old name as alias so any remaining callers continue to work
+    _item_row_to_dict = _raw_item_row_to_dict
 
     def _deep_summary_row_to_dict(self, row: sqlite3.Row) -> dict[str, Any]:
         meta: dict[str, Any] | None = None

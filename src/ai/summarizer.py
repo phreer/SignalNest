@@ -52,6 +52,7 @@ def summarize_items(
     max_output: Optional[int] = None,
     focus: str = "",
     schedule_name: str = "",
+    already_annotated_keys: set[str] | None = None,
 ) -> list[dict]:
     """
     两阶段处理：
@@ -160,6 +161,21 @@ def summarize_items(
             f"  新闻筛选完成: final_count=0 effective_cap={effective_max_output}"
         )
         return []
+
+    # ── 阶段 A2：跳过已有 AI 标注的 items ──────────────────────────────────
+    if already_annotated_keys:
+        pre_count = len(items_after_history)
+        items_after_history = [
+            item
+            for item in items_after_history
+            if item_key(item) not in already_annotated_keys
+        ]
+        skipped = pre_count - len(items_after_history)
+        if skipped:
+            logger.info(f"  skipped_already_annotated={skipped}")
+        if not items_after_history:
+            logger.info(f"  新闻筛选完成: final_count=0 (all items already annotated)")
+            return []
 
     # ── 阶段 1：标题批量筛选 ──────────────────────────────────────────────────
     max_keep = min(effective_max_output * 2, len(items_after_history))
