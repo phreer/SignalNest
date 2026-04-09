@@ -724,7 +724,7 @@ class AppStateStore:
         conn = self._connect()
         try:
             rows = conn.execute(
-                f"SELECT * FROM job_runs {where_sql} ORDER BY created_at DESC LIMIT ?",
+                f"SELECT * FROM job_runs {where_sql} ORDER BY COALESCE(updated_at, created_at) DESC, id DESC LIMIT ?",
                 (*params, limit),
             ).fetchall()
             return [self._job_row_to_dict(row) for row in rows]
@@ -836,7 +836,7 @@ class AppStateStore:
         conn = self._connect()
         try:
             row = conn.execute(
-                "SELECT * FROM digests ORDER BY COALESCE(digest_datetime, created_at) DESC, id DESC LIMIT 1"
+                "SELECT * FROM digests ORDER BY created_at DESC, id DESC LIMIT 1"
             ).fetchone()
             return self._digest_row_to_dict(row) if row else None
         finally:
