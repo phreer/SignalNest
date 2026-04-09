@@ -395,7 +395,7 @@ class ApiTests(unittest.TestCase):
             self.assertEqual(status_resp.status_code, 200)
             self.assertIn("next_runs", status_resp.json())
 
-            with patch("src.web.app.enqueue_manual_run", return_value=(123, None)):
+            with patch("src.web.app.enqueue_manual_run", return_value=123):
                 run_resp = client.post("/api/schedules/早间日报/run?dry_run=true")
             self.assertEqual(run_resp.status_code, 200)
             self.assertEqual(run_resp.json()["job_run_id"], 123)

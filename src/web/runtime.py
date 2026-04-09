@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import logging
+import os
 import threading
+import time
 import uuid
 from concurrent.futures import (
     Future,
@@ -12,6 +14,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 from zoneinfo import ZoneInfo
+
+from croniter import croniter
 
 from src.agent.session_store import AgentSessionStore
 from src.web.content import (
@@ -25,6 +29,8 @@ logger = logging.getLogger(__name__)
 
 _JOB_LEASE_SECONDS = 45
 _JOB_HEARTBEAT_INTERVAL_SECONDS = 10
+_WORKER_POLL_INTERVAL_SECONDS = 2
+_SCHEDULER_POLL_INTERVAL_SECONDS = 15
 
 _DEFAULT_DEEP_SUMMARY_CONFIG = {
     "auto_enabled": False,
@@ -306,14 +312,18 @@ def run_tracked_schedule(
             dry_run=dry_run,
         )
 
-    worker_id = f"local-{uuid.uuid4().hex[:12]}"
-    store.mark_job_running(
-        job_run_id,
-        stage="boot",
-        message="Preparing job execution",
-        worker_id=worker_id,
-        lease_seconds=_JOB_LEASE_SECONDS,
-    )
+    job = store.get_job(job_run_id)
+    if job is None:
+        raise RuntimeError(f"job_run {job_run_id} not found")
+    worker_id = job.get("worker_id") or f"local-{uuid.uuid4().hex[:12]}"
+    if job.get("status") != "running":
+        store.mark_job_running(
+            job_run_id,
+            stage="boot",
+            message="Preparing job execution",
+            worker_id=worker_id,
+            lease_seconds=_JOB_LEASE_SECONDS,
+        )
     store.add_job_log(
         job_run_id,
         level="INFO",
@@ -426,15 +436,10 @@ def run_tracked_schedule(
         heartbeat.stop()
 
 
-def enqueue_manual_run(
-    *,
-    executor: ThreadPoolExecutor,
-    config: dict,
-    schedule_name: str,
-    dry_run: bool,
-) -> tuple[int, Future[Any]]:
+def enqueue_manual_run(*, config: dict, schedule_name: str, dry_run: bool) -> int:
     store = AppStateStore.from_config(config)
     store.init_db()
+    store.recover_stale_job_runs()
     effective_schedule = _resolve_schedule(schedule_name, config)
     effective_name = str(effective_schedule.get("name") or schedule_name or "(default)")
 
@@ -463,15 +468,254 @@ def enqueue_manual_run(
         message=f"Queued manual run for {effective_name}",
         extra={"dry_run": dry_run},
     )
-    future = executor.submit(
-        run_tracked_schedule,
-        effective_name,
-        config,
+    return job_run_id
+
+
+def enqueue_scheduled_run(
+    *,
+    config: dict,
+    schedule_name: str,
+    dry_run: bool,
+    trigger_type: str = "cron",
+    scheduled_for: str = "",
+    idempotency_key: str = "",
+) -> dict[str, Any]:
+    store = AppStateStore.from_config(config)
+    store.init_db()
+    store.recover_stale_job_runs()
+    effective_schedule = _resolve_schedule(schedule_name, config)
+    effective_name = str(effective_schedule.get("name") or schedule_name or "(default)")
+
+    existing = store.get_running_job_for_schedule(effective_name)
+    if existing is not None:
+        logger.warning(
+            "Schedule '%s' already has an active job (id=%s, status=%s); skipping queue submission.",
+            effective_name,
+            existing["id"],
+            existing["status"],
+        )
+        return {"skipped": True, "existing_job_run_id": existing["id"]}
+
+    if idempotency_key:
+        existing_queued = store.get_job_by_idempotency_key(idempotency_key)
+        if existing_queued is not None:
+            return {
+                "skipped": True,
+                "existing_job_run_id": existing_queued["id"],
+                "reason": "duplicate_idempotency_key",
+            }
+
+    job_run_id = store.create_job_run(
+        schedule_name=effective_name,
+        trigger_type=trigger_type,
         dry_run=dry_run,
-        trigger_type="manual",
-        job_run_id=job_run_id,
+        status="queued",
+        scheduled_for=scheduled_for,
+        idempotency_key=idempotency_key,
     )
-    return job_run_id, future
+    store.add_job_log(
+        job_run_id,
+        level="INFO",
+        component="runtime",
+        event_type="job_queued",
+        message=f"Queued {trigger_type} run for {effective_name}",
+        extra={
+            "dry_run": dry_run,
+            "scheduled_for": scheduled_for,
+            "idempotency_key": idempotency_key,
+        },
+    )
+    return {"job_run_id": job_run_id, "queued": True}
+
+
+def _resolve_scheduler_timezone(config: dict) -> ZoneInfo:
+    return ZoneInfo(config.get("app", {}).get("timezone", "Asia/Shanghai"))
+
+
+def _compute_due_schedule_slots(
+    *,
+    config: dict,
+    schedule_name: str,
+    trigger_type: str,
+    now: datetime,
+    catch_up_limit: int = 1,
+) -> list[datetime]:
+    store = AppStateStore.from_config(config)
+    store.init_db()
+
+    schedule = _resolve_schedule(schedule_name, config)
+    cron_expr = str(schedule.get("cron", "")).strip()
+    effective_name = str(schedule.get("name") or schedule_name or "(default)")
+    if not cron_expr:
+        return []
+
+    latest_scheduled_for = store.get_latest_scheduled_for(
+        schedule_name=effective_name,
+        trigger_type=trigger_type,
+    )
+    if latest_scheduled_for:
+        base = datetime.fromisoformat(latest_scheduled_for)
+    else:
+        base = now
+        if croniter.match(cron_expr, now):
+            base = now
+        else:
+            base = croniter(cron_expr, now).get_prev(datetime)
+
+    due_slots: list[datetime] = []
+    cursor = base
+    for _ in range(max(int(catch_up_limit), 1)):
+        next_run = croniter(cron_expr, cursor).get_next(datetime)
+        if next_run > now:
+            break
+        due_slots.append(next_run)
+        cursor = next_run
+
+    if not latest_scheduled_for and not due_slots and croniter.match(cron_expr, now):
+        due_slots.append(now)
+    return due_slots
+
+
+def run_scheduler_tick(
+    config: dict,
+    *,
+    now: datetime | None = None,
+    dry_run: bool = False,
+    trigger_type: str = "cron",
+    catch_up_limit: int = 1,
+) -> list[dict[str, Any]]:
+    tz = _resolve_scheduler_timezone(config)
+    effective_now = now.astimezone(tz) if now is not None else datetime.now(tz)
+    queued: list[dict[str, Any]] = []
+
+    for schedule in config.get("schedules", []):
+        schedule_name = str(schedule.get("name", "")).strip()
+        if not schedule_name:
+            continue
+        for slot in _compute_due_schedule_slots(
+            config=config,
+            schedule_name=schedule_name,
+            trigger_type=trigger_type,
+            now=effective_now,
+            catch_up_limit=catch_up_limit,
+        ):
+            slot_iso = slot.isoformat()
+            result = enqueue_scheduled_run(
+                config=config,
+                schedule_name=schedule_name,
+                dry_run=dry_run,
+                trigger_type=trigger_type,
+                scheduled_for=slot_iso,
+                idempotency_key=f"{schedule_name}:{slot_iso}:{trigger_type}",
+            )
+            if result.get("queued"):
+                queued.append(result)
+    return queued
+
+
+def run_scheduler_loop(
+    config: dict,
+    *,
+    stop_event: threading.Event | None = None,
+    poll_interval_seconds: int = _SCHEDULER_POLL_INTERVAL_SECONDS,
+    dry_run: bool = False,
+    catch_up_limit: int = 1,
+) -> int:
+    scheduled = 0
+    while True:
+        if stop_event is not None and stop_event.is_set():
+            break
+        scheduled += len(
+            run_scheduler_tick(
+                config,
+                dry_run=dry_run,
+                catch_up_limit=catch_up_limit,
+            )
+        )
+        if stop_event is not None and stop_event.wait(poll_interval_seconds):
+            break
+        if stop_event is None:
+            time.sleep(poll_interval_seconds)
+    return scheduled
+
+
+def run_worker_loop(
+    config: dict,
+    *,
+    stop_event: threading.Event | None = None,
+    poll_interval_seconds: int = _WORKER_POLL_INTERVAL_SECONDS,
+    worker_id: str | None = None,
+    run_once: bool = False,
+    scheduler_enabled: bool = False,
+    scheduler_poll_interval_seconds: int = _SCHEDULER_POLL_INTERVAL_SECONDS,
+    scheduler_dry_run: bool = False,
+    scheduler_catch_up_limit: int = 1,
+) -> int:
+    store = AppStateStore.from_config(config)
+    store.init_db()
+    store.recover_stale_job_runs()
+
+    effective_worker_id = worker_id or f"worker-{os.getpid()}-{uuid.uuid4().hex[:8]}"
+    processed = 0
+    last_scheduler_tick = 0.0
+
+    while True:
+        if stop_event is not None and stop_event.is_set():
+            break
+
+        if scheduler_enabled:
+            now_monotonic = time.monotonic()
+            if (
+                last_scheduler_tick == 0.0
+                or now_monotonic - last_scheduler_tick
+                >= scheduler_poll_interval_seconds
+            ):
+                run_scheduler_tick(
+                    config,
+                    dry_run=scheduler_dry_run,
+                    catch_up_limit=scheduler_catch_up_limit,
+                )
+                last_scheduler_tick = now_monotonic
+
+        claimed = store.claim_next_job_run(
+            worker_id=effective_worker_id,
+            lease_seconds=_JOB_LEASE_SECONDS,
+        )
+        if claimed is None:
+            if run_once:
+                break
+            if stop_event is not None and stop_event.wait(poll_interval_seconds):
+                break
+            if stop_event is None:
+                time.sleep(poll_interval_seconds)
+            continue
+
+        processed += 1
+        store.add_job_log(
+            claimed["id"],
+            level="INFO",
+            component="worker",
+            event_type="job_claimed",
+            message=f"Worker {effective_worker_id} claimed queued job",
+            extra={"worker_id": effective_worker_id},
+        )
+        try:
+            run_tracked_schedule(
+                claimed["schedule_name"],
+                config,
+                dry_run=claimed["dry_run"],
+                trigger_type=claimed["trigger_type"],
+                job_run_id=claimed["id"],
+            )
+        except Exception:
+            logger.exception(
+                "worker job execution failed", extra={"job_run_id": claimed["id"]}
+            )
+
+        if run_once:
+            break
+
+    return processed
 
 
 def run_deep_summary(

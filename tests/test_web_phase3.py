@@ -4,8 +4,11 @@ import copy
 import sqlite3
 import tempfile
 import unittest
+from datetime import datetime
 from pathlib import Path
 from unittest.mock import patch
+
+from zoneinfo import ZoneInfo
 
 from fastapi.testclient import TestClient
 
@@ -13,7 +16,10 @@ from src.web.app import create_app
 from src.web.runtime import (
     ScheduleAlreadyRunningError,
     _auto_deep_summaries,
+    enqueue_scheduled_run,
     enqueue_manual_run,
+    run_scheduler_tick,
+    run_worker_loop,
     run_tracked_schedule,
 )
 from src.web.store import AppStateStore
@@ -129,8 +135,6 @@ class StoreWALTests(unittest.TestCase):
 class ReentrancyTests(unittest.TestCase):
     def test_duplicate_schedule_submission_rejected(self) -> None:
         """enqueue_manual_run raises ScheduleAlreadyRunningError when a job is active."""
-        from concurrent.futures import ThreadPoolExecutor
-
         with tempfile.TemporaryDirectory() as tmp:
             config = _sample_config(tmp)
             store = AppStateStore.from_config(config)
@@ -143,17 +147,12 @@ class ReentrancyTests(unittest.TestCase):
                 status="queued",
             )
 
-            executor = ThreadPoolExecutor(max_workers=1)
-            try:
-                with self.assertRaises(ScheduleAlreadyRunningError):
-                    enqueue_manual_run(
-                        executor=executor,
-                        config=config,
-                        schedule_name="早间日报",
-                        dry_run=False,
-                    )
-            finally:
-                executor.shutdown(wait=False)
+            with self.assertRaises(ScheduleAlreadyRunningError):
+                enqueue_manual_run(
+                    config=config,
+                    schedule_name="早间日报",
+                    dry_run=False,
+                )
 
     def test_cron_run_skips_when_already_running(self) -> None:
         """run_tracked_schedule returns skipped=True if active job exists (cron path)."""
@@ -176,6 +175,84 @@ class ReentrancyTests(unittest.TestCase):
             )
             self.assertTrue(result.get("skipped"))
             self.assertIn("existing_job_run_id", result)
+
+    def test_manual_run_is_only_enqueued_until_worker_claims_it(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            config = _sample_config(tmp)
+
+            job_run_id = enqueue_manual_run(
+                config=config,
+                schedule_name="早间日报",
+                dry_run=True,
+            )
+
+            store = AppStateStore.from_config(config)
+            job = store.get_job(job_run_id)
+            self.assertIsNotNone(job)
+            self.assertEqual(job["status"], "queued")
+            self.assertEqual(job["trigger_type"], "manual")
+
+    def test_worker_claims_and_executes_queued_manual_job(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            config = _sample_config(tmp)
+            job_run_id = enqueue_manual_run(
+                config=config,
+                schedule_name="早间日报",
+                dry_run=True,
+            )
+
+            with (
+                patch(
+                    "src.web.runtime._execute_schedule",
+                    return_value={
+                        "session_id": "session-1",
+                        "turn_index": 1,
+                        "status": "ok",
+                        "response": "done",
+                        "steps": [],
+                    },
+                ),
+                patch(
+                    "src.web.runtime._load_agent_state",
+                    return_value={
+                        "payload": {
+                            "schedule_name": "早间日报",
+                            "date": "2026-04-08",
+                            "datetime": "2026-04-08T10:00:00+08:00",
+                            "digest_summary": "summary",
+                            "news_items": [],
+                        },
+                        "raw_items": [],
+                        "news_items": [],
+                    },
+                ),
+            ):
+                processed = run_worker_loop(
+                    config, run_once=True, worker_id="test-worker"
+                )
+
+            self.assertEqual(processed, 1)
+            store = AppStateStore.from_config(config)
+            job = store.get_job(job_run_id)
+            self.assertEqual(job["status"], "succeeded")
+            self.assertEqual(job["worker_id"], "test-worker")
+
+    def test_scheduled_run_is_enqueued_without_direct_execution(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            config = _sample_config(tmp)
+
+            result = enqueue_scheduled_run(
+                config=config,
+                schedule_name="早间日报",
+                dry_run=False,
+                trigger_type="cron",
+            )
+
+            self.assertTrue(result["queued"])
+            store = AppStateStore.from_config(config)
+            job = store.get_job(result["job_run_id"])
+            self.assertEqual(job["status"], "queued")
+            self.assertEqual(job["trigger_type"], "cron")
 
 
 # ──────────────────────────────────────────────────────────────────────────
@@ -459,6 +536,87 @@ class LeaseAwareStatusTests(unittest.TestCase):
             resp = client.get("/api/status")
             self.assertEqual(resp.status_code, 200)
             self.assertIsNone(resp.json()["running_job"])
+
+
+class SchedulerTests(unittest.TestCase):
+    def test_scheduler_tick_enqueues_due_job(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            config = _sample_config(tmp)
+            tz = ZoneInfo("Asia/Shanghai")
+            now = datetime(2026, 4, 9, 9, 0, tzinfo=tz)
+
+            queued = run_scheduler_tick(config, now=now)
+
+            self.assertEqual(len(queued), 1)
+            store = AppStateStore.from_config(config)
+            jobs = store.list_jobs(limit=10)
+            self.assertEqual(len(jobs), 1)
+            self.assertEqual(jobs[0]["status"], "queued")
+            self.assertEqual(jobs[0]["scheduled_for"], now.isoformat())
+
+    def test_scheduler_tick_is_idempotent_for_same_slot(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            config = _sample_config(tmp)
+            tz = ZoneInfo("Asia/Shanghai")
+            now = datetime(2026, 4, 9, 9, 0, tzinfo=tz)
+
+            first = run_scheduler_tick(config, now=now)
+            second = run_scheduler_tick(config, now=now)
+
+            self.assertEqual(len(first), 1)
+            self.assertEqual(len(second), 0)
+            store = AppStateStore.from_config(config)
+            jobs = store.list_jobs(limit=10)
+            self.assertEqual(len(jobs), 1)
+
+    def test_worker_with_scheduler_enabled_claims_due_job(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            config = _sample_config(tmp)
+            config["runtime"] = {"embedded_scheduler": True}
+            tz = ZoneInfo("Asia/Shanghai")
+            now = datetime(2026, 4, 9, 9, 0, tzinfo=tz)
+
+            run_scheduler_tick(config, now=now)
+
+            with (
+                patch(
+                    "src.web.runtime._execute_schedule",
+                    return_value={
+                        "session_id": "session-1",
+                        "turn_index": 1,
+                        "status": "ok",
+                        "response": "done",
+                        "steps": [],
+                    },
+                ),
+                patch(
+                    "src.web.runtime._load_agent_state",
+                    return_value={
+                        "payload": {
+                            "schedule_name": "早间日报",
+                            "date": "2026-04-09",
+                            "datetime": now.isoformat(),
+                            "digest_summary": "summary",
+                            "news_items": [],
+                        },
+                        "raw_items": [],
+                        "news_items": [],
+                    },
+                ),
+            ):
+                processed = run_worker_loop(
+                    config,
+                    run_once=True,
+                    worker_id="test-worker",
+                    scheduler_enabled=False,
+                    scheduler_poll_interval_seconds=0,
+                )
+
+            self.assertEqual(processed, 1)
+            store = AppStateStore.from_config(config)
+            jobs = store.list_jobs(limit=10)
+            self.assertEqual(len(jobs), 1)
+            self.assertEqual(jobs[0]["status"], "succeeded")
 
 
 if __name__ == "__main__":

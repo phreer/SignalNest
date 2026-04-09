@@ -336,6 +336,31 @@ def main():
         metavar="TEXT",
         help="向 agent 提问（交互查询模式，不发送通知）",
     )
+    parser.add_argument(
+        "--worker",
+        action="store_true",
+        help="运行 job worker，轮询并执行已入队任务",
+    )
+    parser.add_argument(
+        "--worker-once",
+        action="store_true",
+        help="运行 worker 并最多处理一个已入队任务后退出",
+    )
+    parser.add_argument(
+        "--scheduler",
+        action="store_true",
+        help="运行内部 scheduler，按配置检测到点任务并入队",
+    )
+    parser.add_argument(
+        "--scheduler-once",
+        action="store_true",
+        help="运行一次 scheduler tick 后退出",
+    )
+    parser.add_argument(
+        "--all-in-one",
+        action="store_true",
+        help="运行 worker，并在同一进程内启用内部 scheduler",
+    )
     args = parser.parse_args()
 
     logging.basicConfig(
@@ -351,18 +376,45 @@ def main():
         print(f"[query] {args.query}")
         print(f"[agent session] {result['session_id']} | turn #{result['turn_index']}")
         print(result.get("response", ""))
-    else:
-        from src.web.runtime import run_tracked_schedule
+    elif args.scheduler or args.scheduler_once:
+        from src.web.runtime import run_scheduler_loop, run_scheduler_tick
 
-        result = run_tracked_schedule(
+        if args.scheduler_once:
+            queued = run_scheduler_tick(config)
+            print(f"[scheduler] queued={len(queued)}")
+        else:
+            queued = run_scheduler_loop(config)
+            print(f"[scheduler] queued={queued}")
+    elif args.all_in_one:
+        from src.web.runtime import run_worker_loop
+
+        processed = run_worker_loop(config, scheduler_enabled=True)
+        print(f"[all-in-one] processed={processed}")
+    elif args.worker or args.worker_once:
+        from src.web.runtime import run_worker_loop
+
+        processed = run_worker_loop(
+            config,
+            run_once=args.worker_once,
+            scheduler_enabled=args.all_in_one,
+        )
+        print(f"[worker] processed={processed}")
+    else:
+        from src.web.runtime import enqueue_scheduled_run
+
+        result = enqueue_scheduled_run(
             schedule_name=args.schedule_name,
             config=config,
             dry_run=args.dry_run,
             trigger_type=os.environ.get("SIGNALNEST_TRIGGER_TYPE", "cron"),
         )
         print(f"[schedule] {args.schedule_name or '(default)'}")
-        print(f"[agent session] {result['session_id']} | turn #{result['turn_index']}")
-        print(result.get("response", ""))
+        if result.get("skipped"):
+            print(
+                f"[queue] skipped existing_job_run_id={result['existing_job_run_id']}"
+            )
+        else:
+            print(f"[queue] job_run_id={result['job_run_id']}")
 
 
 if __name__ == "__main__":

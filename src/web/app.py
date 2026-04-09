@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import re
+import threading
 from contextlib import asynccontextmanager
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
@@ -19,6 +20,7 @@ from src.web.runtime import (
     ScheduleAlreadyRunningError,
     enqueue_manual_deep_summary,
     enqueue_manual_run,
+    run_worker_loop,
 )
 from src.web.store import AppStateStore
 
@@ -359,21 +361,40 @@ def create_app(config: dict | None = None) -> FastAPI:
     store.sync_output_archives(resolved_config)
 
     templates = Jinja2Templates(directory=str(_template_dir()))
-    executor = ThreadPoolExecutor(max_workers=2, thread_name_prefix="signalnest-web")
+    deep_summary_executor = ThreadPoolExecutor(
+        max_workers=2, thread_name_prefix="signalnest-deep-summary"
+    )
+    worker_stop_event = threading.Event()
+    worker_thread = threading.Thread(
+        target=run_worker_loop,
+        kwargs={
+            "config": resolved_config,
+            "stop_event": worker_stop_event,
+            "worker_id": f"web-worker-{os.getpid()}",
+            "scheduler_enabled": bool(
+                resolved_config.get("runtime", {}).get("embedded_scheduler", False)
+            ),
+        },
+        name="signalnest-worker",
+        daemon=True,
+    )
 
     @asynccontextmanager
     async def lifespan(_app: FastAPI):
         try:
+            worker_thread.start()
             yield
         finally:
-            executor.shutdown(wait=False, cancel_futures=False)
+            worker_stop_event.set()
+            worker_thread.join(timeout=5)
+            deep_summary_executor.shutdown(wait=False, cancel_futures=False)
 
     app = FastAPI(title="SignalNest Web", lifespan=lifespan)
 
     app.state.config = resolved_config
     app.state.store = store
     app.state.templates = templates
-    app.state.executor = executor
+    app.state.deep_summary_executor = deep_summary_executor
 
     def render(
         request: Request, template_name: str, context: dict[str, Any]
@@ -424,8 +445,7 @@ def create_app(config: dict | None = None) -> FastAPI:
     ) -> RedirectResponse:
         dry_run_flag = str(dry_run).lower() in {"1", "true", "on", "yes"}
         try:
-            job_run_id, _future = enqueue_manual_run(
-                executor=app.state.executor,
+            job_run_id = enqueue_manual_run(
                 config=app.state.config,
                 schedule_name=schedule_name,
                 dry_run=dry_run_flag,
@@ -526,7 +546,7 @@ def create_app(config: dict | None = None) -> FastAPI:
         if app.state.store.get_item(item_id) is None:
             raise HTTPException(status_code=404, detail="item not found")
         deep_summary_id, _future = enqueue_manual_deep_summary(
-            executor=app.state.executor,
+            executor=app.state.deep_summary_executor,
             config=app.state.config,
             item_id=item_id,
         )
@@ -557,11 +577,8 @@ def create_app(config: dict | None = None) -> FastAPI:
     @app.post("/api/schedules/{schedule_name}/run")
     def api_run_schedule(schedule_name: str, dry_run: bool = False) -> dict[str, Any]:
         try:
-            job_run_id, _future = enqueue_manual_run(
-                executor=app.state.executor,
-                config=app.state.config,
-                schedule_name=schedule_name,
-                dry_run=dry_run,
+            job_run_id = enqueue_manual_run(
+                config=app.state.config, schedule_name=schedule_name, dry_run=dry_run
             )
         except ScheduleAlreadyRunningError as exc:
             raise HTTPException(status_code=409, detail=str(exc))
@@ -637,7 +654,7 @@ def create_app(config: dict | None = None) -> FastAPI:
         if app.state.store.get_item(item_id) is None:
             raise HTTPException(status_code=404, detail="item not found")
         deep_summary_id, _future = enqueue_manual_deep_summary(
-            executor=app.state.executor,
+            executor=app.state.deep_summary_executor,
             config=app.state.config,
             item_id=item_id,
         )

@@ -365,6 +365,97 @@ class AppStateStore:
         finally:
             conn.close()
 
+    def claim_next_job_run(
+        self,
+        *,
+        worker_id: str,
+        lease_seconds: int = 45,
+        trigger_types: tuple[str, ...] = ("manual", "cron"),
+    ) -> dict[str, Any] | None:
+        self.recover_stale_job_runs()
+        placeholders = ", ".join("?" for _ in trigger_types)
+        now = _utcnow_iso()
+        lease_expires_at = (
+            datetime.now(timezone.utc) + timedelta(seconds=max(int(lease_seconds), 1))
+        ).isoformat()
+
+        conn = self._connect()
+        try:
+            conn.execute("BEGIN IMMEDIATE")
+            row = conn.execute(
+                f"""
+                SELECT id FROM job_runs
+                WHERE status='queued' AND trigger_type IN ({placeholders})
+                ORDER BY created_at ASC, id ASC
+                LIMIT 1
+                """,
+                trigger_types,
+            ).fetchone()
+            if row is None:
+                conn.commit()
+                return None
+
+            job_run_id = int(row["id"])
+            updated = conn.execute(
+                """
+                UPDATE job_runs
+                SET status='running', worker_id=?, claimed_at=COALESCE(claimed_at, ?),
+                    heartbeat_at=?, lease_expires_at=?,
+                    current_stage=COALESCE(NULLIF(current_stage, ''), 'boot'),
+                    current_message=COALESCE(NULLIF(current_message, ''), 'Worker claimed queued job'),
+                    started_at=COALESCE(started_at, ?), updated_at=?
+                WHERE id=? AND status='queued'
+                """,
+                (
+                    worker_id,
+                    now,
+                    now,
+                    lease_expires_at,
+                    now,
+                    now,
+                    job_run_id,
+                ),
+            )
+            if updated.rowcount != 1:
+                conn.rollback()
+                return None
+
+            claimed_row = conn.execute(
+                "SELECT * FROM job_runs WHERE id=?", (job_run_id,)
+            ).fetchone()
+            conn.commit()
+            return self._job_row_to_dict(claimed_row) if claimed_row else None
+        finally:
+            conn.close()
+
+    def get_job_by_idempotency_key(self, idempotency_key: str) -> dict[str, Any] | None:
+        if not idempotency_key:
+            return None
+        conn = self._connect()
+        try:
+            row = conn.execute(
+                "SELECT * FROM job_runs WHERE idempotency_key=?",
+                (idempotency_key,),
+            ).fetchone()
+            return self._job_row_to_dict(row) if row else None
+        finally:
+            conn.close()
+
+    def get_latest_scheduled_for(self, *, schedule_name: str, trigger_type: str) -> str:
+        conn = self._connect()
+        try:
+            row = conn.execute(
+                """
+                SELECT scheduled_for FROM job_runs
+                WHERE schedule_name=? AND trigger_type=? AND scheduled_for IS NOT NULL
+                ORDER BY scheduled_for DESC, id DESC LIMIT 1
+                """,
+                (schedule_name, trigger_type),
+            ).fetchone()
+            return str(row["scheduled_for"] or "") if row else ""
+        finally:
+            conn.close()
+
     def add_job_log(
         self,
         job_run_id: int,

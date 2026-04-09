@@ -47,7 +47,7 @@ services:
       - WEWORK_MSG_TYPE=${WEWORK_MSG_TYPE:-markdown}
 
       # ── 运行模式 ─────────────────────────────────────────────
-      # RUN_MODE: all（cron + web，推荐）| cron | web | once
+      # RUN_MODE: all（web + worker + internal scheduler，推荐）| worker | web | once
       - RUN_MODE=${RUN_MODE:-all}
       # Web UI 端口
       - WEB_PORT=${WEB_PORT:-8080}

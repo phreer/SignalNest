@@ -8,19 +8,15 @@ This document tracks web UI work that is not yet fully implemented, intentionall
 
 ### Job Runtime Refactor
 
-- Replace direct `supercronic -> python -m src.main` execution with an app-level queued job model
-- Introduce a durable worker process that claims queued jobs and owns all `running -> terminal` transitions
-- Add lease-based liveness fields to `job_runs`: `worker_id`, `claimed_at`, `heartbeat_at`, `lease_expires_at`, `attempt`, `idempotency_key`, and `scheduled_for`
-- Treat expired `running` jobs as `lost` and surface that state explicitly in the UI
-- Move manual triggers onto the same queue path so web requests never execute digest jobs directly
-- Refactor `run_tracked_schedule()` into a worker-owned execution path instead of a cron/web dual-use helper
+- Tighten queued job creation so duplicate-run protection becomes atomic instead of the current check-then-insert flow
+- Add explicit cancellation and retry semantics on top of the current queued/leased job model
+- Surface `lost`, retryable, and cancelled states more clearly in the UI
 
 ### Scheduler Replacement
 
-- Replace shell-generated crontab management with an internal scheduler loop that reads `config.yaml` and enqueues due schedule slots
-- Add deterministic idempotency keys per schedule slot to avoid double-enqueue on restart
-- Persist enough scheduler cursor state to recover cleanly after restarts without skipping or replaying jobs
-- Simplify deployment modes around `web`, `worker`, and optional dedicated `scheduler`
+- Persist an explicit scheduler cursor/checkpoint so recovery does not rely only on the latest `job_runs.scheduled_for` value
+- Improve missed-slot catch-up policy for longer outages and make it configurable per deployment
+- Decide whether to keep the scheduler embedded in the worker by default or split it into a dedicated long-running process role
 
 ### Item Browser Improvements
 

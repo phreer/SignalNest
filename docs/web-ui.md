@@ -4,9 +4,9 @@
 
 SignalNest now includes a built-in web console for operational visibility and content browsing.
 
-Today the project still uses a `supercronic -> python -m src.main` execution model for scheduled runs. That model is simple, but it leaves the web UI without a durable ownership relationship to the real executor process. If a scheduled child process is killed unexpectedly, the corresponding `job_runs` row can remain stuck in `running` because no process is left alive to write the terminal state.
+The web runtime now uses an application-owned queued job model: manual triggers and scheduled triggers both insert `job_runs`, workers claim queued jobs with leases, and scheduler ticks enqueue due schedule slots from `config.yaml`.
 
-The long-term direction documented here is to replace that model with a durable `web + worker` architecture where scheduling enqueues jobs and workers claim them with leases and heartbeats.
+This replaced the earlier `supercronic -> python -m src.main` execution path that could leave stale `running` rows behind when a child process died unexpectedly.
 
 Current implementation status:
 - Operational console: implemented
@@ -25,18 +25,19 @@ The web layer is built with:
 ### Current Runtime
 
 SignalNest supports these container runtime modes through `RUN_MODE`:
-- `all`: web UI + scheduler in one container
-- `cron`: scheduler only
+- `all`: web UI + worker + internal scheduler in one container
+- `worker`: worker + internal scheduler only
 - `web`: web UI only
-- `once`: run one schedule and exit
+- `once`: enqueue one schedule and exit
 
 Recommended deployment is single-container mode:
 - `RUN_MODE=all`
 
 In this mode:
-- `supercronic` remains responsible for scheduled execution
 - the web UI runs in the same container
-- both processes share the same local `data/` directory and SQLite files
+- an internal worker loop claims queued jobs and executes them
+- an internal scheduler loop enqueues due jobs from `config.yaml`
+- all components share the same local `data/` directory and SQLite files
 
 Related files:
 - `docker/entrypoint.sh`
@@ -44,7 +45,7 @@ Related files:
 
 ### Target Runtime
 
-The planned runtime model removes `supercronic` from the critical path and replaces direct process spawning with a durable job queue managed in the application database.
+The current runtime already removes `supercronic` from the critical path and replaces direct process spawning with a durable job queue managed in the application database.
 
 Target process roles:
 - `web`: UI, APIs, manual trigger requests, read-only operational views
@@ -148,7 +149,7 @@ Planned behavior:
 - worker claim: atomically update one eligible `queued` job into `running` if it is still unclaimed
 - retries: a future retry policy can requeue `failed` or `lost` jobs by creating a new attempt or by explicitly rescheduling them
 
-This removes the current split where web manual runs use a `ThreadPoolExecutor` while cron runs spawn a separate Python process.
+This removed the earlier split where web manual runs used a `ThreadPoolExecutor` while cron-triggered runs spawned separate Python processes.
 
 ### Scheduler Design
 
@@ -191,6 +192,11 @@ Acceptance criteria:
 - introduce a worker process that polls the queue and runs jobs
 - keep cron only as a producer that enqueues jobs instead of executing them directly
 
+Current status:
+- manual runs are now enqueued instead of executed in web request threads
+- a local worker loop can claim queued `manual` and `cron` jobs and execute them through the shared tracked-run path
+- scheduled runs are now enqueued by the internal scheduler/queue path instead of shell-generated `supercronic` child processes
+
 Acceptance criteria:
 - manual runs and scheduled runs share one execution path after enqueue
 - web requests return quickly and no longer own long-running work
@@ -200,6 +206,11 @@ Acceptance criteria:
 - add a durable scheduler loop inside a dedicated process role
 - remove crontab generation from `docker/entrypoint.sh`
 - retire `RUN_MODE=cron` in favor of worker/scheduler-oriented modes
+
+Current status:
+- `docker/entrypoint.sh` now starts internal worker/scheduler modes instead of generating crontab files
+- `run_scheduler_tick()` and `run_scheduler_loop()` enqueue due schedule slots with deterministic idempotency keys
+- `RUN_MODE=all` and `RUN_MODE=worker` now rely on the internal scheduler rather than `supercronic`
 
 Acceptance criteria:
 - scheduled runs are created only through the app-level queue
@@ -388,7 +399,7 @@ Relevant test files:
 - `/items` only includes runs executed after item indexing was introduced; historical digest archives do not contain enough raw data to reconstruct all prior collected items
 - item filters do not yet support custom date ranges or score-range filtering
 - the schedule re-entrancy guard still has a narrow TOCTOU window because the active-job check and insert are not fully atomic in one SQL statement
-- scheduled execution still depends on `supercronic` spawning one-shot Python processes; this is the root cause behind stale `running` jobs after unexpected process death and is the main architecture refactor target
+- scheduler catch-up is intentionally conservative right now; it only enqueues a limited number of missed slots per poll and does not yet persist an explicit scheduler cursor separate from `job_runs`
 - the web UI and digest HTML are visually closer now, but template sharing is not yet unified
 
 ## Key Files

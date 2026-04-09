@@ -8,13 +8,9 @@ if [ ! -f "/app/config/config.yaml" ]; then
     exit 1
 fi
 
-# 保存环境变量，确保 cron 任务可以继承
-env >> /etc/environment
-
-SCHEDULE_ARG="--schedule-name"
 echo "🤖 调度执行器: agent-only"
 
-case "${RUN_MODE:-cron}" in
+case "${RUN_MODE:-all}" in
 
 "web")
     echo "🌐 Web UI 模式: 0.0.0.0:${WEB_PORT:-8080}"
@@ -22,50 +18,12 @@ case "${RUN_MODE:-cron}" in
     ;;
 
 "all")
-    echo "🚀 All-in-one 模式: cron + web (port ${WEB_PORT:-8080})"
-
-    # 生成 crontab（复用 cron 模式逻辑）
-    python3 -c "
-import sys, yaml
-
-try:
-    with open('/app/config/config.yaml', encoding='utf-8') as f:
-        cfg = yaml.safe_load(f)
-except Exception as e:
-    print(f'ERROR: 读取 config.yaml 失败: {e}', file=sys.stderr)
-    sys.exit(1)
-
-schedules = cfg.get('schedules', [])
-if not schedules:
-    print('ERROR: config.yaml 中没有定义任何 schedules', file=sys.stderr)
-    sys.exit(1)
-
-arg = '${SCHEDULE_ARG}'
-for s in schedules:
-    cron = s.get('cron', '').strip()
-    name = s.get('name', '').strip()
-    if not cron or not name:
-        continue
-    print(f\"{cron} cd /app && python -m src.main {arg} '{name}'\")
-" > /tmp/crontab
-
-    if [ $? -ne 0 ]; then
-        echo "❌ crontab 生成失败"
-        exit 1
-    fi
-
-    if ! supercronic -test /tmp/crontab; then
-        echo "❌ crontab 格式验证失败"
-        exit 1
-    fi
-
-    echo "📅 生成的 crontab："
-    cat /tmp/crontab
+    echo "🚀 All-in-one 模式: web + worker + internal scheduler (port ${WEB_PORT:-8080})"
 
     # 立即执行一次（如果配置了）
     if [ "${IMMEDIATE_RUN:-false}" = "true" ]; then
-        echo "▶ 立即执行一次: ${SCHEDULE_NAME:-（使用第一个 schedule）}"
-        cd /app && python -m src.main ${SCHEDULE_ARG} "${SCHEDULE_NAME:-}" || true
+        echo "▶ 立即入队一次: ${SCHEDULE_NAME:-（使用第一个 schedule）}"
+        cd /app && python -m src.main --schedule-name "${SCHEDULE_NAME:-}" || true
     fi
 
     # 启动 Web UI 后台进程
@@ -73,65 +31,22 @@ for s in schedules:
     WEB_PID=$!
     echo "🌐 Web UI 已启动 (pid=$WEB_PID, port=${WEB_PORT:-8080})"
 
-    # 前台运行 supercronic
-    exec supercronic -passthrough-logs /tmp/crontab
+    # 前台运行 worker + 内置 scheduler
+    exec python -m src.main --all-in-one
     ;;
 
 "once")
     echo "🔄 单次执行模式: ${SCHEDULE_NAME:-（使用第一个 schedule）}"
-    cd /app && exec python -m src.main ${SCHEDULE_ARG} "${SCHEDULE_NAME:-}"
+    cd /app && exec python -m src.main --schedule-name "${SCHEDULE_NAME:-}"
     ;;
 
-"cron")
-    echo "⏰ 定时模式：从 config.yaml 解析调度计划..."
-
-    # 从 config.yaml 读取 schedules 列表，生成 crontab
-    python3 -c "
-import sys, yaml
-
-try:
-    with open('/app/config/config.yaml', encoding='utf-8') as f:
-        cfg = yaml.safe_load(f)
-except Exception as e:
-    print(f'ERROR: 读取 config.yaml 失败: {e}', file=sys.stderr)
-    sys.exit(1)
-
-schedules = cfg.get('schedules', [])
-if not schedules:
-    print('ERROR: config.yaml 中没有定义任何 schedules', file=sys.stderr)
-    sys.exit(1)
-
-arg = '${SCHEDULE_ARG}'
-for s in schedules:
-    cron = s.get('cron', '').strip()
-    name = s.get('name', '').strip()
-    if not cron or not name:
-        continue
-    # 单引号包裹 name，避免空格问题
-    print(f\"{cron} cd /app && python -m src.main {arg} '{name}'\")
-" > /tmp/crontab
-
-    if [ $? -ne 0 ]; then
-        echo "❌ crontab 生成失败"
-        exit 1
-    fi
-
-    echo "📅 生成的 crontab："
-    cat /tmp/crontab
-
-    if ! supercronic -test /tmp/crontab; then
-        echo "❌ crontab 格式验证失败"
-        exit 1
-    fi
-
-    # 立即执行一次（如果配置了）
+"worker")
+    echo "⚙️ Worker 模式：internal scheduler + worker"
     if [ "${IMMEDIATE_RUN:-false}" = "true" ]; then
-        echo "▶ 立即执行一次: ${SCHEDULE_NAME:-（使用第一个 schedule）}"
-        cd /app && python -m src.main ${SCHEDULE_ARG} "${SCHEDULE_NAME:-}" || true
+        echo "▶ 立即入队一次: ${SCHEDULE_NAME:-（使用第一个 schedule）}"
+        cd /app && python -m src.main --schedule-name "${SCHEDULE_NAME:-}" || true
     fi
-
-    echo "🚀 启动 supercronic..."
-    exec supercronic -passthrough-logs /tmp/crontab
+    exec python -m src.main --all-in-one
     ;;
 
 *)
