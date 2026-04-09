@@ -104,6 +104,10 @@ collectors:
     max_items_per_feed_initial: 10  # 每 feed 初始抓取的标题数（供 AI 批量筛选）
     max_items_per_feed: 3           # 每 feed 最终进入摘要阶段的文章数
     feeds:
+      # Linux
+      - id: "phronix"
+        name: "Phoronix"
+        url: "https://www.phoronix.com/rss.php"
       # 科技资讯
       - id: "hacker-news"
         name: "Hacker News"
@@ -174,7 +178,7 @@ ai:
   # 示例：openai/gpt-5.2  |  gemini/gemini-3.1-pro-preview
   model: "openai/auto"
   # 自定义 API 端点（环境变量 AI_API_BASE 优先，使用官方接口时留空）
-  api_base: "http://fedora-desktop.local:11434"
+  api_base: "http://phree-RPLP-LP5-CPU-RaptorLake.sh.intel.com:11434"
   max_tokens: 2048              # 每条摘要的最大 token 数
   max_workers: 10                # Stage 2 并行 AI 调用数（根据 API 并发限制调整）
   min_relevance_score: 5        # 相关性过滤阈值（1-10），低于此分数不展示
