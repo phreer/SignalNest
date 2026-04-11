@@ -2,6 +2,7 @@
 {% block content %}
 {% if item %}
 {% set translated_title = item.translated_title or '' %}
+<p style="margin-top: 0;"><a href="/items">← 返回 Items</a></p>
 <div class="card">
   <div class="section-title news">📰 {{ translated_title if translated_title and translated_title != item.title else item.title }}</div>
   {% if translated_title and translated_title != item.title %}
@@ -48,7 +49,10 @@
 
 <div class="card" style="margin-top: 16px;">
   <div class="section-title status">🧾 Raw Metadata</div>
-  <div class="pre">{{ item.raw | tojson(indent=2) }}</div>
+  <details class="inline-details">
+    <summary>展开原始元数据</summary>
+    <div class="pre" style="margin-top: 10px;">{{ item.raw | tojson(indent=2) }}</div>
+  </details>
 </div>
 {% else %}
 <div class="card"><p>Item not found.</p></div>

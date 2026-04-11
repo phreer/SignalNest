@@ -441,6 +441,65 @@ class ApiTests(unittest.TestCase):
             self.assertEqual(len(items), 1)
             self.assertEqual(items[0]["source"], "rss")
 
+    def test_items_api_source_filter_is_case_insensitive_and_lists_sources(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            config = _sample_config(tmp)
+            store = AppStateStore.from_config(config)
+            store.init_db()
+            job_id = store.create_job_run(
+                schedule_name="早间日报", trigger_type="manual", dry_run=True
+            )
+            store.replace_items_for_job(
+                job_run_id=job_id,
+                digest_id=None,
+                items=[
+                    {
+                        "source": "rss",
+                        "external_id": "",
+                        "title": "rss item",
+                        "url": "https://example.com/rss",
+                        "author": "",
+                        "feed_title": "Feed",
+                        "language": "",
+                        "published_at": "2026-04-08T10:00:00+08:00",
+                        "selected_for_digest": True,
+                        "ai_score": 8,
+                        "ai_summary": "recent",
+                        "ai_reason": "",
+                        "raw": {"source": "rss", "url": "https://example.com/rss"},
+                    },
+                    {
+                        "source": "github",
+                        "external_id": "owner/repo",
+                        "title": "owner/repo",
+                        "url": "https://github.com/owner/repo",
+                        "author": "",
+                        "feed_title": "",
+                        "language": "Python",
+                        "published_at": "2026-04-08T11:00:00+08:00",
+                        "selected_for_digest": False,
+                        "ai_score": 5,
+                        "ai_summary": "repo",
+                        "ai_reason": "",
+                        "raw": {
+                            "source": "github",
+                            "url": "https://github.com/owner/repo",
+                        },
+                    },
+                ],
+            )
+
+            app = create_app(copy.deepcopy(config))
+            client = TestClient(app)
+            resp = client.get("/api/items?source=RSS")
+            self.assertEqual(resp.status_code, 200)
+            payload = resp.json()
+            self.assertEqual(payload["total"], 1)
+            self.assertEqual([item["source"] for item in payload["items"]], ["rss"])
+            self.assertEqual(payload["available_sources"], ["github", "rss"])
+
     def test_item_deep_summary_api(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             config = _sample_config(tmp)

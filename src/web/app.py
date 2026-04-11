@@ -137,6 +137,20 @@ def _build_status(config: dict, store: AppStateStore) -> dict[str, Any]:
     }
 
 
+def _bool_query_flag(value: str | bool | None) -> bool:
+    if isinstance(value, bool):
+        return value
+    return str(value or "").strip().lower() in {"1", "true", "on", "yes"}
+
+
+def _active_filters(filters: list[tuple[str, str]]) -> list[dict[str, str]]:
+    return [
+        {"label": label, "value": value}
+        for label, value in filters
+        if str(value or "").strip()
+    ]
+
+
 def _mask_email(email: str) -> str:
     """Partially mask an email address: p***e@example.com."""
     if not email or "@" not in email:
@@ -474,9 +488,13 @@ def create_app(config: dict | None = None) -> FastAPI:
     def render(
         request: Request, template_name: str, context: dict[str, Any]
     ) -> HTMLResponse:
+        current_path = str(request.url.path)
         base_context = {
             "request": request,
             "app_name": "SignalNest",
+            "current_path": current_path,
+            "flash_message": request.query_params.get("message", "").strip(),
+            "flash_error": request.query_params.get("error", "").strip(),
         }
         base_context.update(context)
         return templates.TemplateResponse(request, template_name, base_context)
@@ -493,6 +511,11 @@ def create_app(config: dict | None = None) -> FastAPI:
         trigger_type: str = "",
         schedule_name: str = "",
     ) -> HTMLResponse:
+        total_jobs = app.state.store.count_jobs(
+            status=status,
+            trigger_type=trigger_type,
+            schedule_name=schedule_name,
+        )
         jobs = app.state.store.list_jobs(
             limit=100,
             status=status,
@@ -511,6 +534,15 @@ def create_app(config: dict | None = None) -> FastAPI:
                 "selected_trigger_type": trigger_type,
                 "selected_schedule_name": schedule_name,
                 "schedules": schedules,
+                "total_jobs": total_jobs,
+                "active_filters": _active_filters(
+                    [
+                        ("状态", status),
+                        ("触发方式", trigger_type),
+                        ("Schedule", schedule_name),
+                    ]
+                ),
+                "clear_filters_url": "/jobs",
             },
         )
 
@@ -526,8 +558,15 @@ def create_app(config: dict | None = None) -> FastAPI:
                 dry_run=dry_run_flag,
             )
         except ScheduleAlreadyRunningError as exc:
-            raise HTTPException(status_code=409, detail=str(exc))
-        return RedirectResponse(url=f"/jobs/{job_run_id}", status_code=303)
+            return RedirectResponse(
+                url=f"/?error={str(exc)}",
+                status_code=303,
+            )
+        mode_text = "dry-run" if dry_run_flag else "正式运行"
+        return RedirectResponse(
+            url=f"/jobs/{job_run_id}?message=已创建任务，当前为{mode_text}。",
+            status_code=303,
+        )
 
     @app.get("/jobs/{job_run_id}", response_class=HTMLResponse)
     def job_detail(request: Request, job_run_id: int) -> HTMLResponse:
@@ -543,6 +582,7 @@ def create_app(config: dict | None = None) -> FastAPI:
 
     @app.get("/digests", response_class=HTMLResponse)
     def digest_list(request: Request, schedule_name: str = "") -> HTMLResponse:
+        total_digests = app.state.store.count_digests(schedule_name=schedule_name)
         digests = app.state.store.list_digests(limit=100, schedule_name=schedule_name)
         schedules = [
             str(item.get("name", "")) for item in app.state.config.get("schedules", [])
@@ -554,6 +594,9 @@ def create_app(config: dict | None = None) -> FastAPI:
                 "digests": digests,
                 "selected_schedule_name": schedule_name,
                 "schedules": schedules,
+                "total_digests": total_digests,
+                "active_filters": _active_filters([("Schedule", schedule_name)]),
+                "clear_filters_url": "/digests",
             },
         )
 
@@ -585,14 +628,22 @@ def create_app(config: dict | None = None) -> FastAPI:
         keyword: str = "",
         source: str = "",
         time_range: str = "",
-        selected_only: bool = False,
+        selected_only: str = "false",
     ) -> HTMLResponse:
+        selected_only_flag = _bool_query_flag(selected_only)
+        available_sources = app.state.store.list_item_sources()
+        total_items = app.state.store.count_items(
+            keyword=keyword,
+            source=source,
+            time_range=time_range,
+            selected_only=selected_only_flag,
+        )
         items = app.state.store.list_items(
             limit=200,
             keyword=keyword,
             source=source,
             time_range=time_range,
-            selected_only=selected_only,
+            selected_only=selected_only_flag,
         )
         return render(
             request,
@@ -602,7 +653,18 @@ def create_app(config: dict | None = None) -> FastAPI:
                 "selected_keyword": keyword,
                 "selected_source": source,
                 "selected_time_range": time_range,
-                "selected_only": selected_only,
+                "selected_only": selected_only_flag,
+                "available_sources": available_sources,
+                "total_items": total_items,
+                "active_filters": _active_filters(
+                    [
+                        ("关键词", keyword),
+                        ("来源", source),
+                        ("时间", time_range),
+                        ("仅已入选", "是" if selected_only_flag else ""),
+                    ]
+                ),
+                "clear_filters_url": "/items",
             },
         )
 
@@ -626,7 +688,8 @@ def create_app(config: dict | None = None) -> FastAPI:
             item_id=item_id,
         )
         return RedirectResponse(
-            url=f"/deep-summaries/{deep_summary_id}", status_code=303
+            url=f"/deep-summaries/{deep_summary_id}?message=已加入深度总结队列。",
+            status_code=303,
         )
 
     @app.get("/deep-summaries/{deep_summary_id}", response_class=HTMLResponse)
@@ -705,16 +768,24 @@ def create_app(config: dict | None = None) -> FastAPI:
         keyword: str = "",
         source: str = "",
         time_range: str = "",
-        selected_only: bool = False,
+        selected_only: str = "false",
     ) -> dict[str, Any]:
+        selected_only_flag = _bool_query_flag(selected_only)
         return {
             "items": app.state.store.list_items(
                 limit=200,
                 keyword=keyword,
                 source=source,
                 time_range=time_range,
-                selected_only=selected_only,
-            )
+                selected_only=selected_only_flag,
+            ),
+            "total": app.state.store.count_items(
+                keyword=keyword,
+                source=source,
+                time_range=time_range,
+                selected_only=selected_only_flag,
+            ),
+            "available_sources": app.state.store.list_item_sources(),
         }
 
     @app.get("/api/items/{item_id}")

@@ -14,6 +14,10 @@
     }
     a { color: #1d4ed8; text-decoration: none; }
     a:hover { text-decoration: underline; }
+    a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-visible {
+      outline: 3px solid rgba(37, 99, 235, 0.28);
+      outline-offset: 2px;
+    }
     .layout { max-width: 980px; margin: 0 auto; padding: 24px 16px 40px; }
     .header {
       background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%);
@@ -44,6 +48,13 @@
       color: rgba(255,255,255,0.92);
       font-size: 14px;
       font-weight: 500;
+      padding: 6px 10px;
+      border-radius: 999px;
+    }
+    .nav a.active {
+      background: rgba(255,255,255,0.18);
+      color: #fff;
+      text-decoration: none;
     }
     .grid { display: grid; gap: 16px; }
     .grid.cards { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
@@ -62,6 +73,7 @@
     th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid #f3f4f6; vertical-align: top; }
     th { color: #6b7280; font-weight: 600; }
     .actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: end; }
+    .actions .field { min-width: 140px; }
     input, select, button {
       background: #ffffff;
       color: #111827;
@@ -84,6 +96,57 @@
       font-size: 12px;
       color: #6b7280;
       background: #f9fafb;
+    }
+    .pill.active-filter {
+      background: #eff6ff;
+      border-color: #bfdbfe;
+      color: #1d4ed8;
+    }
+    .toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+    }
+    .toolbar-meta {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .empty-state {
+      padding: 20px 0 6px;
+      color: #6b7280;
+    }
+    .alert {
+      margin-bottom: 16px;
+      border-radius: 12px;
+      padding: 12px 14px;
+      border: 1px solid transparent;
+    }
+    .alert-success {
+      background: #ecfdf5;
+      color: #065f46;
+      border-color: #a7f3d0;
+    }
+    .alert-error {
+      background: #fef2f2;
+      color: #991b1b;
+      border-color: #fecaca;
+    }
+    .table-wrap {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    details.inline-details {
+      margin-top: 12px;
+    }
+    details.inline-details > summary {
+      cursor: pointer;
+      color: #374151;
+      font-weight: 600;
     }
     .pre {
       white-space: pre-wrap;
@@ -259,7 +322,9 @@
     .task-due-ai { color: #9ca3af; font-style: italic; }
     @media (max-width: 720px) {
       .layout { padding: 18px 12px 28px; }
-      th:nth-child(4), td:nth-child(4), th:nth-child(5), td:nth-child(5) { display: none; }
+      .card { padding: 14px; }
+      .nav { gap: 8px; }
+      .actions .field { min-width: 100%; }
     }
   </style>
 </head>
@@ -272,15 +337,21 @@
           <div class="meta">管理台延续 digest HTML 的视觉风格，优先服务状态、任务日志与摘要浏览。</div>
         </div>
         <div class="nav">
-        <a href="/">Dashboard</a>
-        <a href="/jobs">Jobs</a>
-        <a href="/items">Items</a>
-        <a href="/digests/latest">Latest Digest</a>
-        <a href="/digests">Digest History</a>
-        <a href="/config">Config</a>
+        <a href="/" class="{% if current_path == '/' %}active{% endif %}">Dashboard</a>
+        <a href="/jobs" class="{% if current_path.startswith('/jobs') %}active{% endif %}">Jobs</a>
+        <a href="/items" class="{% if current_path.startswith('/items') or current_path.startswith('/deep-summaries') %}active{% endif %}">Items</a>
+        <a href="/digests/latest" class="{% if current_path == '/digests/latest' %}active{% endif %}">Latest Digest</a>
+        <a href="/digests" class="{% if current_path.startswith('/digests') and current_path != '/digests/latest' %}active{% endif %}">Digest History</a>
+        <a href="/config" class="{% if current_path.startswith('/config') %}active{% endif %}">Config</a>
       </div>
       </div>
     </div>
+    {% if flash_message %}
+    <div class="alert alert-success">{{ flash_message }}</div>
+    {% endif %}
+    {% if flash_error %}
+    <div class="alert alert-error">{{ flash_error }}</div>
+    {% endif %}
     {% block content %}{% endblock %}
   </div>
 </body>

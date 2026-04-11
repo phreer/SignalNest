@@ -36,7 +36,7 @@
     手动触发沿用现有 schedule，支持 `dry-run`，适合临时验证采集和摘要流程。
   </div>
   <form class="actions" method="post" action="/jobs/run">
-    <div>
+    <div class="field">
       <label for="schedule_name">Schedule</label><br>
       <select id="schedule_name" name="schedule_name">
         {% for item in next_runs %}
@@ -44,11 +44,11 @@
         {% endfor %}
       </select>
     </div>
-    <div>
-      <label for="dry_run">Dry run</label><br>
+    <div class="field">
+      <label for="dry_run">Run mode</label><br>
       <select id="dry_run" name="dry_run">
-        <option value="false">false</option>
-        <option value="true">true</option>
+        <option value="true">Dry-run（仅验证，不发送）</option>
+        <option value="false">正式运行（允许发送）</option>
       </select>
     </div>
     <div>
@@ -60,6 +60,7 @@
 <div class="grid" style="grid-template-columns: 1.2fr 1fr; margin-top: 16px;">
   <div class="card">
     <div class="section-title status">📅 Next Runs</div>
+    <div class="table-wrap">
     <table>
       <thead>
         <tr>
@@ -84,9 +85,11 @@
         {% endfor %}
       </tbody>
     </table>
+    </div>
   </div>
   <div class="card">
     <div class="section-title jobs">🧾 Recent Jobs</div>
+    <div class="table-wrap">
     <table>
       <thead>
         <tr>
@@ -105,6 +108,7 @@
         {% endfor %}
       </tbody>
     </table>
+    </div>
   </div>
 </div>
 {% endblock %}

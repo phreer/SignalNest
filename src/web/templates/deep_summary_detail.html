@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% block content %}
 {% if deep_summary and item %}
+<p style="margin-top: 0;"><a href="/items/{{ item.id }}">← 返回 Item</a></p>
 <div class="card">
   <div class="section-title digest">🧠 Deep Summary #{{ deep_summary.id }}</div>
   <p><a href="/items/{{ item.id }}">{{ item.title }}</a></p>
@@ -18,7 +19,10 @@
 
 <div class="card" style="margin-top: 16px;">
   <div class="section-title status">📚 Source Content</div>
-  <div class="pre">{{ deep_summary.source_content or "(pending)" }}</div>
+  <details class="inline-details" {% if deep_summary.status != 'succeeded' %}open{% endif %}>
+    <summary>展开源内容</summary>
+    <div class="pre" style="margin-top: 10px;">{{ deep_summary.source_content or "(pending)" }}</div>
+  </details>
 </div>
 {% else %}
 <div class="card"><p>Deep summary not found.</p></div>

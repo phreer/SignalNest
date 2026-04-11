@@ -3,20 +3,20 @@
 <div class="card">
   <div class="section-title news">🗃 Collected Items</div>
   <form class="actions" method="get" action="/items">
-    <div>
+    <div class="field">
       <label for="keyword">Keyword</label><br>
       <input id="keyword" name="keyword" value="{{ selected_keyword }}" placeholder="title / summary / feed">
     </div>
-    <div>
+    <div class="field">
       <label for="source">Source</label><br>
       <select id="source" name="source">
         <option value="">All</option>
-        {% for value in ["rss", "github", "youtube"] %}
+        {% for value in available_sources %}
         <option value="{{ value }}" {% if selected_source == value %}selected{% endif %}>{{ value }}</option>
         {% endfor %}
       </select>
     </div>
-    <div>
+    <div class="field">
       <label for="time_range">Time</label><br>
       <select id="time_range" name="time_range">
         <option value="">All</option>
@@ -25,19 +25,39 @@
         {% endfor %}
       </select>
     </div>
-    <div>
-      <label for="selected_only">Selected</label><br>
+    <div class="field">
+      <label for="selected_only">Digest status</label><br>
       <select id="selected_only" name="selected_only">
-        <option value="false" {% if not selected_only %}selected{% endif %}>false</option>
-        <option value="true" {% if selected_only %}selected{% endif %}>true</option>
+        <option value="false" {% if not selected_only %}selected{% endif %}>全部</option>
+        <option value="true" {% if selected_only %}selected{% endif %}>仅已入选 digest</option>
       </select>
     </div>
     <div>
       <button type="submit">Filter</button>
     </div>
+    {% if active_filters %}
+    <div>
+      <a href="{{ clear_filters_url }}">清空筛选</a>
+    </div>
+    {% endif %}
   </form>
 
+  <div class="toolbar" style="margin-top: 16px;">
+    <div class="toolbar-meta">
+      <span class="pill">共 {{ total_items }} 条</span>
+      {% if total_items >= 200 %}<span class="pill">当前最多展示前 200 条</span>{% endif %}
+    </div>
+    {% if active_filters %}
+    <div class="toolbar-meta">
+      {% for filter in active_filters %}
+      <span class="pill active-filter">{{ filter.label }}: {{ filter.value }}</span>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+
   <div style="margin-top: 16px;">
+    {% if items %}
     {% for item in items %}
     <div class="news-item">
       <div class="news-meta">
@@ -69,6 +89,11 @@
       <p class="muted" title="{{ item_time | datetime_local }}">{{ item_time | datetime_relative }}</p>
     </div>
     {% endfor %}
+    {% else %}
+    <div class="empty-state">
+      当前筛选条件下没有结果。{% if active_filters %}<a href="{{ clear_filters_url }}">清空筛选后重试</a>{% endif %}
+    </div>
+    {% endif %}
   </div>
 </div>
 {% endblock %}

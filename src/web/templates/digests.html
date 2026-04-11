@@ -3,7 +3,7 @@
 <div class="card">
   <div class="section-title digest">🗂 Digest History</div>
   <form class="actions" method="get" action="/digests">
-    <div>
+    <div class="field">
       <label for="schedule_name">Schedule</label><br>
       <select id="schedule_name" name="schedule_name">
         <option value="">All</option>
@@ -15,9 +15,30 @@
     <div>
       <button type="submit">Filter</button>
     </div>
+    {% if active_filters %}
+    <div>
+      <a href="{{ clear_filters_url }}">清空筛选</a>
+    </div>
+    {% endif %}
   </form>
 
-  <table style="margin-top: 16px;">
+  <div class="toolbar" style="margin-top: 16px;">
+    <div class="toolbar-meta">
+      <span class="pill">共 {{ total_digests }} 条</span>
+      {% if total_digests >= 100 %}<span class="pill">当前最多展示前 100 条</span>{% endif %}
+    </div>
+    {% if active_filters %}
+    <div class="toolbar-meta">
+      {% for filter in active_filters %}
+      <span class="pill active-filter">{{ filter.label }}: {{ filter.value }}</span>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+
+  {% if digests %}
+  <div class="table-wrap" style="margin-top: 16px;">
+  <table>
     <thead>
       <tr>
         <th>ID</th>
@@ -38,5 +59,9 @@
       {% endfor %}
     </tbody>
   </table>
+  </div>
+  {% else %}
+  <div class="empty-state">还没有可显示的 digest。{% if active_filters %}<a href="{{ clear_filters_url }}">清空筛选</a>{% endif %}</div>
+  {% endif %}
 </div>
 {% endblock %}

@@ -6,6 +6,7 @@
 {% set schedule_entries = payload.get("schedule_entries", []) %}
 {% set projects = payload.get("projects", []) %}
 {% set focus = payload.get("focus", "") %}
+<p style="margin-top: 0;"><a href="/digests">← 返回 Digest History</a></p>
 <div class="card">
   <div class="section-title digest">💡 {{ digest.schedule_name }}</div>
   {% set digest_time = digest.digest_datetime or digest.created_at %}

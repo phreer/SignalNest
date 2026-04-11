@@ -766,6 +766,36 @@ class AppStateStore:
         finally:
             conn.close()
 
+    def count_jobs(
+        self,
+        *,
+        status: str = "",
+        trigger_type: str = "",
+        schedule_name: str = "",
+    ) -> int:
+        self.recover_stale_job_runs()
+        clauses = []
+        params: list[Any] = []
+        if status:
+            clauses.append("status=?")
+            params.append(status)
+        if trigger_type:
+            clauses.append("trigger_type=?")
+            params.append(trigger_type)
+        if schedule_name:
+            clauses.append("schedule_name=?")
+            params.append(schedule_name)
+        where_sql = f"WHERE {' AND '.join(clauses)}" if clauses else ""
+
+        conn = self._connect()
+        try:
+            row = conn.execute(
+                f"SELECT COUNT(*) AS count FROM job_runs {where_sql}", params
+            ).fetchone()
+            return int(row["count"] or 0) if row else 0
+        finally:
+            conn.close()
+
     def get_latest_running_job(self) -> dict[str, Any] | None:
         self.recover_stale_job_runs()
         now = _utcnow_iso()
@@ -904,6 +934,20 @@ class AppStateStore:
             return [
                 self._digest_row_to_dict(row, include_payload=False) for row in rows
             ]
+        finally:
+            conn.close()
+
+    def count_digests(self, *, schedule_name: str = "") -> int:
+        conn = self._connect()
+        try:
+            if schedule_name:
+                row = conn.execute(
+                    "SELECT COUNT(*) AS count FROM digests WHERE schedule_name=?",
+                    (schedule_name,),
+                ).fetchone()
+            else:
+                row = conn.execute("SELECT COUNT(*) AS count FROM digests").fetchone()
+            return int(row["count"] or 0) if row else 0
         finally:
             conn.close()
 
@@ -1140,29 +1184,12 @@ class AppStateStore:
         selected_only: bool = False,
     ) -> list[dict[str, Any]]:
         """List raw_items joined with their most recent annotation."""
-        clauses: list[str] = []
-        params: list[Any] = []
-        # Time expression falls back to first_seen_at when published_at is missing
-        time_expr = "COALESCE(datetime(r.published_at), datetime(r.first_seen_at))"
-        if keyword:
-            keyword_like = f"%{keyword}%"
-            clauses.append(
-                "(r.title LIKE ? OR r.translated_title LIKE ? OR ia.ai_summary LIKE ? OR r.feed_title LIKE ?)"
-            )
-            params.extend([keyword_like, keyword_like, keyword_like, keyword_like])
-        if source:
-            clauses.append("r.source=?")
-            params.append(source)
-        if selected_only:
-            clauses.append("ia.selected_for_digest=1")
-        if time_range in {"1d", "7d", "30d"}:
-            days = int(time_range[:-1])
-            cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).replace(
-                microsecond=0
-            )
-            clauses.append(f"{time_expr} >= datetime(?)")
-            params.append(cutoff.isoformat())
-        where_sql = f"WHERE {' AND '.join(clauses)}" if clauses else ""
+        where_sql, params, time_expr = self._build_item_filters(
+            keyword=keyword,
+            source=source,
+            time_range=time_range,
+            selected_only=selected_only,
+        )
 
         conn = self._connect()
         try:
@@ -1194,6 +1221,88 @@ class AppStateStore:
             return [self._raw_item_row_to_dict(row) for row in rows]
         finally:
             conn.close()
+
+    def count_items(
+        self,
+        *,
+        keyword: str = "",
+        source: str = "",
+        time_range: str = "",
+        selected_only: bool = False,
+    ) -> int:
+        where_sql, params, _time_expr = self._build_item_filters(
+            keyword=keyword,
+            source=source,
+            time_range=time_range,
+            selected_only=selected_only,
+        )
+
+        conn = self._connect()
+        try:
+            row = conn.execute(
+                f"""
+                SELECT COUNT(*) AS count
+                FROM raw_items r
+                LEFT JOIN item_annotations ia ON ia.id = (
+                    SELECT id FROM item_annotations
+                    WHERE raw_item_id = r.id
+                    ORDER BY created_at DESC, id DESC
+                    LIMIT 1
+                )
+                {where_sql}
+                """,
+                params,
+            ).fetchone()
+            return int(row["count"] or 0) if row else 0
+        finally:
+            conn.close()
+
+    def list_item_sources(self) -> list[str]:
+        conn = self._connect()
+        try:
+            rows = conn.execute(
+                "SELECT DISTINCT source FROM raw_items WHERE COALESCE(source, '') != '' ORDER BY source ASC"
+            ).fetchall()
+            return [str(row["source"]) for row in rows if row["source"]]
+        finally:
+            conn.close()
+
+    def _build_item_filters(
+        self,
+        *,
+        keyword: str = "",
+        source: str = "",
+        time_range: str = "",
+        selected_only: bool = False,
+    ) -> tuple[str, list[Any], str]:
+        clauses: list[str] = []
+        params: list[Any] = []
+        time_expr = "COALESCE(datetime(r.published_at), datetime(r.first_seen_at))"
+
+        normalized_keyword = str(keyword or "").strip()
+        normalized_source = str(source or "").strip().lower()
+
+        if normalized_keyword:
+            keyword_like = f"%{normalized_keyword}%"
+            clauses.append(
+                "(r.title LIKE ? OR r.translated_title LIKE ? OR ia.ai_summary LIKE ? OR r.feed_title LIKE ?)"
+            )
+            params.extend([keyword_like, keyword_like, keyword_like, keyword_like])
+        if normalized_source:
+            clauses.append("LOWER(r.source)=?")
+            params.append(normalized_source)
+        if selected_only:
+            clauses.append("ia.selected_for_digest=1")
+        if time_range in {"1d", "7d", "30d"}:
+            days = int(time_range[:-1])
+            cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).replace(
+                microsecond=0
+            )
+            clauses.append(f"{time_expr} >= datetime(?)")
+            params.append(cutoff.isoformat())
+
+        where_sql = f"WHERE {' AND '.join(clauses)}" if clauses else ""
+        return where_sql, params, time_expr
 
     def get_url_to_item_id_map(self, job_run_id: int) -> dict[str, int]:
         """Return {url: raw_item_id} for all items annotated in a given job run."""

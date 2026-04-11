@@ -3,6 +3,7 @@
 {% if not job %}
 <div class="card"><p>Job not found.</p></div>
 {% else %}
+<p style="margin-top: 0;"><a href="/jobs">← 返回 Jobs</a></p>
 
 {# ── Inline styles for this page ───────────────────────────────────────────── #}
 <style>
@@ -384,6 +385,7 @@
     <span class="filter-pill" data-level="ERROR" onclick="filterLogs(this)">ERROR</span>
   </div>
 
+  <div class="table-wrap">
   <table id="log-table">
     <thead>
       <tr>
@@ -416,6 +418,7 @@
       {% endfor %}
     </tbody>
   </table>
+  </div>
 </div>
 
 {# ── Scripts ─────────────────────────────────────────────────────────────────── #}
@@ -451,7 +454,7 @@ function filterLogs(pill) {
         var job = data.job;
         if (!job) return;
         // Stop polling once terminal
-        if (job.status === 'succeeded' || job.status === 'failed') {
+        if (['succeeded', 'failed', 'lost', 'cancelled'].indexOf(job.status) !== -1) {
           clearInterval(interval);
           // Full page reload to show final state
           window.location.reload();
