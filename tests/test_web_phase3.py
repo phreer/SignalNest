@@ -12,7 +12,7 @@ from zoneinfo import ZoneInfo
 
 from fastapi.testclient import TestClient
 
-from src.web.app import create_app
+from src.web.app import bootstrap_app_state, create_app
 from src.web.runtime import (
     ScheduleAlreadyRunningError,
     _auto_deep_summaries,
@@ -468,7 +468,8 @@ class ConfigApiTests(unittest.TestCase):
     def test_config_api_masks_sensitive_fields(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             config = _sample_config(tmp)
-            app = create_app(copy.deepcopy(config))
+            app_config = copy.deepcopy(config)
+            app = create_app(app_config, store=bootstrap_app_state(app_config))
             client = TestClient(app)
 
             # Inject a fake API key into the environment
@@ -485,7 +486,8 @@ class ConfigApiTests(unittest.TestCase):
     def test_config_api_shows_env_overrides(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             config = _sample_config(tmp)
-            app = create_app(copy.deepcopy(config))
+            app_config = copy.deepcopy(config)
+            app = create_app(app_config, store=bootstrap_app_state(app_config))
             client = TestClient(app)
 
             with patch.dict(
@@ -502,7 +504,8 @@ class ConfigApiTests(unittest.TestCase):
     def test_config_page_renders(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             config = _sample_config(tmp)
-            app = create_app(copy.deepcopy(config))
+            app_config = copy.deepcopy(config)
+            app = create_app(app_config, store=bootstrap_app_state(app_config))
             client = TestClient(app)
             resp = client.get("/config")
             self.assertEqual(resp.status_code, 200)
@@ -531,7 +534,8 @@ class LeaseAwareStatusTests(unittest.TestCase):
             finally:
                 conn.close()
 
-            app = create_app(copy.deepcopy(config))
+            app_config = copy.deepcopy(config)
+            app = create_app(app_config, store=bootstrap_app_state(app_config))
             client = TestClient(app)
             resp = client.get("/api/status")
             self.assertEqual(resp.status_code, 200)

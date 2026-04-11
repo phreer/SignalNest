@@ -6,7 +6,7 @@ SignalNest now includes a built-in web console for operational visibility and co
 
 The web runtime now uses an application-owned queued job model: manual triggers and scheduled triggers both insert `job_runs`, workers claim queued jobs with leases, and scheduler ticks enqueue due schedule slots from `config.yaml`.
 
-This replaced the earlier `supercronic -> python -m src.main` execution path that could leave stale `running` rows behind when a child process died unexpectedly.
+This replaced the earlier external cron-triggered execution path that could leave stale `running` rows behind when a child process died unexpectedly.
 
 Current implementation status:
 - Operational console: implemented
@@ -24,39 +24,30 @@ The web layer is built with:
 
 ### Current Runtime
 
-SignalNest supports these container runtime modes through `RUN_MODE`:
-- `all`: web UI + worker + internal scheduler in one container
-- `worker`: worker + internal scheduler only
-- `web`: web UI only
-- `once`: enqueue one schedule and exit
-
-Recommended deployment is single-container mode:
-- `RUN_MODE=all`
+SignalNest now uses one default long-running service entrypoint:
+- `python -m src.main`
 
 In this mode:
-- the web UI runs in the same container
-- an internal worker loop claims queued jobs and executes them
-- an internal scheduler loop enqueues due jobs from `config.yaml`
+- the web UI runs in the main process
+- a single embedded worker loop claims queued jobs and executes them
+- a single embedded scheduler loop enqueues due jobs from `config.yaml`
 - all components share the same local `data/` directory and SQLite files
+- the deployment assumption is one service instance and one uvicorn worker
 
 Related files:
 - `docker/entrypoint.sh`
 - `docker/docker-compose.yml`
 
-### Target Runtime
+### Design Choice
 
-The current runtime already removes `supercronic` from the critical path and replaces direct process spawning with a durable job queue managed in the application database.
+The current runtime intentionally keeps scheduling inside the application instead of separate process roles.
 
-Target process roles:
+Current operational model:
 - `web`: UI, APIs, manual trigger requests, read-only operational views
-- `scheduler`: computes due schedules from `config.yaml` and enqueues jobs
-- `worker`: claims queued jobs, executes them, refreshes heartbeats, and writes terminal states
+- embedded `scheduler`: computes due schedules from `config.yaml` and enqueues jobs
+- embedded `worker`: claims queued jobs, executes them, refreshes heartbeats, and writes terminal states
 
-Recommended deployment shapes:
-- small self-hosted deployment: one `web` process and one `worker` process, with the scheduler loop embedded in the worker process
-- clearer separation: independent `web`, `scheduler`, and `worker` processes
-
-The critical change is that scheduling will enqueue work instead of directly executing `python -m src.main`. Workers become the only component allowed to transition a queued job into `running`.
+The critical change is that scheduling enqueues work instead of directly executing a child process. The worker loop is the only component allowed to transition a queued job into `running`.
 
 ## Refactor Plan
 
@@ -195,7 +186,7 @@ Acceptance criteria:
 Current status:
 - manual runs are now enqueued instead of executed in web request threads
 - a local worker loop can claim queued `manual` and `cron` jobs and execute them through the shared tracked-run path
-- scheduled runs are now enqueued by the internal scheduler/queue path instead of shell-generated `supercronic` child processes
+- scheduled runs are now enqueued by the internal scheduler/queue path instead of shell-generated child processes
 
 Acceptance criteria:
 - manual runs and scheduled runs share one execution path after enqueue
@@ -205,12 +196,12 @@ Acceptance criteria:
 
 - add a durable scheduler loop inside a dedicated process role
 - remove crontab generation from `docker/entrypoint.sh`
-- retire `RUN_MODE=cron` in favor of worker/scheduler-oriented modes
+- retire externally switched runtime modes in favor of the single service entrypoint
 
 Current status:
 - `docker/entrypoint.sh` now starts internal worker/scheduler modes instead of generating crontab files
 - `run_scheduler_tick()` and `run_scheduler_loop()` enqueue due schedule slots with deterministic idempotency keys
-- `RUN_MODE=all` and `RUN_MODE=worker` now rely on the internal scheduler rather than `supercronic`
+- the default service entrypoint now relies on the internal scheduler rather than an external cron helper
 
 Acceptance criteria:
 - scheduled runs are created only through the app-level queue
@@ -410,6 +401,5 @@ Relevant test files:
 - `src/web/store.py`
 - `src/web/content.py`
 - `src/web/templates/`
-- `src/web_main.py`
 - `docker/entrypoint.sh`
 - `docker/docker-compose.yml`

@@ -6,7 +6,7 @@ A self-hosted personal AI digest system — scheduled aggregation from GitHub Tr
 
 [![Docker](https://img.shields.io/badge/Docker-ready-2496ED?style=flat-square&logo=docker&logoColor=white)](#-quick-start)
 [![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=flat-square&logo=python&logoColor=white)](#)
-[![Scheduler](https://img.shields.io/badge/Scheduler-supercronic-orange?style=flat-square)](https://github.com/aptible/supercronic)
+[![Scheduler](https://img.shields.io/badge/Scheduler-embedded-orange?style=flat-square)](#-architecture-overview)
 [![Mode](https://img.shields.io/badge/Executor-agent-00A86B?style=flat-square)](#-agent-mode)
 
 **[中文](README.md)** | **[English](README-EN.md)**
@@ -45,14 +45,17 @@ A self-hosted personal AI digest system — scheduled aggregation from GitHub Tr
 ## 🏗️ Architecture Overview
 
 ```text
-Docker entrypoint (supercronic)
-  -> python -m src.main --schedule-name <name>
-
-main.py (agent-only)
-  -> agent.kernel            (LLM planning + tool calls + session persistence)
-  -> agent.tools             (collect/summarize/payload/dispatch tools)
+python -m src.main
+  -> web.app               (FastAPI + Jinja2 Web UI)
+  -> web.runtime           (embedded single worker + scheduler)
+  -> main.run_schedule     (shared scheduled execution entrypoint)
+  -> agent.kernel          (LLM planning + tool calls + session persistence)
+  -> agent.tools           (collect/summarize/payload/dispatch tools)
   -> ai.feedback + data/history + data/last_digest.json
 ```
+
+The default service mode is a single process with a single uvicorn worker. Starting the Web UI also starts the embedded worker and scheduler.
+Running multiple service instances or `uvicorn --workers > 1` would duplicate the background scheduler threads and is not supported today.
 
 ## 🚀 Quick Start
 
@@ -201,14 +204,13 @@ Environment variables override `config.yaml`:
 - `AI_API_BASE`
 - `AI_API_KEY`
 
-### Docker execution modes
+### Docker runtime
 
-`docker/entrypoint.sh` supports:
+`docker/entrypoint.sh` now starts the single service entrypoint by default: `python -m src.main`.
 
-- `RUN_MODE=cron` (default): parse `config.yaml`, generate crontab, keep running with supercronic.
-- `RUN_MODE=once`: execute one schedule and exit.
-
-Scheduler command is fixed to: `python -m src.main --schedule-name <name>`.
+- Long-running service: Web UI + embedded worker + embedded scheduler
+- Queue one run before startup: set `IMMEDIATE_RUN=true`
+- One-off debugging run: override the container command with `python -m src.main --schedule-name <name>`
 
 ## 🤖 Agent Mode
 

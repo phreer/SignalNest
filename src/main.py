@@ -1,7 +1,8 @@
 """
 main.py - SignalNest agent-only orchestrator
 ==========================================
-Invoked by Docker entrypoint / supercronic:
+Invoked by the Docker entrypoint or manual CLI:
+  python -m src.main
   python -m src.main --schedule-name "早间日报"
   python -m src.main --schedule-name "早间日报" --dry-run
 """
@@ -13,10 +14,13 @@ import logging
 import os
 import re
 import sys
+import threading
 from datetime import date, datetime
 from pathlib import Path
 from typing import Any, Callable
 from zoneinfo import ZoneInfo
+
+import uvicorn
 
 from src.ai.dedup import stable_history_key
 from src.config_loader import load_config
@@ -317,6 +321,46 @@ def run_query(query: str, config: dict) -> dict:
     return result
 
 
+def serve(config: dict) -> None:
+    """Run the web UI with the embedded worker and scheduler enabled."""
+    from src.web.app import bootstrap_app_state, create_app
+    from src.web.runtime import run_worker_loop
+
+    host = os.environ.get("WEB_HOST", "0.0.0.0")
+    port = int(os.environ.get("WEB_PORT", "8080"))
+
+    serve_config = copy.deepcopy(config)
+    runtime_cfg = dict(serve_config.get("runtime", {}))
+    runtime_cfg["embedded_scheduler"] = True
+    serve_config["runtime"] = runtime_cfg
+    store = bootstrap_app_state(serve_config)
+    worker_stop_event = threading.Event()
+    worker_thread = threading.Thread(
+        target=run_worker_loop,
+        kwargs={
+            "config": serve_config,
+            "stop_event": worker_stop_event,
+            "worker_id": f"service-worker-{os.getpid()}",
+            "scheduler_enabled": True,
+        },
+        name="signalnest-worker",
+        daemon=True,
+    )
+
+    logger.info(
+        "starting web service on %s:%s with embedded worker+scheduler",
+        host,
+        port,
+    )
+    worker_thread.start()
+    try:
+        app = create_app(serve_config, store=store)
+        uvicorn.run(app, host=host, port=port)
+    finally:
+        worker_stop_event.set()
+        worker_thread.join(timeout=5)
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="SignalNest - Agent-only 个人 AI 日报服务"
@@ -337,31 +381,6 @@ def main():
         metavar="TEXT",
         help="向 agent 提问（交互查询模式，不发送通知）",
     )
-    parser.add_argument(
-        "--worker",
-        action="store_true",
-        help="运行 job worker，轮询并执行已入队任务",
-    )
-    parser.add_argument(
-        "--worker-once",
-        action="store_true",
-        help="运行 worker 并最多处理一个已入队任务后退出",
-    )
-    parser.add_argument(
-        "--scheduler",
-        action="store_true",
-        help="运行内部 scheduler，按配置检测到点任务并入队",
-    )
-    parser.add_argument(
-        "--scheduler-once",
-        action="store_true",
-        help="运行一次 scheduler tick 后退出",
-    )
-    parser.add_argument(
-        "--all-in-one",
-        action="store_true",
-        help="运行 worker，并在同一进程内启用内部 scheduler",
-    )
     args = parser.parse_args()
 
     logging.basicConfig(
@@ -377,30 +396,7 @@ def main():
         print(f"[query] {args.query}")
         print(f"[agent session] {result['session_id']} | turn #{result['turn_index']}")
         print(result.get("response", ""))
-    elif args.scheduler or args.scheduler_once:
-        from src.web.runtime import run_scheduler_loop, run_scheduler_tick
-
-        if args.scheduler_once:
-            queued = run_scheduler_tick(config)
-            print(f"[scheduler] queued={len(queued)}")
-        else:
-            queued = run_scheduler_loop(config)
-            print(f"[scheduler] queued={queued}")
-    elif args.all_in_one:
-        from src.web.runtime import run_worker_loop
-
-        processed = run_worker_loop(config, scheduler_enabled=True)
-        print(f"[all-in-one] processed={processed}")
-    elif args.worker or args.worker_once:
-        from src.web.runtime import run_worker_loop
-
-        processed = run_worker_loop(
-            config,
-            run_once=args.worker_once,
-            scheduler_enabled=args.all_in_one,
-        )
-        print(f"[worker] processed={processed}")
-    else:
+    elif args.schedule_name or args.dry_run:
         from src.web.runtime import enqueue_scheduled_run
 
         result = enqueue_scheduled_run(
@@ -416,6 +412,8 @@ def main():
             )
         else:
             print(f"[queue] job_run_id={result['job_run_id']}")
+    else:
+        serve(config)
 
 
 if __name__ == "__main__":

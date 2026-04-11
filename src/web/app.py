@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import os
 import re
-import threading
 from contextlib import asynccontextmanager
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
@@ -20,7 +19,6 @@ from src.web.runtime import (
     ScheduleAlreadyRunningError,
     enqueue_manual_deep_summary,
     enqueue_manual_run,
-    run_worker_loop,
 )
 from src.web.store import AppStateStore
 
@@ -31,6 +29,14 @@ _SENSITIVE_ENV_PATTERNS = re.compile(
 
 def _template_dir() -> Path:
     return Path(__file__).with_name("templates")
+
+
+def bootstrap_app_state(config: dict) -> AppStateStore:
+    """Prepare the persistent web state used by the service and UI."""
+    store = AppStateStore.from_config(config)
+    store.init_db()
+    store.sync_output_archives(config)
+    return store
 
 
 def _parse_datetime(value: Any) -> datetime | None:
@@ -452,11 +458,8 @@ def _build_config_view(config: dict) -> dict[str, Any]:
     }
 
 
-def create_app(config: dict | None = None) -> FastAPI:
+def create_app(config: dict | None = None, *, store: AppStateStore) -> FastAPI:
     resolved_config = config or load_config()
-    store = AppStateStore.from_config(resolved_config)
-    store.init_db()
-    store.sync_output_archives(resolved_config)
 
     templates = Jinja2Templates(directory=str(_template_dir()))
     app_tz = ZoneInfo(resolved_config.get("app", {}).get("timezone", "Asia/Shanghai"))
@@ -469,29 +472,12 @@ def create_app(config: dict | None = None) -> FastAPI:
     deep_summary_executor = ThreadPoolExecutor(
         max_workers=2, thread_name_prefix="signalnest-deep-summary"
     )
-    worker_stop_event = threading.Event()
-    worker_thread = threading.Thread(
-        target=run_worker_loop,
-        kwargs={
-            "config": resolved_config,
-            "stop_event": worker_stop_event,
-            "worker_id": f"web-worker-{os.getpid()}",
-            "scheduler_enabled": bool(
-                resolved_config.get("runtime", {}).get("embedded_scheduler", False)
-            ),
-        },
-        name="signalnest-worker",
-        daemon=True,
-    )
 
     @asynccontextmanager
     async def lifespan(_app: FastAPI):
         try:
-            worker_thread.start()
             yield
         finally:
-            worker_stop_event.set()
-            worker_thread.join(timeout=5)
             deep_summary_executor.shutdown(wait=False, cancel_futures=False)
 
     app = FastAPI(title="SignalNest Web", lifespan=lifespan)

@@ -11,7 +11,7 @@ from unittest.mock import patch
 
 from fastapi.testclient import TestClient
 
-from src.web.app import create_app
+from src.web.app import bootstrap_app_state, create_app
 from src.web.runtime import run_deep_summary, run_tracked_schedule
 from src.web.store import AppStateStore
 
@@ -378,7 +378,8 @@ class ApiTests(unittest.TestCase):
                 ],
             )
 
-            app = create_app(copy.deepcopy(config))
+            app_config = copy.deepcopy(config)
+            app = create_app(app_config, store=bootstrap_app_state(app_config))
             client = TestClient(app)
             resp = client.get("/api/items?time_range=1d")
             self.assertEqual(resp.status_code, 200)
@@ -388,7 +389,8 @@ class ApiTests(unittest.TestCase):
     def test_status_and_manual_run_api(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             config = _sample_config(tmp)
-            app = create_app(copy.deepcopy(config))
+            app_config = copy.deepcopy(config)
+            app = create_app(app_config, store=bootstrap_app_state(app_config))
             client = TestClient(app)
 
             status_resp = client.get("/api/status")
@@ -417,7 +419,8 @@ class ApiTests(unittest.TestCase):
                 encoding="utf-8",
             )
 
-            app = create_app(copy.deepcopy(config))
+            app_config = copy.deepcopy(config)
+            app = create_app(app_config, store=bootstrap_app_state(app_config))
             client = TestClient(app)
             resp = client.get("/api/digests/latest")
             self.assertEqual(resp.status_code, 200)
@@ -433,7 +436,8 @@ class ApiTests(unittest.TestCase):
                     "早间日报", config, dry_run=True, trigger_type="manual"
                 )
 
-            app = create_app(copy.deepcopy(config))
+            app_config = copy.deepcopy(config)
+            app = create_app(app_config, store=bootstrap_app_state(app_config))
             client = TestClient(app)
             resp = client.get("/api/items?source=rss&selected_only=true")
             self.assertEqual(resp.status_code, 200)
@@ -491,7 +495,8 @@ class ApiTests(unittest.TestCase):
                 ],
             )
 
-            app = create_app(copy.deepcopy(config))
+            app_config = copy.deepcopy(config)
+            app = create_app(app_config, store=bootstrap_app_state(app_config))
             client = TestClient(app)
             resp = client.get("/api/items?source=RSS")
             self.assertEqual(resp.status_code, 200)
@@ -545,7 +550,8 @@ class ApiTests(unittest.TestCase):
                 ],
             )
 
-            app = create_app(copy.deepcopy(config))
+            app_config = copy.deepcopy(config)
+            app = create_app(app_config, store=bootstrap_app_state(app_config))
             client = TestClient(app)
             resp = client.get("/api/items?source=rss&source_name=Feed%20Alpha")
             self.assertEqual(resp.status_code, 200)
@@ -603,7 +609,8 @@ class ApiTests(unittest.TestCase):
                 ],
             )
 
-            app = create_app(copy.deepcopy(config))
+            app_config = copy.deepcopy(config)
+            app = create_app(app_config, store=bootstrap_app_state(app_config))
             client = TestClient(app)
             resp = client.get("/items?source=rss&source_name=Feed%20Alpha")
             self.assertEqual(resp.status_code, 200)
@@ -645,7 +652,8 @@ class ApiTests(unittest.TestCase):
             )
             item = store.list_items(limit=10)[0]
 
-            app = create_app(copy.deepcopy(config))
+            app_config = copy.deepcopy(config)
+            app = create_app(app_config, store=bootstrap_app_state(app_config))
             client = TestClient(app)
             with patch(
                 "src.web.app.enqueue_manual_deep_summary", return_value=(77, None)
@@ -657,7 +665,8 @@ class ApiTests(unittest.TestCase):
     def test_item_deep_summary_api_rejects_missing_item(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             config = _sample_config(tmp)
-            app = create_app(copy.deepcopy(config))
+            app_config = copy.deepcopy(config)
+            app = create_app(app_config, store=bootstrap_app_state(app_config))
             client = TestClient(app)
 
             resp = client.post("/api/items/999/deep-summary")

@@ -17,7 +17,7 @@ app:
 #
 # 每个 entry 定义一个触发时间点：
 #   name:           调度名称（日志和邮件主题中显示）
-#   cron:           标准 cron 表达式（由 supercronic 执行）
+#   cron:           标准 cron 表达式（由内置 scheduler 检测触发）
 #   content:        内容块列表，可选值：
 #                     news     - 采集新闻 + AI 摘要
 #                     schedule - 读取今日日程（personal/schedule.yaml）
@@ -275,4 +275,3 @@ deep_summary:
   timeout_per_item: 120
   # 不参与自动深度摘要的信息源（如只想对 rss 文章做深度阅读，可排除 github/youtube）
   exclude_sources: []
-
