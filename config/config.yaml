@@ -34,7 +34,7 @@ schedules:
     # - AI/科技：昨夜重要发布、开源项目、模型更新
     # - 金融：亚欧市场动态、美股期货、宏观政策信号
     # - 政治：重大外交/政策动向、地缘风险预警
-    focus: "AI大模型、科技产品、科技公司、研究人员最新动态（发布/开源/融资）；金融市场早盘信号、宏观经济政策与央行动向；全球重要政治外交事件与地缘风险；优先呈现时效性强、影响面广的突发与要闻"
+    focus: "AI、大模型、开源社区、Linux、Graphics、科技产品、科技公司、研究人员最新动态（发布/融资）；金融市场早盘信号、宏观经济政策与央行动向；全球重要政治外交事件与地缘风险；优先呈现时效性强、影响面广的突发与要闻"
     subject_prefix: "早安 | SignalNest"
 
   - name: "晚间日报"
@@ -108,7 +108,44 @@ collectors:
       - id: "phronix"
         name: "Phoronix"
         url: "https://www.phoronix.com/rss.php"
+      # Developer
+      - id: "devblogs-directx"
+        name: "DirectX Developer Blog"
+        url: "https://devblogs.microsoft.com/directx/feed/"
+      - id: "drew-devault"
+        name: "Drew DeVault's blog"
+        url: "https://drewdevault.com/blog/index.xml"
+      - id: "fedora-magazine"
+        name: "Fedora Magazine"
+        url: "https://fedoramagazine.org/feed/"
+      - id: "freebsd-news-flash"
+        name: "FreeBSD News Flash"
+        url: "https://www.freebsd.org/news/feed.xml"
+      - id: "collabora-newsroom"
+        name: "Collabora Newsroom RSS Feed"
+        url: "https://www.collabora.com/feed"
+      - id: "kraxel-news"
+        name: "kraxel's news"
+        url: "https://www.kraxel.org/blog/feed.xml"
+      - id: "lwn"
+        name: "LWN.net"
+        url: "https://lwn.net/headlines/rss"
+      - id: "ubuntu-blog"
+        name: "Ubuntu blog"
+        url: "https://ubuntu.com/blog/feed"
+      - id: "ebpf-top"
+        name: "深入浅出 eBPF"
+        url: "https://www.ebpf.top/index.xml"
+      - id: "danvet-blog"
+        name: "stuff by danvet"
+        url: "https://blog.ffwll.ch/feed.xml"
       # 科技资讯
+      - id: "phoronix"
+        name: "Phoronix"
+        url: "https://www.phoronix.com/rss.php"
+      - id: "ithome"
+        name: "IT之家"
+        url: "https://www.ithome.com/rss/"
       - id: "hacker-news"
         name: "Hacker News"
         url: "https://hnrss.org/frontpage"
@@ -130,6 +167,15 @@ collectors:
       - id: "mit-tech-review"
         name: "MIT Technology Review"
         url: "https://www.technologyreview.com/feed/"
+      - id: "tomshardware"
+        name: "Tomshardware"
+        url: "https://www.tomshardware.com/feeds/all"
+      - id: "slashdot"
+        name: "Slashdot"
+        url: "http://rss.slashdot.org/Slashdot/slashdotMain"
+      - id: "himiku"
+        name: "初之音"
+        url: "https://www.himiku.com/feed/"
       # AI 专项
       - id: "langchain-blog"
         name: "LangChain Blog"
@@ -178,7 +224,7 @@ ai:
   # 示例：openai/gpt-5.2  |  gemini/gemini-3.1-pro-preview
   model: "openai/auto"
   # 自定义 API 端点（环境变量 AI_API_BASE 优先，使用官方接口时留空）
-  api_base: "http://phree-RPLP-LP5-CPU-RaptorLake.sh.intel.com:11434"
+  api_base: "http://fedora-desktop.local:11434"
   max_tokens: 2048              # 每条摘要的最大 token 数
   max_workers: 10                # Stage 2 并行 AI 调用数（根据 API 并发限制调整）
   min_relevance_score: 5        # 相关性过滤阈值（1-10），低于此分数不展示
