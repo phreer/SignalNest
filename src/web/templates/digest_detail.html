@@ -98,26 +98,20 @@
         {% set item_id = url_to_item_id.get(item.get('url', '')) %}
         {% if item_id %}
         <a href="/items/{{ item_id }}">
-          <span class="news-title-main">{{ translated_title if translated_title and translated_title != item.get("title", "") else item.get("title", "") }}</span>
-          {% if translated_title and translated_title != item.get("title", "") %}
-          <span class="news-title-original">{{ item.get("title", "") }}</span>
-          {% endif %}
+          <span class="news-title-main">{{ item.get("title", "") }}</span>
         </a>
         {% elif item.get("url") %}
         <a href="{{ item.get('url') }}" target="_blank" rel="noreferrer">
-          <span class="news-title-main">{{ translated_title if translated_title and translated_title != item.get("title", "") else item.get("title", "") }}</span>
-          {% if translated_title and translated_title != item.get("title", "") %}
-          <span class="news-title-original">{{ item.get("title", "") }}</span>
-          {% endif %}
+          <span class="news-title-main">{{ item.get("title", "") }}</span>
         </a>
         {% else %}
-        <span class="news-title-main">{{ translated_title if translated_title and translated_title != item.get("title", "") else item.get("title", "") }}</span>
-        {% if translated_title and translated_title != item.get("title", "") %}
-        <span class="news-title-original">{{ item.get("title", "") }}</span>
-        {% endif %}
+        <span class="news-title-main">{{ item.get("title", "") }}</span>
         {% endif %}
         {% if item.get("url") %}
-        <a class="muted" style="font-size:12px;margin-left:8px" href="{{ item.get('url') }}" target="_blank" rel="noreferrer">查看原文 ↗</a>
+        <a class="muted news-origin-link" href="{{ item.get('url') }}" target="_blank" rel="noreferrer">查看原文 ↗</a>
+        {% endif %}
+        {% if translated_title and translated_title != item.get("title", "") %}
+        <span class="news-title-translation">{{ translated_title }}</span>
         {% endif %}
       </p>
       {% if item.get("ai_summary") %}

@@ -53,13 +53,13 @@
       <p class="news-title">
         {% set translated_title = item.translated_title or '' %}
         <a href="/items/{{ item.id }}">
-          <span class="news-title-main">{{ translated_title if translated_title and translated_title != item.title else item.title }}</span>
-          {% if translated_title and translated_title != item.title %}
-          <span class="news-title-original">{{ item.title }}</span>
-          {% endif %}
+          <span class="news-title-main">{{ item.title }}</span>
         </a>
         {% if item.url %}
-        <a class="muted" style="font-size:12px;margin-left:8px" href="{{ item.url }}" target="_blank" rel="noreferrer">查看原文 ↗</a>
+        <a class="muted news-origin-link" href="{{ item.url }}" target="_blank" rel="noreferrer">查看原文 ↗</a>
+        {% endif %}
+        {% if translated_title and translated_title != item.title %}
+        <span class="news-title-translation">{{ translated_title }}</span>
         {% endif %}
       </p>
       {% if item.ai_summary %}
