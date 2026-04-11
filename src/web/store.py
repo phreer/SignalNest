@@ -987,6 +987,26 @@ class AppStateStore:
             conn.close()
         return ids
 
+    def list_raw_items_missing_translation(
+        self, limit: int = 100
+    ) -> list[dict[str, Any]]:
+        conn = self._connect()
+        try:
+            rows = conn.execute(
+                """
+                SELECT *
+                FROM raw_items
+                WHERE source != 'github'
+                  AND COALESCE(translated_title, '') = ''
+                ORDER BY id ASC
+                LIMIT ?
+                """,
+                (max(1, int(limit)),),
+            ).fetchall()
+            return [self._raw_item_row_to_dict(row) for row in rows]
+        finally:
+            conn.close()
+
     def replace_annotations_for_job(
         self,
         *,

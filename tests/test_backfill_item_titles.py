@@ -3,7 +3,6 @@ from __future__ import annotations
 import tempfile
 import unittest
 
-from scripts.backfill_item_titles import _load_pending_items
 from src.web.store import AppStateStore
 
 
@@ -35,7 +34,9 @@ def _sample_config(data_dir: str) -> dict:
 
 
 class BackfillItemTitlesTests(unittest.TestCase):
-    def test_load_pending_items_skips_github_and_existing_translations(self) -> None:
+    def test_list_raw_items_missing_translation_skips_github_and_existing_translations(
+        self,
+    ) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             store = AppStateStore.from_config(_sample_config(tmp))
             store.init_db()
@@ -60,7 +61,7 @@ class BackfillItemTitlesTests(unittest.TestCase):
                 ]
             )
 
-            pending = _load_pending_items(store, limit=10)
+            pending = store.list_raw_items_missing_translation(limit=10)
 
         self.assertEqual(len(pending), 1)
         self.assertEqual(pending[0]["title"], "A")
