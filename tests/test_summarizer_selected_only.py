@@ -8,7 +8,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from src.ai.summarizer import summarize_items
 
 
-def test_summarize_items_skips_history_based_dedup(monkeypatch) -> None:
+def test_summarize_items_does_not_load_history_records(monkeypatch) -> None:
     config = {
         "app": {"language": "zh"},
         "collectors": {"rss": {"max_items_per_feed": 3}},
@@ -36,16 +36,10 @@ def test_summarize_items_skips_history_based_dedup(monkeypatch) -> None:
     def _fail_load_history(*args, **kwargs):
         raise AssertionError("history records should not be loaded")
 
-    def _fail_history_dedup(*args, **kwargs):
-        raise AssertionError("history dedup should not be called")
-
     monkeypatch.setattr(
         "src.ai.summarizer.load_recent_history_records",
         _fail_load_history,
         raising=False,
-    )
-    monkeypatch.setattr(
-        "src.ai.summarizer.ai_dedup_against_history", _fail_history_dedup, raising=False
     )
     monkeypatch.setattr(
         "src.ai.summarizer.load_taste_examples", lambda *args, **kwargs: []

@@ -2,7 +2,7 @@
 summarizer.py - AI 摘要与品味过滤引擎（主流程编排）
 
 子模块职责：
-  - dedup.py   : URL/标题归一化、历史去重、跨源去重
+  - dedup.py   : URL/标题归一化、内容身份键、跨源去重
   - filter.py  : 批量标题筛选、来源保底逻辑
   - scorer.py  : 单条内容 AI 评分与摘要
   - digest.py  : 生成「今日要点」整体总结
@@ -55,7 +55,7 @@ def summarize_items(
 ) -> list[dict]:
     """
     两阶段处理：
-      阶段 A : 历史去重（title/url）
+      阶段 A : 过滤历史已入选内容
       阶段 1 : AI 仅看标题+简介，一次调用批量筛选入围条目
       阶段 B : 跨源去重（精读前）
       阶段 2 : 仅对入围条目逐条调用 AI，生成完整评分+摘要
@@ -66,7 +66,7 @@ def summarize_items(
         min_score: 低于此分数的条目被过滤（默认读 config）
         max_output: 最多返回条目数（默认读 config）
         focus:     本次筛选方向（来自 schedule.focus），传给 AI 做相关度评分
-        schedule_name: 当前任务名，用于历史归档和跨任务去重上下文
+        schedule_name: 当前任务名，用于日志和归档上下文
 
     Returns:
         过滤并排序后的列表，每项新增：

@@ -362,7 +362,7 @@ def build_agent_tools() -> dict[str, ToolSpec]:
                 "输出高质量的 state.news_items 列表，并生成 state.digest_summary 摘要。"
                 "前置条件：至少调用过一次 collect_* 工具，state.raw_items 不为空。"
                 "参数：focus 影响筛选偏好，min_score 过滤低分内容（1-10，默认按配置），"
-                "schedule_name 用于跨任务历史去重。"
+                "schedule_name 用于日志与归档标识。"
                 "这一步耗时较长，每次日报只需调用一次。"
             ),
             side_effect=False,

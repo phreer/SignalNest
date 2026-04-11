@@ -1,5 +1,5 @@
 """
-dedup.py - URL/标题归一化 + 历史去重 + 跨源去重
+dedup.py - URL/标题归一化 + 内容身份键 + 跨源去重
 """
 
 from __future__ import annotations
@@ -202,59 +202,6 @@ def parse_json_dict(raw_text: str) -> dict | None:
     return parsed if isinstance(parsed, dict) else None
 
 
-# ── Fallback 去重（不依赖 AI）────────────────────────────────────────────────
-
-
-def fallback_dedup_against_history(
-    items: list[dict], history_records: list[dict]
-) -> list[int]:
-    history_keys: set[str] = set()
-    history_urls: set[str] = set()
-    history_titles: list[str] = []
-    history_titles_set: set[str] = set()
-
-    for rec in history_records:
-        stable_key = stable_history_key(rec)
-        if stable_key:
-            history_keys.add(stable_key)
-        nurl = normalize_url(str(rec.get("url", "")))
-        if nurl:
-            history_urls.add(nurl)
-        ntitle = normalize_title(str(rec.get("title", "")))
-        if ntitle and ntitle not in history_titles_set:
-            history_titles.append(ntitle)
-            history_titles_set.add(ntitle)
-
-    kept: list[int] = []
-    dropped = 0
-    for idx, item in enumerate(items):
-        stable_key = stable_history_key(item)
-        nurl = normalize_url(str(item.get("url", "")))
-        ntitle = normalize_title(str(item.get("title", "")))
-
-        is_dup = False
-        if stable_key and stable_key in history_keys:
-            is_dup = True
-        elif nurl and nurl in history_urls:
-            is_dup = True
-        elif ntitle:
-            if ntitle in history_titles_set:
-                is_dup = True
-            else:
-                for h in history_titles:
-                    if _is_strict_title_duplicate(ntitle, h):
-                        is_dup = True
-                        break
-
-        if is_dup:
-            dropped += 1
-        else:
-            kept.append(idx)
-
-    logger.info(f"  历史去重（fallback）：{len(items)} → {len(kept)}（丢弃 {dropped}）")
-    return kept
-
-
 def fallback_dedup_across_candidates(candidates: list[dict]) -> list[dict]:
     if len(candidates) <= 1:
         return candidates
@@ -301,111 +248,11 @@ def fallback_dedup_across_candidates(candidates: list[dict]) -> list[dict]:
     return result
 
 
-def _should_skip_ai_history_dedup(items: list[dict], kept_indices: list[int]) -> bool:
-    # 程序规则已经过滤掉明显重复时，优先相信确定性结果，避免模型误杀。
-    return len(kept_indices) < len(items)
-
-
 def _should_skip_ai_candidate_dedup(
     candidates: list[dict], deduped: list[dict]
 ) -> bool:
     # 当前程序只做严格 URL/标题近似去重；一旦已经命中，说明重复很明确，无需再交给模型。
     return len(deduped) < len(candidates)
-
-
-# ── AI 去重 ───────────────────────────────────────────────────────────────────
-
-
-def ai_dedup_against_history(
-    items: list[dict],
-    history_records: list[dict],
-    call_kwargs: dict,
-    language: str,
-    backend: str = "litellm",
-) -> list[int]:
-    if not items:
-        return []
-    if not history_records:
-        return list(range(len(items)))
-
-    fallback_kept = fallback_dedup_against_history(items, history_records)
-    if _should_skip_ai_history_dedup(items, fallback_kept):
-        logger.info("  历史去重：程序规则已命中重复，跳过 AI 复判")
-        return fallback_kept
-
-    capped_history = history_records[:200]
-    lang_label = "中文" if language == "zh" else "English"
-    items_text = "\n".join(short_item_line(i, item) for i, item in enumerate(items))
-    history_text = "\n".join(
-        f"- [{idx}] {str(rec.get('title', '')).strip()} | "
-        f"url={str(rec.get('url', '')).strip()} | "
-        f"source={str(rec.get('source', '')).strip()} | "
-        f"key={stable_history_key(rec)} | "
-        f"schedule={str(rec.get('schedule_name', '')).strip()}"
-        for idx, rec in enumerate(capped_history)
-    )
-
-    user_message = f"""请执行严格的历史去重判断。
-
-规则：
-1) 优先以 URL 一致性判重：URL 规范化后相同则视为重复。
-2) 若 source-specific key 一致，也视为重复，例如同一个 YouTube video_id、同一个 GitHub owner/repo。
-3) URL 不同但标题几乎一致、且语义明显是同一条新闻时，才判重。
-4) 不要做主题级"泛化去重"（同主题不同新闻必须保留）。
-
-当前候选（{len(items)} 条）：
-{items_text}
-
-历史已推送（最近 7 天，{len(capped_history)} 条）：
-{history_text}
-
-请仅输出 JSON：
-{{
-  "kept": [0, 2, 5],
-  "dropped": [{{"index": 1, "reason": "same normalized url as history"}}]
-}}
-其中 kept 为保留的当前候选序号（0-based）。"""
-
-    try:
-        messages = [
-            {
-                "role": "system",
-                "content": f"你是严格去重助手，请用{lang_label}思考，只输出 JSON。",
-            },
-            {"role": "user", "content": user_message},
-        ]
-        raw_text = _call_ai(messages, backend, {**call_kwargs, "max_tokens": 700})
-        parsed = parse_json_dict(raw_text)
-        if parsed and isinstance(parsed.get("kept"), list):
-            kept: list[int] = []
-            seen: set[int] = set()
-            for idx in parsed.get("kept", []):
-                if not isinstance(idx, int) or not (0 <= idx < len(items)):
-                    continue
-                if idx in seen:
-                    continue
-                seen.add(idx)
-                kept.append(idx)
-
-            dropped = parsed.get("dropped", [])
-            if (
-                not kept
-                and items
-                and not (isinstance(dropped, list) and len(dropped) >= len(items))
-            ):
-                logger.warning(
-                    "  历史去重 AI 结果异常（kept 为空且无充分 dropped 信息），改用 fallback"
-                )
-                return fallback_kept
-
-            logger.info(
-                f"  历史去重（AI）：{len(items)} → {len(kept)} (history={len(capped_history)})"
-            )
-            return kept
-    except Exception as e:
-        logger.warning(f"历史去重 AI 失败，改用 fallback: {e}")
-
-    return fallback_kept
 
 
 def ai_dedup_across_candidates(
