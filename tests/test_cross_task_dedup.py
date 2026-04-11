@@ -6,6 +6,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from src.ai.dedup import (
     ai_dedup_across_candidates,
     ai_dedup_against_history,
+    dedup_key_for_item,
     fallback_dedup_against_history,
     stable_history_key,
 )
@@ -29,6 +30,16 @@ def test_stable_history_key_uses_github_repo_name() -> None:
     }
 
     assert stable_history_key(item) == "github::owner/repo"
+
+
+def test_dedup_key_for_item_normalizes_generic_urls() -> None:
+    item = {
+        "source": "rss",
+        "title": "Example",
+        "url": "https://example.com/post?a=1&utm_source=x",
+    }
+
+    assert dedup_key_for_item(item) == "https://example.com/post?a=1"
 
 
 def test_fallback_dedup_against_history_drops_same_youtube_video_across_tasks() -> None:

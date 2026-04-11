@@ -6,6 +6,8 @@ from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
+from src.ai.dedup import dedup_key_for_item
+
 
 def _utcnow_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
@@ -21,12 +23,15 @@ def _sqlite_datetime_range_expr(column: str) -> str:
     return f"COALESCE(datetime({column}), datetime(collected_at))"
 
 
-def _make_dedup_key(source: str, url: str, title: str = "") -> str:
-    s = source.strip().lower()
-    u = url.strip().lower()
-    if u:
-        return f"{s}:{u}"
-    return f"{s}:{title.strip().lower()}"
+def _make_dedup_key(source: str, url: str, title: str = "", **extra: Any) -> str:
+    return dedup_key_for_item(
+        {
+            "source": source,
+            "url": url,
+            "title": title,
+            **extra,
+        }
+    )
 
 
 class AppStateStore:
@@ -255,14 +260,24 @@ class AppStateStore:
             )
             SELECT
                 source, url, title, NULL,
-                lower(source) || ':' || lower(url) AS dedup_key,
+                CASE
+                    WHEN lower(source) = 'youtube' AND COALESCE(external_id, '') != '' THEN 'youtube::' || external_id
+                    WHEN lower(source) = 'github' AND instr(lower(title), '/') > 0 THEN 'github::' || lower(title)
+                    WHEN COALESCE(url, '') != '' THEN lower(url)
+                    ELSE lower(source) || '::' || lower(title)
+                END AS dedup_key,
                 external_id, author, feed_title, language, published_at,
                 MIN(collected_at) AS first_seen_at,
                 MAX(collected_at) AS last_seen_at,
                 COUNT(*) AS seen_count,
                 raw_json
             FROM collected_items
-            GROUP BY lower(source) || ':' || lower(url)
+            GROUP BY CASE
+                WHEN lower(source) = 'youtube' AND COALESCE(external_id, '') != '' THEN 'youtube::' || external_id
+                WHEN lower(source) = 'github' AND instr(lower(title), '/') > 0 THEN 'github::' || lower(title)
+                WHEN COALESCE(url, '') != '' THEN lower(url)
+                ELSE lower(source) || '::' || lower(title)
+            END
             """
         )
 
@@ -278,7 +293,12 @@ class AppStateStore:
                 c.selected_for_digest, c.ai_score, c.ai_summary, c.ai_reason, c.collected_at
             FROM collected_items c
             JOIN raw_items r
-              ON r.dedup_key = lower(c.source) || ':' || lower(c.url)
+              ON r.dedup_key = CASE
+                  WHEN lower(c.source) = 'youtube' AND COALESCE(c.external_id, '') != '' THEN 'youtube::' || c.external_id
+                  WHEN lower(c.source) = 'github' AND instr(lower(c.title), '/') > 0 THEN 'github::' || lower(c.title)
+                  WHEN COALESCE(c.url, '') != '' THEN lower(c.url)
+                  ELSE lower(c.source) || '::' || lower(c.title)
+              END
             WHERE NOT EXISTS (
                 SELECT 1 FROM item_annotations ia
                 WHERE ia.raw_item_id = r.id AND ia.job_run_id = c.job_run_id
@@ -321,7 +341,12 @@ class AppStateStore:
                 ds.created_at, ds.updated_at
             FROM deep_summaries ds
             LEFT JOIN collected_items c ON c.id = ds.item_id
-            LEFT JOIN raw_items r ON r.dedup_key = lower(c.source) || ':' || lower(c.url)
+            LEFT JOIN raw_items r ON r.dedup_key = CASE
+                WHEN lower(c.source) = 'youtube' AND COALESCE(c.external_id, '') != '' THEN 'youtube::' || c.external_id
+                WHEN lower(c.source) = 'github' AND instr(lower(c.title), '/') > 0 THEN 'github::' || lower(c.title)
+                WHEN COALESCE(c.url, '') != '' THEN lower(c.url)
+                ELSE lower(c.source) || '::' || lower(c.title)
+            END
             """
         )
         conn.execute("DROP TABLE deep_summaries")
@@ -914,7 +939,14 @@ class AppStateStore:
                 url = str(item.get("url", "")).strip()
                 title = str(item.get("title", "")).strip()
                 translated_title = str(item.get("translated_title", "")).strip()
-                dedup_key = _make_dedup_key(source, url, title)
+                dedup_key = _make_dedup_key(
+                    source,
+                    url,
+                    title,
+                    video_id=item.get("video_id", ""),
+                    external_id=item.get("external_id", ""),
+                    repo_full_name=item.get("repo_full_name", ""),
+                )
                 raw_json = json.dumps(
                     item.get("raw", item), ensure_ascii=False, default=_json_default
                 )
@@ -998,13 +1030,26 @@ class AppStateStore:
         try:
             rows = conn.execute(
                 """
-                SELECT DISTINCT r.dedup_key
+                SELECT DISTINCT r.dedup_key, r.source, r.url, r.title, r.external_id
                 FROM raw_items r
                 JOIN item_annotations ia ON ia.raw_item_id = r.id
                 WHERE ia.ai_score IS NOT NULL
                 """
             ).fetchall()
-            return {row["dedup_key"] for row in rows}
+            keys: set[str] = set()
+            for row in rows:
+                keys.add(row["dedup_key"])
+                keys.add(
+                    dedup_key_for_item(
+                        {
+                            "source": row["source"],
+                            "url": row["url"],
+                            "title": row["title"],
+                            "external_id": row["external_id"],
+                        }
+                    )
+                )
+            return keys
         finally:
             conn.close()
 
@@ -1014,13 +1059,26 @@ class AppStateStore:
         try:
             rows = conn.execute(
                 """
-                SELECT DISTINCT r.dedup_key
+                SELECT DISTINCT r.dedup_key, r.source, r.url, r.title, r.external_id
                 FROM raw_items r
                 JOIN item_annotations ia ON ia.raw_item_id = r.id
                 WHERE ia.selected_for_digest = 1
                 """
             ).fetchall()
-            return {row["dedup_key"] for row in rows}
+            keys: set[str] = set()
+            for row in rows:
+                keys.add(row["dedup_key"])
+                keys.add(
+                    dedup_key_for_item(
+                        {
+                            "source": row["source"],
+                            "url": row["url"],
+                            "title": row["title"],
+                            "external_id": row["external_id"],
+                        }
+                    )
+                )
+            return keys
         finally:
             conn.close()
 

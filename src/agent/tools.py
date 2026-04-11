@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any, Callable
 from zoneinfo import ZoneInfo
 
+from src.ai.dedup import dedup_key_for_item
 from src.ai.summarizer import generate_digest_summary, summarize_items
 from src.ai.title_translator import translate_item_titles
 from src.collectors.github_collector import collect_github
@@ -50,12 +51,7 @@ class ToolRuntime:
 
 
 def _item_key(item: dict[str, Any]) -> str:
-    source = str(item.get("source", "")).strip().lower()
-    url = str(item.get("url", "")).strip().lower()
-    title = str(item.get("title", "")).strip().lower()
-    if url:
-        return f"{source}:{url}"
-    return f"{source}:{title}"
+    return dedup_key_for_item(item)
 
 
 def _merge_items(existing: list[dict], added: list[dict]) -> list[dict]:

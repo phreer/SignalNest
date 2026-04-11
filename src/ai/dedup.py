@@ -136,20 +136,15 @@ def _pick_better_item_index(items: list[dict], idx_a: int, idx_b: int) -> int:
 
 
 def item_key(item: dict) -> str:
-    nurl = normalize_url(str(item.get("url", "")))
-    if nurl:
-        return nurl
-    source = str(item.get("source", "unknown")).strip().lower()
-    title = normalize_title(str(item.get("title", "")))
-    return f"{source}::{title}"
+    return dedup_key_for_item(item)
 
 
-def stable_history_key(item: dict) -> str:
-    """Return a stronger cross-run identity key for previously recommended items."""
+def dedup_key_for_item(item: dict) -> str:
+    """Return the canonical cross-run identity key for an item."""
     source = str(item.get("source", "unknown")).strip().lower()
 
     if source == "youtube":
-        video_id = str(item.get("video_id", "")).strip()
+        video_id = str(item.get("video_id", "") or item.get("external_id", "")).strip()
         if not video_id:
             nurl = normalize_url(str(item.get("url", "")))
             match = re.search(r"(?:v=|youtu\.be/)([A-Za-z0-9_-]{6,})", nurl)
@@ -165,7 +160,17 @@ def stable_history_key(item: dict) -> str:
         if repo and "/" in repo:
             return f"github::{repo}"
 
-    return item_key(item)
+    nurl = normalize_url(str(item.get("url", "")))
+    if nurl:
+        return nurl
+
+    title = normalize_title(str(item.get("title", "")))
+    return f"{source}::{title}"
+
+
+def stable_history_key(item: dict) -> str:
+    """Return a stronger cross-run identity key for previously recommended items."""
+    return dedup_key_for_item(item)
 
 
 def short_item_line(i: int, item: dict) -> str:
