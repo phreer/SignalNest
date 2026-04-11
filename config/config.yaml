@@ -101,7 +101,7 @@ collectors:
   rss:
     enabled: true
     days_lookback: 2            # 只抓取最近 N 天的文章
-    max_items_per_feed_initial: 10  # 每 feed 初始抓取的标题数（供 AI 批量筛选）
+    max_items_per_feed_initial: 30  # 每 feed 初始抓取的标题数（供 AI 批量筛选）
     max_items_per_feed: 3           # 每 feed 最终进入摘要阶段的文章数
     feeds:
       # Linux
