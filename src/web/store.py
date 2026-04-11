@@ -385,8 +385,8 @@ class AppStateStore:
                 """
                 INSERT INTO job_runs (
                     schedule_name, trigger_type, status, dry_run, scheduled_for,
-                    idempotency_key, created_at, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    idempotency_key, current_stage, current_message, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     schedule_name,
@@ -395,6 +395,8 @@ class AppStateStore:
                     1 if dry_run else 0,
                     scheduled_for or None,
                     idempotency_key or None,
+                    "Queued" if status == "queued" else status,
+                    "Waiting for worker...",
                     now,
                     now,
                 ),
@@ -502,6 +504,24 @@ class AppStateStore:
         final_reason: str = "",
     ) -> None:
         now = _utcnow_iso()
+
+        stage = ""
+        if status == "succeeded":
+            stage = "Done"
+            message = "Job completed successfully"
+        elif status == "failed":
+            stage = "Failed"
+            message = error_message or "Job failed"
+        elif status == "cancelled":
+            stage = "Cancelled"
+            message = "Job was cancelled"
+        elif status == "lost":
+            stage = "Lost"
+            message = "Job was lost or timed out"
+        else:
+            stage = status
+            message = ""
+
         conn = self._connect()
         try:
             conn.execute(
@@ -510,10 +530,21 @@ class AppStateStore:
                 SET status=?, error_message=?, session_id=COALESCE(NULLIF(?, ''), session_id),
                     lease_expires_at=NULL,
                     final_reason=COALESCE(NULLIF(?, ''), final_reason),
+                    current_stage=?, current_message=?,
                     ended_at=?, updated_at=?
                 WHERE id=?
                 """,
-                (status, error_message, session_id, final_reason, now, now, job_run_id),
+                (
+                    status,
+                    error_message,
+                    session_id,
+                    final_reason,
+                    stage,
+                    message,
+                    now,
+                    now,
+                    job_run_id,
+                ),
             )
             conn.commit()
         finally:
@@ -528,7 +559,8 @@ class AppStateStore:
                 UPDATE job_runs
                 SET status='lost',
                     error_message=COALESCE(NULLIF(error_message, ''), 'Worker heartbeat expired before the job finished.'),
-                    current_message=COALESCE(NULLIF(current_message, ''), 'Worker heartbeat expired'),
+                    current_stage='Lost',
+                    current_message='Worker heartbeat expired',
                     lease_expires_at=NULL,
                     final_reason=COALESCE(NULLIF(final_reason, ''), 'worker_lost'),
                     ended_at=COALESCE(ended_at, ?),
@@ -578,8 +610,8 @@ class AppStateStore:
                 UPDATE job_runs
                 SET status='running', worker_id=?, claimed_at=COALESCE(claimed_at, ?),
                     heartbeat_at=?, lease_expires_at=?,
-                    current_stage=COALESCE(NULLIF(current_stage, ''), 'boot'),
-                    current_message=COALESCE(NULLIF(current_message, ''), 'Worker claimed queued job'),
+                    current_stage='Boot',
+                    current_message='Worker claimed queued job',
                     started_at=COALESCE(started_at, ?), updated_at=?
                 WHERE id=? AND status='queued'
                 """,
