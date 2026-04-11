@@ -1,0 +1,1691 @@
+<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"
+	xmlns:content="http://purl.org/rss/1.0/modules/content/"
+	xmlns:wfw="http://wellformedweb.org/CommentAPI/"
+	xmlns:dc="http://purl.org/dc/elements/1.1/"
+	xmlns:atom="http://www.w3.org/2005/Atom"
+	xmlns:sy="http://purl.org/rss/1.0/modules/syndication/"
+	xmlns:slash="http://purl.org/rss/1.0/modules/slash/"
+	>
+
+<channel>
+	<title>MIT Technology Review</title>
+	<atom:link href="https://www.technologyreview.com/feed/" rel="self" type="application/rss+xml" />
+	<link>https://www.technologyreview.com</link>
+	<description></description>
+	<lastBuildDate>Fri, 10 Apr 2026 14:04:22 +0000</lastBuildDate>
+	<language>en-US</language>
+	<sy:updatePeriod>
+	hourly	</sy:updatePeriod>
+	<sy:updateFrequency>
+	1	</sy:updateFrequency>
+	<generator>https://wordpress.org/?v=6.9.4</generator>
+
+<image>
+	<url>https://wp.technologyreview.com/wp-content/uploads/2024/09/cropped-TR-Logo-Block-Centered-R.png?w=32</url>
+	<title>MIT Technology Review</title>
+	<link>https://www.technologyreview.com</link>
+	<width>32</width>
+	<height>32</height>
+</image> 
+<site xmlns="com-wordpress:feed-additions:1">172986898</site>	<item>
+		<title>What’s in a name? Moderna’s “vaccine” vs. “therapy” dilemma</title>
+		<link>https://www.technologyreview.com/2026/04/10/1135631/whats-in-a-name-modernas-vaccine-vs-therapy-dilemma/</link>
+		
+		<dc:creator><![CDATA[Antonio Regalado]]></dc:creator>
+		<pubDate>Fri, 10 Apr 2026 14:04:20 +0000</pubDate>
+				<category><![CDATA[Biotechnology and health]]></category>
+		<category><![CDATA[App]]></category>
+		<category><![CDATA[The Checkup]]></category>
+		<guid isPermaLink="false">https://www.technologyreview.com/?p=1135631</guid>
+
+					<description><![CDATA[Is it the Department of Defense or the Department of War? The Gulf of Mexico or the Gulf of America? A vaccine—or an “individualized neoantigen treatment”? That’s the Trump-era vocabulary paradox facing Moderna, the covid-19 shot maker whose plans for next-generation mRNA vaccines against flus and emerging pathogens have been dashed by vaccine skeptics in&#8230;]]></description>
+										<content:encoded><![CDATA[
+<p>Is it the Department of Defense or the Department of War? The Gulf of Mexico or the Gulf of America? A vaccine—or an “individualized neoantigen treatment”?</p>
+
+
+
+<p>That’s the Trump-era vocabulary paradox facing Moderna, the covid-19 shot maker whose plans for next-generation mRNA vaccines against flus and emerging pathogens have been dashed by vaccine skeptics in the federal government. Canceled contracts and unfriendly regulators have pushed the Massachusetts-based biotech firm to a breaking point. Last year, Robert F. Kennedy Jr., head of the Department of Health and Human Services, zeroed in on mRNA, unwinding support for dozens of projects—including a $776 million award to Moderna for a bird flu vaccine. By January, the company was warning it might have to stop late-stage programs to develop vaccines against infections altogether.</p>
+
+
+
+<p>That raises the stakes for a second area of Moderna’s research. In a partnership with Merck, it’s been using its mRNA technology to destroy tumors through a very, very promising technique known as a cancer vacc—</p>
+
+
+
+<p>“It’s not a vaccine,” a spokesperson for Merck jumped in before the V-word could leave my mouth. “It’s an individualized neoantigen therapy.”</p>
+
+
+
+<p>Oh, but it is a vaccine. And here’s how it works. Moderna sequences a patient’s cancer cells to find the ugliest, most peculiar molecules on their surface. Then it packages the genetic code for those same molecules, called neoantigens, into a shot. The patient’s immune system has its orders: Kill any cells with those yucky surface markers.</p>
+
+
+
+
+
+<p>Mechanistically, it’s similar to the covid-19 vaccines. What’s different, of course, is that the patient is being immunized against a cancer, not a virus.</p>
+
+
+
+<p>And it looks like a possible breakthrough. This year, Moderna and Merck showed that such shots halved the chance that patients with the deadliest form of skin cancer would die from a recurrence after surgery.</p>
+
+
+
+<p>In its formal communications, like regulatory filings, Moderna hasn’t called the shot a cancer vaccine since 2023. That’s when it partnered up with Merck and rebranded the tech as individualized neoantigen therapy, or INT. Moderna’s CEO said at the time that the renaming was to “better describe the goal of the program.” (BioNTech, the European vaccine maker that’s also working in cancer, has shifted its language too, moving from “neoantigen vaccine” in 2021 to “mRNA cancer immunotherapies” in its latest report.)</p>
+
+
+
+<p>The logic of casting it as a therapy is that patients already have cancer—so it’s a treatment as opposed to a preventive measure. But it’s no secret what the other goal is: to distance important innovation from vaccine fearmongering, which has been inflamed by high-ranking US officials. “Vaccines are maybe a dirty word nowadays, but we still believe in the science and harnessing our immune system to not only fight infections, but hopefully to also fight … cancers,” Kyle Holen, head of Moderna’s cancer program, said last summer during BIO 2025, a big biotech event in Boston.</p>
+
+
+
+<p>Not everyone is happy with the word games. Take Ryan Sullivan, a physician at Massachusetts General Hospital who has enrolled patients in Moderna’s trials. He says the change raises questions over whether trial volunteers are being properly informed. “There is some concern that there will be patients who decline to treat their cancer because it is a vaccine,” Sullivan told me. “But I also felt it was important, as many of my colleagues did, that you have to call it what it is.”</p>
+
+
+
+<p>But is it worth going to the mat for a word? Lillian Siu, a medical oncologist at the Princess Margaret Cancer Centre, in Toronto, who has played a role in safety testing for the new shots, watches US politics from a distance. She believes name change is acceptable “if it allows the research to continue.”</p>
+
+
+
+<p>Holen told me the doctors complaining to Moderna were basically motivated by a desire to defend vaccines—which are, of course, among the greatest public health interventions of all time. They wanted the company to stand strong.&nbsp;</p>
+
+
+
+<p>But that’s not what’s happening. When Moderna’s latest results were published <a href="https://ascopubs.org/doi/10.1200/OA-25-00008">in February</a>, the paper’s main text didn’t use the word “vaccine” at all. It was only in the footnotes that you could see the term—in the titles of old papers and patents.</p>
+
+
+
+<p>All this could be a sign that Kennedy’s strategy is working. His agencies often appear to make mRNA vaccines a focus of people’s worries, impede their reach, devalue them for companies, and sideline their defenders.&nbsp;</p>
+
+
+
+<p>Still, Moderna’s strategy may be working too. So far, at least, the government hasn’t had much to say about the company’s cancer vacc— I mean, its individualized neoantigen therapy.</p>
+
+
+
+<p><em>This article first appeared in The Checkup, </em>MIT Technology Review’s<em> weekly biotech newsletter. To receive it in your inbox every Thursday, and read articles like this first, </em><a href="https://forms.technologyreview.com/newsletters/biotech-the-checkup/?_ga=2.241810882.15113993.1664981064-43237434.1647441349"><em>sign up here</em></a><em>.</em></p>
+]]></content:encoded>
+					
+		
+		
+		<post-id xmlns="com-wordpress:feed-additions:1">1135631</post-id>	</item>
+		<item>
+		<title>The Download: an exclusive Jeff VanderMeer story and AI models too scary to release</title>
+		<link>https://www.technologyreview.com/2026/04/10/1135618/the-download-jeff-vandermeer-short-story-and-ai-models-too-danger-to-release/</link>
+		
+		<dc:creator><![CDATA[Thomas Macaulay]]></dc:creator>
+		<pubDate>Fri, 10 Apr 2026 12:10:00 +0000</pubDate>
+				<category><![CDATA[The Download]]></category>
+		<guid isPermaLink="false">https://www.technologyreview.com/?p=1135618</guid>
+
+					<description><![CDATA[This is today&#8217;s edition of The Download, our weekday newsletter that provides a daily dose of what&#8217;s going on in the world of technology. Constellations&#160; —Constellations is a short story by Jeff VanderMeer, the author of the critically acclaimed, bestselling Southern Reach series. &#160; A spacecraft has crash-landed on a hostile planet. The only survivors&#8230;]]></description>
+										<content:encoded><![CDATA[
+<p><em>This is today&#8217;s edition of </em><a href="https://forms.technologyreview.com/newsletters/briefing-the-download/?_ga=2.179569122.736533416.1649661040-405833893.1649413289"><em>The Download</em></a>,<em> our weekday newsletter that provides a daily dose of what&#8217;s going on in the world of technology.</em></p>
+
+
+
+<h3 class="wp-block-heading"><strong>Constellations</strong>&nbsp;</h3>
+
+
+
+<p><em>—Constellations is a short story by Jeff VanderMeer, the author of the critically acclaimed, bestselling Southern Reach series. &nbsp;</em></p>
+
+
+
+<p>A spacecraft has crash-landed on a hostile planet. The only survivors are three members of the exploration team and the ship’s AI mind. &nbsp;</p>
+
+
+
+<p>Little exists on the planet except deserts of snow. But alien artifacts lie nearby, in the form of 13 domes, spread across the terrain. Linked by cables threaded through metal posts, the domes form a series of paths—the only hope for life support.&nbsp;</p>
+
+
+
+<p>As the team treks across the frozen hellscape, they discover the remains of countless astronauts from unknown species who followed the same route before them. Is their trail a path to salvation, or a cosmic trap?</p>
+
+
+
+<p><strong><a href="https://www.technologyreview.com/2026/04/10/1135106/jeff-vandermeer-constellations-science-fiction/?utm_source=the_download&amp;utm_medium=email&amp;utm_campaign=the_download.unpaid.engagement&amp;utm_term=&lt;&lt;Class%3E%3E&amp;utm_content=04-10-2026" target="_blank" rel="noreferrer noopener">Read the rest of this short story in full</a>. </strong></p>
+
+
+
+<p><strong>This story is from the next issue of our print magazine, packed with stories all about nature.&nbsp;<a href="https://www.technologyreview.com/subscribe?utm_source=the_download&amp;utm_medium=email&amp;utm_campaign=the_download.unpaid.engagement&amp;utm_term=&amp;lt;&amp;lt;Class%3E%3E&amp;utm_content=04-10-2026" target="_blank" rel="noreferrer noopener">Subscribe now</a>&nbsp;to read the full thing when it lands on Wednesday, April 22.&nbsp;</strong></p>
+
+
+
+<p class="has-medium-font-size"><strong>The must-reads </strong></p>
+
+
+
+<p><em>I’ve&nbsp;combed&nbsp;the&nbsp;internet&nbsp;to&nbsp;find&nbsp;you&nbsp;today’s&nbsp;most&nbsp;fun/important/scary/fascinating&nbsp;stories&nbsp;about&nbsp;technology.</em>&nbsp;</p>
+
+
+
+<p><strong>1 OpenAI has joined Anthropic in curbing an AI release over security fears</strong> <br>Only select partners will get its new cybersecurity tool. (<a href="https://www.axios.com/2026/04/09/openai-new-model-cyber-mythos-anthopic" target="_blank" rel="noreferrer noopener">Axios</a>)  <br><em>+ Anthropic said only yesterday that its new AI is too dangerous for the public. </em>(<a href="https://www.nbcnews.com/tech/security/anthropic-project-glasswing-mythos-preview-claude-gets-limited-release-rcna267234" target="_blank" rel="noreferrer noopener">NBC News</a>) <br><em>+ Top models may not be so public going forward. </em>(<a href="https://www.bloomberg.com/news/newsletters/2026-04-09/anthropic-s-mythos-model-heralds-new-era-for-ai-releases" target="_blank" rel="noreferrer noopener">Bloomberg</a> $)  <br><em>+ The US has summoned bank CEOs to discuss the risks. </em>(<a href="https://www.ft.com/content/397bf755-54cf-4018-a01d-8f714d8667c5?syn-25a6b1a6=1" target="_blank" rel="noreferrer noopener">FT</a> $)  <br> <br><strong>2 Florida is investigating OpenAI over an alleged role in a shooting </strong> <br>ChatGPT may have helped someone plan a mass shooting in Florida. (<a href="https://www.wsj.com/tech/ai/florida-ag-investigates-openai-chatgpt-citing-national-security-risks-fsu-shooting-ba8f06be" target="_blank" rel="noreferrer noopener">WSJ</a> $)  <br>+ OpenAI has backed a bill that would limit AI liability for deaths. (<a href="https://www.wired.com/story/openai-backs-bill-exempt-ai-firms-model-harm-lawsuits/" target="_blank" rel="noreferrer noopener">Wired</a> $)  <br>+ The family of a victim plans to sue the company. (<a href="https://www.theguardian.com/us-news/2026/apr/08/florida-state-university-shooting-robert-morales-family-sue-chatgpt-openai" target="_blank" rel="noreferrer noopener">Guardian</a>)  <br>+ AI’s role in delusions is dividing opinion. (<a href="https://www.technologyreview.com/2026/03/23/1134527/the-hardest-question-to-answer-about-ai-fueled-delusions/?utm_source=the_download&amp;utm_medium=email&amp;utm_campaign=the_download.unpaid.engagement&amp;utm_term=*%7CSUBCLASS%7C*&amp;utm_content=*%7CDATE:m-d-Y%7C*" target="_blank" rel="noreferrer noopener">MIT Technology Review</a>)  <br> <br><strong>3 Volkswagen is ditching EV production for more gasoline models </strong> <br>The carmaker will stop making its top electric vehicle in the US. (<a href="https://www.nytimes.com/2026/04/09/business/volkswagen-electric-vehicles-id4-chattanooga.html" target="_blank" rel="noreferrer noopener">NYT</a> $)  <br><em>+ Instead, it will concentrate on developing a new SUV. </em>(<a href="https://arstechnica.com/cars/2026/04/volkswagen-ends-id-4-production-in-tennessee-to-build-atlas-suv/" target="_blank" rel="noreferrer noopener">Ars Technica</a>)  <br><em>+ Western carmakers are retreating from electric vehicles.</em> (<a href="https://www.theguardian.com/business/2026/mar/21/west-carmakers-retreat-electric-vehicle-risks-irrelevance-iran-war-evs-china" target="_blank" rel="noreferrer noopener">Guardian</a>) <br> <br><strong>4 Elon Musk&#8217;s xAI has sued Colorado over an AI anti-discrimination law</strong>  <br>It’s the first state bill of its kind. (<a href="https://www.bloomberg.com/news/articles/2026-04-10/elon-musk-s-xai-sues-colorado-over-ai-anti-discrimination-law" target="_blank" rel="noreferrer noopener">Bloomberg</a> $)  <br><em>+ xAI says it will force the firm to “promote the state’s ideological views.”</em> (<a href="https://www.ft.com/content/397bf755-54cf-4018-a01d-8f714d8667c5?syn-25a6b1a6=1" target="_blank" rel="noreferrer noopener">FT</a> $) <br><br><strong>5 A fifth of US employees say AI now does parts of their job </strong> <br>The survey found half of US adults used AI in the past week. (<a href="https://www.nbcnews.com/tech/tech-news/ai-job-work-replace-task-help-rcna267238" target="_blank" rel="noreferrer noopener">NBC News</a>)  <br><em>+ Missing data could shed light on AI’s job impact. </em>(<a href="https://www.technologyreview.com/2026/04/06/1135187/the-one-piece-of-data-that-could-actually-shed-light-on-your-job-and-ai/?utm_source=the_download&amp;utm_medium=email&amp;utm_campaign=the_download.unpaid.engagement&amp;utm_term=*%7CSUBCLASS%7C*&amp;utm_content=*%7CDATE:m-d-Y%7C*" target="_blank" rel="noreferrer noopener">MIT Technology Review</a>)  <br> <br><strong>6 Google DeepMind’s CEO wants to automate drug design </strong> <br>He hopes to develop AI capable of curing all diseases. (<a href="https://www.economist.com/science-and-technology/2026/04/09/sir-demis-hassabis-wants-to-automate-drug-design" target="_blank" rel="noreferrer noopener">The Economist</a>)  <br><em>+ A scientist is using AI to hunt for antibiotics.</em> (<a href="https://www.technologyreview.com/2026/02/16/1132516/cesar-de-la-fuente-using-ai-antibiotics-hunt/?utm_source=the_download&amp;utm_medium=email&amp;utm_campaign=the_download.unpaid.engagement&amp;utm_term=*%7CSUBCLASS%7C*&amp;utm_content=*%7CDATE:m-d-Y%7C*" target="_blank" rel="noreferrer noopener">MIT Technology Review</a>) </p>
+
+
+
+<p><strong>7 China&#8217;s Unitree is launching a viral robot on the international market<br></strong>R1, its cheapest humanoid, will go on sale outside China next week. (<a href="https://www.scmp.com/tech/article/3349489/chinas-unitree-debut-cheapest-humanoid-robot-globally-alibaba-site-sources?utm_source=feedly_feed">SCMP</a>)<br>+ Gig workers are training humanoids at home. (<a href="https://www.technologyreview.com/2026/04/01/1134863/humanoid-data-training-gig-economy-2026-breakthrough-technology/?utm_source=the_download&amp;utm_medium=email&amp;utm_campaign=the_download.unpaid.engagement&amp;utm_term=*%7CSUBCLASS%7C*&amp;utm_content=*%7CDATE:m-d-Y%7C*">MIT Technology Review</a>)</p>
+
+
+
+<p><strong>8 An experiment on Artemis II astronauts could reshape space medicine<br></strong>Chips containing their cells will model spaceflight&#8217;s effects. (<a href="https://www.washingtonpost.com/science/2026/04/09/avatar-astronauts-organ-on-a-chip-artemis/" data-type="link" data-id="https://www.washingtonpost.com/science/2026/04/09/avatar-astronauts-organ-on-a-chip-artemis/">WP</a> $)<br><br><strong>9 A pro-Iran meme machine is trolling Trump with AI Lego cartoons<br></strong>The videos have racked up millions of views. (<a href="https://www.wired.com/story/inside-the-pro-iran-meme-machine-trolling-trump-with-ai-lego-cartoons/" target="_blank" rel="noreferrer noopener">Wired</a> $) <br><em>+ You can learn to love AI slop. </em>(<a href="https://www.technologyreview.com/2025/12/23/1130396/how-i-learned-to-stop-worrying-and-love-ai-slop/" target="_blank" rel="noreferrer noopener">MIT Technology Review</a>)</p>
+
+
+
+<p><strong>10 Short breaks could erase 10 years of social media brain damage </strong><br>Studies show that a two-week detox could have a dramatic benefit. (<a href="https://www.washingtonpost.com/health/2026/04/09/social-media-detox/" target="_blank" rel="noreferrer noopener">WP</a> $) </p>
+
+
+
+<p class="has-medium-font-size"><strong>Quote of the day </strong></p>
+
+
+
+<h2 class="wp-block-heading">“AI should advance mankind, not destroy it. We&#8217;re demanding answers on OpenAI&#8217;s activities that have hurt kids, endangered Americans, and facilitated the recent FSU mass shooting.”</h2>
+
+
+
+<p>—Florida Attorney General James Uthmeier explains <a href="https://x.com/AGJamesUthmeier/status/2042258048115265541?s=20" target="_blank" rel="noreferrer noopener">on X</a> why he’s probing OpenAI. </p>
+
+
+
+<p class="has-medium-font-size"><strong>One More Thing </strong></p>
+
+
+
+<figure class="wp-block-gallery has-nested-images columns-default is-cropped wp-block-gallery-1 is-layout-flex wp-block-gallery-is-layout-flex"><div class="wp-block-image">
+<figure class="wp-block-image size-large"><img fetchpriority="high" decoding="async" width="2281" height="1284" data-id="1090997" src="https://wp.technologyreview.com/wp-content/uploads/2024/04/Users_Glass-thumb.jpg" alt="girl holding a cell phone seen in a cracked glass" class="wp-image-1090997" srcset="https://wp.technologyreview.com/wp-content/uploads/2024/04/Users_Glass-thumb.jpg 2281w, https://wp.technologyreview.com/wp-content/uploads/2024/04/Users_Glass-thumb.jpg?resize=300,169 300w, https://wp.technologyreview.com/wp-content/uploads/2024/04/Users_Glass-thumb.jpg?resize=768,432 768w, https://wp.technologyreview.com/wp-content/uploads/2024/04/Users_Glass-thumb.jpg?resize=1536,865 1536w, https://wp.technologyreview.com/wp-content/uploads/2024/04/Users_Glass-thumb.jpg?resize=2048,1153 2048w" sizes="(max-width: 2281px) 100vw, 2281px" /><div class="image-credit">TOM HUMBERSTONE</div>
+</figure>
+</div></figure>
+
+
+
+<h4 class="wp-block-heading"><strong>It’s&nbsp;time&nbsp;to&nbsp;retire&nbsp;the&nbsp;term&nbsp;“user”</strong>&nbsp;</h4>
+
+
+
+<p>People have been called “users” for a long time. Often, it’s the right word to describe people who use software. But “users” is also unspecific enough to refer to just about everyone. It can accommodate almost any big idea or long-term vision.&nbsp;<br><br>We use—and are used by—computers and platforms and companies. The label &#8220;user&#8221; suggests these interactions are deeply transactional, but they’re frequently quite personal. Is it time for a more human vocabulary?&nbsp;<a href="https://www.technologyreview.com/2024/04/19/1090872/ai-users-people-terms/?utm_source=the_download&amp;utm_medium=email&amp;utm_campaign=the_download.unpaid.engagement&amp;utm_term=&amp;lt;&amp;lt;Class%3E%3E&amp;utm_content=04-10-2026" target="_blank" rel="noreferrer noopener">Read the full story</a>.&nbsp;</p>
+
+
+
+<p><em>—Taylor Majewski</em> </p>
+
+
+
+<p class="has-medium-font-size"><strong>We can still have nice things </strong></p>
+
+
+
+<p><em>A place&nbsp;for&nbsp;comfort,&nbsp;fun&nbsp;and&nbsp;distraction&nbsp;to&nbsp;brighten&nbsp;up&nbsp;your&nbsp;day. (Got&nbsp;any&nbsp;ideas?&nbsp;</em><a href="mailto:thomas.macaulay@technologyreview.com" target="_blank" rel="noreferrer noopener"><em>Drop me a line</em></a><em>.)</em>&nbsp;</p>
+
+
+
+<p>+ This <a href="https://www.reddit.com/r/blackmagicfuckery/comments/1rz177n/flawless_levitation/?solution=3de7d67338c8c48b3de7d67338c8c48b&amp;js_challenge=1&amp;token=bbbe4bf1c9a2b5160829c4be34da586186bc73a585534c93ffb725ddc48b2126">flawless levitation trick</a> will leave you questioning the laws of physics.<br>+ The <a href="https://www.theguardian.com/world/gallery/2026/apr/09/world-press-photo-2026-winners-in-pictures" data-type="link" data-id="https://www.theguardian.com/world/gallery/2026/apr/09/world-press-photo-2026-winners-in-pictures">World Press Photo winners</a> expose the beauty (and brutality) of our planet.<br>+ Over <a href="https://www.instagram.com/reels/DUC3EzgiLIJ/">3 million pink flamingos</a> gathered to create a stunning pink horizon.<br>+ Behold <a href="https://www.youtube.com/shorts/ZTocYB4j4tA">the galaxy&#8217;s enormity</a> in this comparison of its largest known star to Earth</p>
+
+
+
+<p></p>
+]]></content:encoded>
+					
+		
+		
+		<post-id xmlns="com-wordpress:feed-additions:1">1135618</post-id>	</item>
+		<item>
+		<title>Constellations</title>
+		<link>https://www.technologyreview.com/2026/04/10/1135106/jeff-vandermeer-constellations-science-fiction/</link>
+		
+		<dc:creator><![CDATA[Jeff VanderMeer]]></dc:creator>
+		<pubDate>Fri, 10 Apr 2026 10:00:00 +0000</pubDate>
+				<category><![CDATA[Culture]]></category>
+		<category><![CDATA[App]]></category>
+		<guid isPermaLink="false">https://www.technologyreview.com/?p=1135106</guid>
+
+					<description><![CDATA[I. We had crash-landed on the planet. We were far from home. The spaceship could not be repaired, and the rescue beacon had failed. Besides me, only the astrogator, part of the captain, and the ship’s AI mind were left.&#160; Outside, the atmosphere registered as hostile to most organisms. We huddled in the lifeboat, which&#8230;]]></description>
+										<content:encoded><![CDATA[
+<h3 class="wp-block-heading has-text-align-left">I. </h3>
+
+
+
+<p>We had crash-landed on the planet. We were far from home. The spaceship could not be repaired, and the rescue beacon had failed. Besides me, only the astrogator, part of the captain, and the ship’s AI mind were left.&nbsp;</p>
+
+
+
+<p>Outside, the atmosphere registered as hostile to most organisms. We huddled in the lifeboat, which was inoperable but still held air. Vast storms buffeted our cockleshell shelter, although we knew from prior readings that other areas remained calm. All that remained to us was to explore, if we wanted to live. The captain gave me the sole weapon. She tasked the astrogator with carrying some tools that would not unduly weigh him down.</p>
+
+
+
+<p>Little existed on the planet except deserts of snow. But alien artifacts lay in an area near us. We were an exploration team, so this discovery had oddly comforted us, even though we had been on our way elsewhere. The massive systems failure had no discernible source, and the planet had been our only choice for landfall.</p>
+
+
+
+<p>The artifacts took the form of 13 domes, spread out over that hostile terrain. The domes had been linked by cables just below shoulder level, threaded through the tops of metal posts at irregular intervals. Whether intended or not, these cables and rods formed a series of paths between the domes.&nbsp;</p>
+
+
+
+<p>Before our instruments failed, the AI had reported that the domes appeared to have a heat signature. The cables pulsed under our grip in a way that teased promised warmth far ahead. It took some time to get used to the feeling.</p>
+
+
+
+<p>The shortest path between domes was a thousand miles long. The longest path was 10 thousand miles long. Our suit technology was good: A suit could recycle water, generate food, create oxygen. It could push us into various states of near hibernation while motors in the legs drove us forward. For the captain, the suit would compensate for having lost her legs and ease her pain. We estimated we could reach the nearest path and follow it to the nearest dome … and that was it. If the dome had life support capabilities, or even just a way to replenish our suits, we would live. Otherwise, we would probably die.</p>
+
+
+
+<p>We revised the estimate of our survival downward when we reached the path and soon encountered the skeletons of dead astronauts littering the way. In all shapes and sizes, cocooned within their suits. Their huddled forms under the snow displayed a serenity at odds with their fate. But when I wiped the frost from face plates, we saw the extremity of their suffering.</p>
+
+
+
+<p>It is difficult to explain how we felt walking among so many fatalities. So many dead first contacts.&nbsp;</p>
+
+
+
+<p>We no longer had to puzzle over the systems failure. Spaceships came here to crash, and intelligent entities came here to die, for whatever reason. We could not presume our fate would be any different, and adjusted our expectations accordingly. The AI’s platitudes about courage did not raise morale. There were too many lost there in the frozen wastes.&nbsp;</p>
+
+
+
+<blockquote class="wp-block-quote is-layout-flow wp-block-quote-is-layout-flow">
+<p style="font-size:30px"><strong>Here were the ghastly emissaries of hundreds of spacefaring species we had never before encountered.</strong></p>
+</blockquote>
+
+
+
+<p>The number of the bodies and their haphazard positioning hampered our ability to make progress to the dome. The AI estimated our chances of survival at below 50% for the first time. We would starve in our suits as the motors propelled us forward. We would become desiccated and exist in an elongation of our thoughts that made us weak and stupid until the light winked out. But still, we had no choice. So even in places where the dead in their suits were piled high, we would simply plunge forward, over and through them, headed for the dome.&nbsp;</p>
+
+
+
+<p>What we would find there, as I have said, we did not know. But we were in an area of the galaxy where ancient civilizations had died out millions of years ago. We had been on our way to a major site, an ancient city on a moon with no atmosphere in a wilderness of stars.&nbsp;</p>
+
+
+
+<p>Although our emotions fluctuated, a professional awe and curiosity about the dead eventually came over us. This created much debate over the comms. We had made a discovery for the ages, but our satisfaction was bittersweet. Even if we lived longer than expected, we would never return home, never see our friends or family again. The AI might continue on after we were dead, but I doubt it envied being the one to report on our discovery centuries hence. And to who?</p>
+
+
+
+
+
+<p>Here were the ghastly emissaries of hundreds of spacefaring species we had never before encountered. Their suits displayed an extraordinary range, although our examination was cursory. Some even appeared to be made out of scales and other biological substances from their home worlds, giving us further clues as to their origins.&nbsp;</p>
+
+
+
+<p>The burial of the suits by snow and the lack of access to anything other than a screaming face or faces, often distorted by time and ice, worked against recording much usable data. This issue was compounded in those cases where the suit was part of the organism and they had not needed any “artificial skin,” as the AI put it, to survive harsh conditions. That many had died despite appearing well-­prepared for the planet’s environment sobered us up even before our own suits dispensed drugs to help our mental states.&nbsp;</p>
+
+
+
+<p>After a time, each face seemed to express some aspect of our own stress and terror at the seriousness of our situation. After a time, the sheer welter of detail defeated us and caused us extreme distress. The captain made the observation that even one instance of alien contact might cause physiological and mental conditions, including anxiety, stress, fatigue. Here, we were constantly encountering the alien dead of what seemed at times an infinite number of civilizations.&nbsp;</p>
+
+
+
+<p>We stopped recording. We recommitted ourselves to the slog toward the nearest dome.&nbsp;</p>
+
+
+
+<p>The captain’s drugs unit had failed, but the AI found a way to help her by turning off the heating element in select panels of her suit. Some parts of her would soon be lost to the cold, but the system would allow her to live on with some measure of comfort.</p>
+
+
+
+<p>I must admit, we were just glad the screaming had stopped and welcomed her counsel.</p>
+
+
+
+<hr class="wp-block-separator has-alpha-channel-opacity"/>
+
+
+
+<h3 class="wp-block-heading has-text-align-left">II. </h3>
+
+
+
+<p>For a long time, as we labored in our spacesuits on that planet—following the path, beleaguered by snowstorms—we could not understand why we found so many dead astronauts, of so many unknown alien types, and yet no spaceships. During good visibility, our line of sight reached, unbroken, for 500 miles. Where were the crash sites?&nbsp;</p>
+
+
+
+<p>But one day we chanced upon an antenna sticking up out of the ground. Clumsy attempts at excavation soon revealed that below this antenna lay a vast dead spaceship of a kind we had never seen before. The gash that had opened it to the elements had laid bare its unique architecture, but also gave the illusion that the snow had spilled out of it to create the world around us rather than having infiltrated and accumulated inside over time.</p>
+
+
+
+<p>Aspects of the spaceship’s texture gave the startling suggestion that it had been made of some ultra-hard wood or wood equivalent. Clambering partway up to stare at the inner compartments, we all felt the strangeness of the dimensions and proportions of the living quarters. There was no sign of the occupants. Perhaps, I suggested, they had headed for the domes. Perhaps they had even made it to the domes. I tried and failed to keep hope from my voice.</p>
+
+
+
+<p>But the captain had ordered the AI to perform a materials analysis. The “snow” in this region had been contaminated by ash and tiny particles of bone. The AI estimated that more than 70% of the white surrounding us was made of the remains of vertebrate sentient life and the remnants of suits. Of invertebrates there was no telling. A thaw might bring not just the drip, drip of water but a shushing sound indicative of bone particulate in the mixture. I imagined there might even be the clink of small objects not rendered down by whatever intense heat had created the ash.</p>
+
+
+
+
+
+<p>The astrogator had insisted on digging deeper into the ship, with the idea that some recognizable commonality between technologies might yield a part or parts with which he could fix our ship. The rest of us allowed this delusion for the obvious reasons. But upon his return, he held in his hands ovals of snow not much larger than the space formed by the circle between a thumb and finger. Many of them had soft indentations, as one might find in the afterbirth of reptiles from eggs. A kind of ghostly cilia-like tread appeared along the bottoms of these objects.</p>
+
+
+
+<p>The astrogator did not find any technology of use to us. Instead, he discovered that the species piloting the spaceship had been so different from us as to be safely encapsuled in suits the size of eggs. Much of what had spilled into or spilled out of the gash constituted the bodies of the crew, in their hundreds of thousands. Their suits had been inadequate to the conditions. They had died en masse attempting to escape their own ship.</p>
+
+
+
+<p>The AI speculated that it had been a generation ship, perhaps fleeing a planet with a dying star. If we wondered how the AI had reached this conclusion, it was because we did not want it to be true.</p>
+
+
+
+<p>The captain became silent upon receiving this further news and did not speak to us for more than 100 miles of further progress.&nbsp;</p>
+
+
+
+<p>As we left that site, unsure exactly what we stepped upon, we also knew that since the spaceship was entirely covered by snow, it had been falling into the sediment for days or months or years. We knew then that our ship might not be visible against the horizon should we retrace our steps. The already bleak probability of rescue through visual identification of a crash site from above would be lost to us in time, even as the line of cables remained perpetually visible to the horizon. We now thought of the planet as a trap. But of what sort?&nbsp;</p>
+
+
+
+<hr class="wp-block-separator has-alpha-channel-opacity"/>
+
+
+
+<h3 class="wp-block-heading">III. </h3>
+
+
+
+<p>We could not be sure, but in the absence of the captain’s voice, it may have been the AI that put forward the idea of the planet’s being “duplicitous.” The phrasing concerned us, for there was a duplicity in using the planet as the subject of the spoken sentence. A sphere rotating around a sun in deep space could not exhibit forethought or premeditation or other qualities of sentience.&nbsp;</p>
+
+
+
+<p>The AI meant whoever or whatever had created the conditions on the planet that allowed spacecraft to be trapped and then the occupants placed in a perilous situation with no recourse. But I distinctly recall the AI using the words “the planet.” In addition to being inaccurate, this also let us know that the AI did not have any analysis available that might help us understand the agency and motivations acting upon us.&nbsp;</p>
+
+
+
+<p>But in a sense, the AI only voiced something I had felt for several miles: that there existed an overlay to the planet’s surface, an area or space or different landscape unavailable to us. This overlay had also not been available to any of the prior astronauts who had died here. In this area or space or different landscape existed a wealth of the usual hoped-for things: a breathable atmosphere and abundant food and water.&nbsp;</p>
+
+
+
+<p>While we struggled with the line through the snow and through the storms that welled up, <em>others</em> could see us but chose to ignore us for reasons or perhaps just for their own well-being. For hundreds, possibly thousands of years, as explorers had died here in merciless and terrible ways, there raged a sumptuous feast for the senses, as excessive as it was ancient and unending.</p>
+
+
+
+<p>I cannot tell you how powerfully the AI’s words struck us, so that our mouths watered at the thought of real food and of clean, unrecycled water, of a freedom unencumbered by suits and breathing apparatus. Even at our intended destination, we would have spent most of our days aboard a small space station. This tedium would have been broken only by the arduous process of reaching the unbreathable surface and its ancient ruins of jagged black stone.&nbsp;</p>
+
+
+
+<p>This vision that overtook us functioned not just as tantalizing delusion. It scared us so much that we could not compartmentalize it in our thoughts. It continued to overwhelm us like a wave.</p>
+
+
+
+<p>We fought for the first time, with the astrogator expressing the wish to return to the ruined spacecraft and explore nearby areas for parts, while the captain broke silence to order us to continue to make progress toward the nearest dome. The AI, which had brought us to this point, stole the captain’s silence and said no more.</p>
+
+
+
+<p>For each of us, those endless white plains with no real elevation, just the metal rope and the metal posts, had become a kind of repetition that hurt the brain, and the mind with it.</p>
+
+
+
+<div class="wp-block-group is-layout-constrained wp-block-group-is-layout-constrained">
+<p>As I looked out across the white, I could not help seeing the impression of shapes in the wind, as if invisible entities fled by, carried there by gusts, unable to get purchase, swept up for hundreds and hundreds of miles before being dashed to the ground.</p>
+
+
+
+<p>We did not give up, however.</p>
+</div>
+
+
+
+<hr class="wp-block-separator has-alpha-channel-opacity"/>
+
+
+
+<h3 class="wp-block-heading">IV. </h3>
+
+
+
+<p>About halfway to the nearest dome, amid a storm that reduced our progress incrementally and our line of sight to nothing, we came upon a peculiar tableau.&nbsp;</p>
+
+
+
+<p>Six astronaut suits had fallen across and around the metal rope. With the flurries of snow, it took us, even with our powerful headlamps, some minutes to determine the nature of the obstruction. The six suits had been created for a humanoid species that must have had torsos like nine-foot-long slabs, attached to six limbs, three for walking. Their heads had flared out like thick fans. All the helmets were cracked open, and curled inside were the skeletons of some other intelligent species no larger than 40 or 50 pounds, possibly warm-blooded. With no sign of the original occupants.&nbsp;</p>
+
+
+
+<p>After a brief analysis cut short by the conditions, we postulated that the warm-blooded species had worn breathable skin suits that, as they failed, required these intruders to seek shelter. All they could find were these six dead astronauts. Because we could discover no trace of the original occupants, the AI put forward the theory that this smaller species had eaten every scrap of the remains within the suits.&nbsp;</p>
+
+
+
+<p>Then they too had perished, and in time, the AI suggested, something smaller would take up residence inside those bodies, then smaller still within those, and smaller still—</p>
+
+
+
+<p>At this point, the captain attempted a soft reboot of the AI using a coded question. We could hear the concern in her voice.</p>
+
+
+
+<p>Yet the AI continued undeterred, suggesting that we might find this to be a common situation. It might be replicated across the planet, depending on a system’s ability to break down and process meat that had not evolved alongside the devourer for millions of years. In all likelihood, most who attempted to eat in this way died soon after, poisoned by alien flesh.</p>
+
+
+
+<div class="wp-block-group is-layout-constrained wp-block-group-is-layout-constrained">
+<p>The astrogator had taken to muttering inside his suit, off comms, as if he no longer thought we functioned as a team. No amount of castigation from the captain served to change his mind.</p>
+
+
+
+<p>In the terse harshness of the captain’s reprimand, I recognized that her pain levels had spiked once again.</p>
+</div>
+
+
+
+<hr class="wp-block-separator has-alpha-channel-opacity"/>
+
+
+
+<h3 class="wp-block-heading">V. </h3>
+
+
+
+<p>The AI began to talk to us in strange alien voices at mile 700, as we labored through the snowstorm to hold onto the cables and thus the path. The AI warbled and chirped and howled and hummed and clucked. The AI spoke in voices like fossilized choruses of beasts, vast and harmonious. And in voices like dry grass spun to fire by the sun. And in voices like the dissolution of all things, darkness in the blinding white that scared me.&nbsp;</p>
+
+
+
+<p>At first we thought the AI was deranged. Then that the AI channeled voices from the dome 300 miles ahead. But finally, the AI managed to make known to us that these were the voices of the dead astronauts we had come across from time to time. Huddled frozen. The suits in so many shapes and sizes. That the voices of the dead were channeled through the AI, and nothing could stop them.</p>
+
+
+
+<div class="wp-block-group is-layout-constrained wp-block-group-is-layout-constrained">
+<p>We chose to believe that the AI had begun to malfunction. We did not waste time with a response. The captain asked the AI to perform self-shutdown and whispered the numbers in the correct sequence. We knew what we lost with this act, and yet we knew if we did not shut down the AI it might become harmful to us beyond the mental distress of what it had just conveyed to us.</p>
+
+
+
+<p>Soon after, the AI gave up its own voice, and all that came from it were the sounds of the others.&nbsp;</p>
+
+
+
+<p>A little later, the AI no longer spoke at all.</p>
+</div>
+
+
+
+<hr class="wp-block-separator has-alpha-channel-opacity"/>
+
+
+
+<h3 class="wp-block-heading">VI. </h3>
+
+
+
+<p>The snow began to betray us, as the storms created different forms of ice. Often, our arms became weary, our legs cramping, and we had to rest with greater frequency. We came to accept the solid crunch that could support our weight. We came to reject the feather-light freshness that felt effortless underfoot but could give way just as easily as if it were air. In some places, slick purple-hued ice welled up in sluggish layers as if something half-alive. In others, we discovered strange islands of elevation, with brutal curls and curves that suggested two continental shelves had clashed in that space.</p>
+
+
+
+<p>As we adapted to these conditions, and as conditions worsened and still we adapted, we came to feel an illusion of competency, one that made even the astrogator temporarily cheerful. The sounds through the comms of our efforts, the deeper breathing, the occasional muffled curse, seduced us in this regard. We felt that we were becoming adroit at handling the snow. We began to believe if we could only make it to the dome, we would be saved.</p>
+
+
+
+<p>Yet this uptick in morale ran parallel to, rather than intersected with, the idea of our ultimate survival.</p>
+
+
+
+<hr class="wp-block-separator has-alpha-channel-opacity"/>
+
+
+
+<h3 class="wp-block-heading">VII. </h3>
+
+
+
+<p>We lost track of the distance left to us without the AI to tell us. Or the captain, in her pain, no longer thought to issue updates. But across the distance left to us came sights beyond reckoning: three giant astronauts spaced 50 miles apart. Larger than most starships, each body lay sprawled across an area larger than several fields and in very different conditions.</p>
+
+
+
+<p>The first had been badly burned and was thus unrecoverable, even in terms of salvage. The astronaut had crawled or pulled itself along for some distance. It had left a long smudge of black and red across that expanse. The alien species was, as ever, unknown to us, but the five arms were sunk in the ground as if in agony. The skull had once held three eyes, and the face plate had been cracked by force so strong it resembled a meteor strike. The body was bloated, the fabric of the suit gray with a shimmer of green that came and went, linked to photosensitive skin cells. The way the flesh took up space, and how it exhibited aspects more plant than animal, made it impossible to study further.</p>
+
+
+
+<p>The second was a sprawl of limbs, with the suggestion of a defensive posture. The debris of conflict flared out to the side in an incomprehensible display. The suit had an intactness that surprised us, but a similar crack in the face plate without any trace of body within. The rest of the suit had become inhabited by a wealth of other dead astronauts of varying sizes and shapes, who had sought shelter or sustenance and then become trapped or simply … given up. As the AI had predicted, we had once again encountered bodies providing other bodies with temporary sustenance and shelter.</p>
+
+
+
+<blockquote class="wp-block-quote is-layout-flow wp-block-quote-is-layout-flow">
+<p style="font-size:30px"><strong>I felt like a parasite who beheld a god. Or was the scale even more ludicrous?</strong></p>
+</blockquote>
+
+
+
+<p>But this condition was not at first evident to us, becoming apparent only after we had clambered for an hour to reach the cracked face plate and the entry hole extended like a broken archway before us.</p>
+
+
+
+<p>Despite the number of remains within, and the difficulty in moving through them to explore, the captain ordered an exhaustive recon. Her pulse in the readings had a thready quality. Sometimes I felt, and the astrogator too when we took private comms, that the captain had begun to say things similar to the AI’s delusions. Yet we obeyed the order, on the chance that some internal calculation on the captain’s part meant she believed this was the only way we would survive.&nbsp;</p>
+
+
+
+<p>What did we expect to find in the dead body of a once-­intelligent giant? Food? Oxygen? Some cause of death? To put off the thought of our own death by seeking shelter with a death so large we could not comprehend it?</p>
+
+
+
+<p>I felt like a parasite who beheld a god. Or was the scale even more ludicrous? I had trouble envisioning the way the body must have twisted as it pitched forward into that icy ground. I had trouble holding onto my own thoughts.</p>
+
+
+
+<p>More and more pressure moved through my skull as I contemplated that scene. We were in the midst of something none of my kind had ever known. We might be the only ones, ever. I better understood the unraveling of the AI and of the captain. My sharpness had dulled, taking my calm with it.</p>
+
+
+
+<p>It was impossible to tell how long the astronaut had taken to die. Unless somewhere within that fallen figure some hint of life hid that we would never find.</p>
+
+
+
+<p>The storms fell away, rose, then fell away again.&nbsp;</p>
+
+
+
+<hr class="wp-block-separator has-alpha-channel-opacity"/>
+
+
+
+<h3 class="wp-block-heading">VIII. </h3>
+
+
+
+<p>The third huge astronaut was full of light and life and shone out across the wasteland of snow like a beacon. For a moment, I thought we had pierced the invisible layer and could see what lay beyond the veil. We would have comforts beyond anything found on our ruined spaceship even when it had been fit to cross galactic space. There would not be recycled urine for our water. There would not be the faint stink of sweat creeping into our suits as the ventilation system began to fail. Our liquid food would not taste stale and moldy.&nbsp;</p>
+
+
+
+<p>As we approached, the suit extended almost to the horizon in that foreshortened perspective created by the left foot. We noted through our remaining instrumentation that the suit remained intact. The pressure told us a kind of air circulated within its sealed surfaces.&nbsp;</p>
+
+
+
+<p>We climbed with a renewed energy, the promise of sanctuary so close making us giddy. We each exhorted the others on with such exuberance that it made me a little afraid. What lay on the other side of this state of mind but a fall?</p>
+
+
+
+
+
+<p>When we reached the helmet plate, we could see inside not a face or a skull, but instead such a richness of healthy growth that we fell silent before it. None of us could, I believe, understand exactly what we saw, except that it equaled ecosystem—resplendent with vibrant greens and blues, stippled with other colors. There might be some parallel to a terrarium full of moss and exotic plants. There might be some sense of life moving amongst those plants, as of jewel-like amphibians or even tiny shy sapphire birds. We could not smell or taste or hear what lay behind the face plate. We could not experience it in that way, but somehow we each imagined enough to be calmed and comforted by it.&nbsp;</p>
+
+
+
+<p>The astrogator said he might be able to create a hole in the plate or elsewhere on the body to let us in, and then patch the surface such that not too much air or vitality would spill out. This workaround might take an hour or two, due to the delicate nature of what we saw within. But it was possible.</p>
+
+
+
+<p>The captain considered the astrogator’s proposal and then agreed. The weather had begun to turn dangerous again. That we should begin immediately did not need to be said. With the proper pressure brought to bear, we would have some measure of sanctuary from which to recover for a final push to the dome. It could be the difference between life and death, the astrogator said. If the atmosphere was breathable, we might even be able to give the captain some better solution to her pain.</p>
+
+
+
+<p>I unclipped the astrogator’s equipment from his waist and threw it off the mountain that was the astronaut and watched it sail through the air and into the snow. Then I used my weapon to fry it where it lay. Then I threw my weapon into the snow, too, in a place where the featheriness would cover it and hide it forever.&nbsp;</p>
+
+
+
+<p>We were a team and I had helped my team while showing them I posed no threat—although I knew the astrogator and the captain would not see it that way. I stood there on the face plate that we could no longer open with the diminished tools at our disposal as they both yelled at me through the comms. It’s unimportant what they said to me. They were admonishing me for something that had already happened and that they had no power to stop. I did not bother to explain, but began to make the descent to the ground so we could once again take up the metal rope and make for the dome.</p>
+
+
+
+<div class="wp-block-group is-layout-constrained wp-block-group-is-layout-constrained">
+<p>Will you follow, I asked them from the ground, when I saw they still stood on the heights. There came no reply, but when they saw me take up the rope, they climbed down to take up the rope too.</p>
+
+
+
+<p>I waited then, and let them catch up.</p>
+</div>
+
+
+
+<hr class="wp-block-separator has-alpha-channel-opacity"/>
+
+
+
+<div class="wp-block-group is-layout-constrained wp-block-group-is-layout-constrained">
+<h3 class="wp-block-heading">IX. </h3>
+
+
+
+<p>The captain died not long after. The pain was too great or the wounds she had suffered too damaging. I had known for some time she would never make it to the dome, but there was no point in emphasizing that to her. Nothing she had done until the end had required her to be removed from command. Her last words were the name of our ship and giving her love to someone who would be dead of old age even if we found a way to escape this place and return home. But the astrogator told her he would carry those words forward.&nbsp;</p>
+
+
+
+<p>Then we left her by the marker that meant we had 100 miles left to the dome. We knew the snow would cover her for burial. It had done so faithfully for all the rest.</p>
+</div>
+
+
+
+<blockquote class="wp-block-quote is-layout-flow wp-block-quote-is-layout-flow">
+<p style="font-size:30px"><strong>That in that frozen hellscape, the persistence of life in that manner, an oasis in the midst of nothing, could be categorized as a miracle.</strong></p>
+</blockquote>
+
+
+
+<div class="wp-block-group is-layout-constrained wp-block-group-is-layout-constrained">
+<p>As the astrogator followed me down the rope line, he cried out for explanation. The captain’s death required it for some reason, in his mind. The captain had not deserved my betrayal. The captain would not rest easy until I told him why.&nbsp;</p>
+
+
+
+<p>You must believe in ghosts, I replied.</p>
+</div>
+
+
+<div class="wp-block-image">
+<figure class="wp-block-image size-large"><img decoding="async" width="2687" height="1511" src="https://wp.technologyreview.com/wp-content/uploads/2026/04/edit-thumb.jpg?w=2687" alt="" class="wp-image-1135135" srcset="https://wp.technologyreview.com/wp-content/uploads/2026/04/edit-thumb.jpg 2687w, https://wp.technologyreview.com/wp-content/uploads/2026/04/edit-thumb.jpg?resize=300,169 300w, https://wp.technologyreview.com/wp-content/uploads/2026/04/edit-thumb.jpg?resize=768,432 768w, https://wp.technologyreview.com/wp-content/uploads/2026/04/edit-thumb.jpg?resize=1536,864 1536w, https://wp.technologyreview.com/wp-content/uploads/2026/04/edit-thumb.jpg?resize=2048,1152 2048w" sizes="(max-width: 2687px) 100vw, 2687px" /><div class="image-credit">ROGAN BROWN</div>
+</figure>
+</div>
+
+
+<p>This reply incensed him and he castigated me in words not used among members of a team that respect each other. Once more, I ignored him, but told him if our oxygen got low, he could have mine if we calculated he could make it to the base. I meant this, as I knew the odds were low anyway. I had hurt my knee taking the equipment from the astrogator and then making my way so rapidly down from the dead astronaut.</p>
+
+
+
+<p>The astrogator did not reply, by which I knew he did not accept my answer.</p>
+
+
+
+<p>The reason I took the tools and destroyed them is because the wind had told me something it had not whispered to the captain or the astrogator. The wind had not spoken to me before, so I believed what it told me. That the astronaut within the suit lived on, if unable to move. That what we saw on the outside and registered as ecosystem, as separate “plants” and “animals,” instead formed a composite life-form and that to crack open the suit or cut through the suit at a leg would have been a violation.</p>
+
+
+
+<p>That in that frozen hellscape, the persistence of life in that manner, an oasis in the midst of nothing, could be categorized as a miracle.&nbsp;</p>
+
+
+
+<p>I would not snuff that out. I could not allow that to be snuffed out. But I remembered too how I felt looking at that vast and alien country behind the face plate. So calm, so comforted, overcome by the depths of an emotion I could not place. Would I replace that feeling with the feeling of seeing all those explorers dead within the other vast suit? Even as I become one of them?&nbsp;</p>
+
+
+
+<p>Because the planet had already told us the rules, the consequences, and the ultimate outcome. There are no odds so terrible that they could not be experienced, and in dozens of ways, in this place.&nbsp;</p>
+
+
+
+<p>So I trudged on and the astrogator cursed me and cursed me and called out my childhood and how badly I must have been brought up and how I must have cheated to pass the psych exams, and yet I had thought the same of him at various points during our journey.</p>
+
+
+
+<p>See how beautiful the snow is, falling now, I said to him over the comms. See how precise and geometric this line we follow across this expanse.&nbsp;</p>
+
+
+
+<p>He did not reply, but a little later he told me he no longer believed in the line at all, and by his calculations he would get to the dome faster if he abandoned it and struck out on his own.</p>
+
+
+
+<p>I could not stop the astrogator and did not want to, so I watched him become a smaller and smaller figure against the white until the white ate him up and I was alone.</p>
+
+
+
+<hr class="wp-block-separator has-alpha-channel-opacity"/>
+
+
+
+<h3 class="wp-block-heading">X. </h3>
+
+
+
+<p>I have been walking a long time, visiting with the dead. Here, against an arch of heaven that appears no different than what I see directly in front of me.&nbsp;</p>
+
+
+
+<p><em><a href="https://www.jeffvandermeer.com/">Jeff VanderMeer</a> is the author of the critically acclaimed, bestselling Southern Reach</em> <em>series, translated into 38 languages. His short fiction has appeared in </em>Vulture, Slate, New York Magazine, Black Clock, Interzone, American Fantastic Tales <em>(Library of America), and many others</em>.</p>
+]]></content:encoded>
+					
+		
+		
+		<post-id xmlns="com-wordpress:feed-additions:1">1135106</post-id>	</item>
+		<item>
+		<title>The Download: AstroTurf wars and exponential AI growth</title>
+		<link>https://www.technologyreview.com/2026/04/09/1135514/the-download-astroturf-wars-exponential-ai-growth-desalination-numbers/</link>
+		
+		<dc:creator><![CDATA[Thomas Macaulay]]></dc:creator>
+		<pubDate>Thu, 09 Apr 2026 12:25:10 +0000</pubDate>
+				<category><![CDATA[The Download]]></category>
+		<guid isPermaLink="false">https://www.technologyreview.com/?p=1135514</guid>
+
+					<description><![CDATA[This is today&#8217;s edition of The Download, our weekday newsletter that provides a daily dose of what&#8217;s going on in the world of technology. Is&#160;fake&#160;grass&#160;a&#160;bad&#160;idea?&#160;The&#160;AstroTurf&#160;wars&#160;are&#160;far&#160;from&#160;over.&#160; In 2001,&#160;Americans installed just over 7 million square meters of synthetic turf. By 2024, that number was 79 million square meters—enough to carpet all of Manhattan and then some. The&#8230;]]></description>
+										<content:encoded><![CDATA[
+<p><em>This is today&#8217;s edition of </em><a href="https://forms.technologyreview.com/newsletters/briefing-the-download/?_ga=2.179569122.736533416.1649661040-405833893.1649413289"><em>The Download</em></a>,<em> our weekday newsletter that provides a daily dose of what&#8217;s going on in the world of technology.</em></p>
+
+
+
+<h3 class="wp-block-heading"><strong>Is&nbsp;fake&nbsp;grass&nbsp;a&nbsp;bad&nbsp;idea?&nbsp;The&nbsp;AstroTurf&nbsp;wars&nbsp;are&nbsp;far&nbsp;from&nbsp;over.</strong>&nbsp;</h3>
+
+
+
+<p>In 2001,&nbsp;Americans installed just over 7 million square meters of synthetic turf. By 2024, that number was 79 million square meters—enough to carpet all of Manhattan and then some. The increase worries folks who study microplastics and environmental pollution. &nbsp;</p>
+
+
+
+<p>While the plastic-making industry insists that synthetic fields are safe if properly installed, lots of researchers think that isn’t so. <a href="https://www.technologyreview.com/2026/04/09/1135092/astroturf-fake-grass-artificial-heated-debates/?utm_source=the_download&amp;utm_medium=email&amp;utm_campaign=the_download.unpaid.engagement&amp;utm_term=*%7CSUBCLASS%7C*&amp;utm_content=*%7CDATE:m-d-Y%7C*" rel="noreferrer noopener" target="_blank">Find out why AstroTurf has ignited heated debates</a>.</p>
+
+
+
+<p><em>—Douglas&nbsp;Main</em>&nbsp;</p>
+
+
+
+<p><strong>This story is from the next issue of our print magazine, packed with stories all about nature. </strong><a href="https://www.technologyreview.com/subscribe?utm_source=the_download&amp;utm_medium=email&amp;utm_campaign=the_download.unpaid.engagement&amp;utm_term=*%7CSUBCLASS%7C*&amp;utm_content=*%7CDATE:m-d-Y%7C*" target="_blank" rel="noreferrer noopener"><strong>Subscribe now</strong></a><strong> to read the full thing when it lands on Wednesday, April 22.</strong> </p>
+
+
+
+<h3 class="wp-block-heading"><strong>Mustafa Suleyman: AI development won&#8217;t hit a development wall anytime soon—here&#8217;s why</strong> </h3>
+
+
+
+<p><em>—Mustafa Suleyman, Microsoft AI CEO and <em>Google DeepMind</em></em> <em>co-founder</em> </p>
+
+
+
+<p>The&nbsp;skeptics&nbsp;keep&nbsp;predicting&nbsp;that&nbsp;AI compute&nbsp;will&nbsp;soon&nbsp;hit a&nbsp;wall—and&nbsp;keep&nbsp;getting&nbsp;proven&nbsp;wrong.&nbsp;To&nbsp;understand&nbsp;why&nbsp;that&nbsp;is,&nbsp;you&nbsp;need&nbsp;to&nbsp;look&nbsp;at&nbsp;the&nbsp;forces&nbsp;driving&nbsp;the&nbsp;AI&nbsp;explosion.&nbsp;&nbsp;</p>
+
+
+
+<p>Three advances are enabling exponential progress: faster basic calculators, high-bandwidth memory, and technologies that turn disparate GPUs into enormous supercomputers. Where does all this get us? <a href="https://www.technologyreview.com/2026/04/08/1135398/mustafa-suleyman-ai-future/?utm_source=the_download&amp;utm_medium=email&amp;utm_campaign=the_download.unpaid.engagement&amp;utm_term=*%7CSUBCLASS%7C*&amp;utm_content=*%7CDATE:m-d-Y%7C*" target="_blank" rel="noreferrer noopener">Read the full op-ed on the future of AI development to learn more</a>. <br> </p>
+
+
+
+<h3 class="wp-block-heading"><strong>Desalination&nbsp;technology,&nbsp;by&nbsp;the&nbsp;numbers</strong>&nbsp;</h3>
+
+
+
+<p><em>—Casey&nbsp;Crownhart</em>&nbsp;</p>
+
+
+
+<p>When I started digging into desalination technology for a new story, I couldn’t help but obsess over the numbers.&nbsp;</p>
+
+
+
+<p>I knew on some level that desalination—pulling salt out of seawater to produce fresh water—was an increasingly important technology, especially in water-stressed regions including the Middle East. But just how much some countries rely on desalination, and how big a business it is, still surprised me.<br><br><a href="https://www.technologyreview.com/2026/04/09/1135495/desalination-technology-numbers/?utm_source=the_download&amp;utm_medium=email&amp;utm_campaign=the_download.unpaid.engagement&amp;utm_term=*%7CSUBCLASS%7C*&amp;utm_content=*%7CDATE:m-d-Y%7C*" target="_blank" rel="noreferrer noopener">Here are the extraordinary numbers behind the crucial water source</a>. <br></p>
+
+
+
+<p><strong>This&nbsp;</strong><a href="https://www.technologyreview.com/2026/04/09/1135495/desalination-technology-numbers/?utm_source=the_download&amp;utm_medium=email&amp;utm_campaign=the_download.unpaid.engagement&amp;utm_term=*%7CSUBCLASS%7C*&amp;utm_content=*%7CDATE:m-d-Y%7C*" target="_blank" rel="noreferrer noopener"><strong>story</strong></a><strong>&nbsp;is&nbsp;from&nbsp;The&nbsp;Spark,&nbsp;our&nbsp;weekly&nbsp;newsletter&nbsp;on&nbsp;the&nbsp;tech&nbsp;that&nbsp;could&nbsp;combat&nbsp;the&nbsp;climate&nbsp;crisis.&nbsp;</strong><a href="https://forms.technologyreview.com/newsletters/climate-energy-the-spark/?utm_source=the_download&amp;utm_medium=email&amp;utm_campaign=the_download.unpaid.engagement&amp;utm_term=*%7CSUBCLASS%7C*&amp;utm_content=*%7CDATE:m-d-Y%7C*" target="_blank" rel="noreferrer noopener"><strong>Sign up</strong></a><strong>&nbsp;to&nbsp;receive&nbsp;it&nbsp;in&nbsp;your&nbsp;inbox&nbsp;every&nbsp;Wednesday.</strong>&nbsp;</p>
+
+
+
+<p class="has-medium-font-size"><strong>The must-reads </strong></p>
+
+
+
+<p><em>I’ve&nbsp;combed&nbsp;the&nbsp;internet&nbsp;to&nbsp;find&nbsp;you&nbsp;today’s&nbsp;most&nbsp;fun/important/scary/fascinating&nbsp;stories&nbsp;about&nbsp;technology.</em>&nbsp;</p>
+
+
+
+<p><strong>1 Meta has launched the first AI model from its Superintelligence Labs<br></strong>Muse Spark is the company’s first model in a year. (<a href="https://www.reuters.com/sustainability/sustainable-finance-reporting/meta-unveils-first-ai-model-superintelligence-team-2026-04-08/" target="_blank" rel="noreferrer noopener">Reuters</a> $) <br><em>+ The closed model brings reasoning capabilities to the Meta AI app.</em> (<a href="https://www.engadget.com/ai/metas-muse-spark-model-brings-reasoning-capabilities-to-the-meta-ai-app-161456684.html?src=rss" target="_blank" rel="noreferrer noopener">Engadget</a>) <br><em>+ It’s built by Meta’s Superintelligence Labs, the unit led by Alexandr Wang.</em> (<a href="https://techcrunch.com/2026/04/08/meta-debuts-the-muse-spark-model-in-a-ground-up-overhaul-of-its-ai/" target="_blank" rel="noreferrer noopener">TechCrunch</a>) </p>
+
+
+
+<p><strong>2 Anthropic has lost a bid to pause the Pentagon’s blacklisting</strong> <br>An appeals court in Washington, DC denied the request. (<a href="https://www.cnbc.com/2026/04/08/anthropic-pentagon-court-ruling-supply-chain-risk.html" target="_blank" rel="noreferrer noopener">CNBC</a>) <br><em>+ A California judge had temporarily blocked the blacklisting in March. (</em><a href="https://www.npr.org/2026/03/24/nx-s1-5759276/anthropic-pentagon-claude-preliminary-injunction-hearing" target="_blank" rel="noreferrer noopener">NPR</a>) <br><em>+ The mixed rulings leave Anthropic in a legal limbo.</em> (<a href="https://www.wired.com/story/anthropic-appeals-court-ruling/" target="_blank" rel="noreferrer noopener">Wired</a> $) <br><em>+ And open doors for smaller AI rivals. </em>(<a href="https://www.reuters.com/legal/government/pentagons-ouster-anthropic-opens-doors-small-ai-rivals-2026-04-09/" target="_blank" rel="noreferrer noopener">Reuters</a> $) </p>
+
+
+
+<p><strong>3 New evidence suggests Adam Back invented Bitcoin</strong> <br>The British cryptographer may be the real Satoshi Nakamoto. (<a href="https://www.nytimes.com/2026/04/08/business/bitcoin-satoshi-nakamoto-identity-adam-back.html" target="_blank" rel="noreferrer noopener">NYT</a> $) <br><em>+ Back denies the claims.</em> (<a href="https://www.bbc.com/news/articles/cgrl4l1y9yxo" target="_blank" rel="noreferrer noopener">BBC</a>) <br><em>+ There’s a dark side to crypto’s permissionless dream.</em> (<a href="https://www.technologyreview.com/2026/02/18/1132587/jean-paul-thorbjornsen-dark-side-crypto-permissionless-dream/?utm_source=the_download&amp;utm_medium=email&amp;utm_campaign=the_download.unpaid.engagement&amp;utm_term=*%7CSUBCLASS%7C*&amp;utm_content=*%7CDATE:m-d-Y%7C*" target="_blank" rel="noreferrer noopener">MIT Technology Review</a>) </p>
+
+
+
+<p><strong>4 Gen Z is cooling on AI</strong> <br>The share feeling angry about it has risen from 22% to 31% in a year. (<a href="https://www.axios.com/2026/04/09/ai-gen-z-polling-gallup" target="_blank" rel="noreferrer noopener">Axios</a>) <br><em>+ Anti-AI protests are also growing. </em>(<a href="https://www.technologyreview.com/2026/03/02/1133814/i-checked-out-londons-biggest-ever-anti-ai-protest/?utm_source=the_download&amp;utm_medium=email&amp;utm_campaign=the_download.unpaid.engagement&amp;utm_term=*%7CSUBCLASS%7C*&amp;utm_content=*%7CDATE:m-d-Y%7C*" target="_blank" rel="noreferrer noopener">MIT Technology Review</a>) </p>
+
+
+
+<p><strong>5 War in the Gulf could tilt the cloud race toward China</strong> <br>Huawei is pitching “multi-cloud” resilience to Gulf clients. (<a href="https://restofworld.org/2026/huawei-china-cloud-gulf-resilience-aws-strikes/" target="_blank" rel="noreferrer noopener">Rest of World</a>) </p>
+
+
+
+<p><strong>6 Meta has killed a leaderboard of its AI token users</strong> <br>It showed the top 250 users. (<a href="https://www.theinformation.com/briefings/meta-shutters-internal-ai-token-leaderboard" target="_blank" rel="noreferrer noopener">The Information</a> $) <br><em>+ Meta blamed data leaks for the shutdown.</em> (<a href="https://fortune.com/2026/03/17/jensen-huang-ai-infrastructure-buildout-1-trillion-dollars/" target="_blank" rel="noreferrer noopener">Fortune</a>) <br><em>+ It encouraged “tokenmaxxing,” a growing phenomenon in Big Tech.</em> (<a href="https://www.nytimes.com/2026/03/20/technology/tokenmaxxing-ai-agents.html" target="_blank" rel="noreferrer noopener">NYT</a> $) </p>
+
+
+
+<p><strong>7 Did Artemis II really tell us anything new about space?</strong> <br>Or was it primarily a PR exercise? (<a href="https://arstechnica.com/space/2026/04/the-moon-is-already-on-google-maps-did-artemis-ii-really-tell-us-anything-new/" target="_blank" rel="noreferrer noopener">Ars Technica</a>) </p>
+
+
+
+<p><strong>8 Israeli attacks have brutally exposed Lebanon’s digital infrastructure</strong> <br>It’s managing a modern crisis without modern technology. (<a href="https://www.wired.com/story/we-were-not-ready-for-this-lebanons-emergency-system-is-hanging-by-a-thread/" target="_blank" rel="noreferrer noopener">Wired</a> $) </p>
+
+
+
+<p><strong>9 AI models could offer mathematicians a common language</strong> <br>They hope it will simplify the process of verifying proofs. (<a href="https://www.economist.com/science-and-technology/2026/04/08/ai-models-could-offer-mathematicians-a-common-language" target="_blank" rel="noreferrer noopener">Economist</a>)  </p>
+
+
+
+<p><strong>10&nbsp;A&nbsp;“self-doxing&#8217; rave&nbsp;is&nbsp;helping&nbsp;trans&nbsp;people&nbsp;stay&nbsp;safe&nbsp;online</strong>&nbsp;<br>It’s&nbsp;among&nbsp;a series&nbsp;of&nbsp;digital&nbsp;self-defenses. (<a href="https://www.404media.co/trans-rights-privacy-online-cybersecurity-workshop-deadname-not-found/" target="_blank" rel="noreferrer noopener">404 Media</a>)&nbsp;</p>
+
+
+
+<p class="has-medium-font-size"><strong>Quote of the day </strong></p>
+
+
+
+<h2 class="wp-block-heading">“I feel like anything that I’m interested in has the potential of maybe getting replaced, even in the next few years.” </h2>
+
+
+
+<p>—Sydney&nbsp;Gill, a&nbsp;freshman&nbsp;at Rice&nbsp;University,&nbsp;tells&nbsp;the&nbsp;<a href="https://www.nytimes.com/2026/04/09/style/gen-z-ai-gallup-study.html#:~:text=gallup%2Dstudy.html-,Gen%20Z%20Is%20Using%20A.I.%2C%20but%20Doesn't%20Feel%20Great,more%20angry%20about%20artificial%20intelligence.&amp;text=Think%20young%20people%20are%20charging,Think%20again." target="_blank" rel="noreferrer noopener">New York Times</a>&nbsp;why&nbsp;she’s&nbsp;soured&nbsp;on&nbsp;AI.&nbsp;</p>
+
+
+
+<p class="has-medium-font-size"><strong>One More Thing </strong></p>
+
+
+<div class="wp-block-image">
+<figure class="wp-block-image size-large"><img decoding="async" width="2947" height="1657" src="https://wp.technologyreview.com/wp-content/uploads/2024/02/0511013_01.jpg?w=2947" alt="&quot;&quot;" class="wp-image-1088294" srcset="https://wp.technologyreview.com/wp-content/uploads/2024/02/0511013_01.jpg 2947w, https://wp.technologyreview.com/wp-content/uploads/2024/02/0511013_01.jpg?resize=300,169 300w, https://wp.technologyreview.com/wp-content/uploads/2024/02/0511013_01.jpg?resize=768,432 768w, https://wp.technologyreview.com/wp-content/uploads/2024/02/0511013_01.jpg?resize=1536,864 1536w, https://wp.technologyreview.com/wp-content/uploads/2024/02/0511013_01.jpg?resize=2048,1152 2048w" sizes="(max-width: 2947px) 100vw, 2947px" /><figcaption class="wp-element-caption">A view inside ATLAS,<br>one of two general-purpose detectors at the Large Hadron Collider.</figcaption><div class="image-credit">MAXIMILIEN BRICE/CERN</div>
+</figure>
+</div>
+
+
+<h4 class="wp-block-heading"><strong>Inside&nbsp;the&nbsp;hunt&nbsp;for&nbsp;new&nbsp;physics&nbsp;at&nbsp;the&nbsp;world’s&nbsp;largest&nbsp;particle&nbsp;collider</strong>&nbsp;</h4>
+
+
+
+<p>In 2012, data from CERN’s Large Hadron Collider (LHC) unearthed a particle called the Higgs boson. The discovery answered a nagging question: where do fundamental particles, such as the ones that make up all the protons and neutrons in our bodies, get their mass? </p>
+
+
+
+<p>But now particle physicists have reached an impasse in their quest to discover, produce, and study new particles at colliders. <a href="https://www.technologyreview.com/2026/04/09/1135092/astroturf-fake-grass-artificial-heated-debates/?utm_source=the_download&amp;utm_medium=email&amp;utm_campaign=the_download.unpaid.engagement&amp;utm_term=*%7CSUBCLASS%7C*&amp;utm_content=*%7CDATE:m-d-Y%7C*">Find out what they’re trying to do about it</a>.</p>
+
+
+
+<p><em>—Dan&nbsp;Garisto</em>&nbsp;</p>
+
+
+
+<p class="has-medium-font-size"><strong>We can still have nice things </strong></p>
+
+
+
+<p><em>A place&nbsp;for&nbsp;comfort,&nbsp;fun&nbsp;and&nbsp;distraction&nbsp;to&nbsp;brighten&nbsp;up&nbsp;your&nbsp;day. (Got&nbsp;any&nbsp;ideas?&nbsp;</em><a href="mailto:thomas.macaulay@technologyreview.com" target="_blank" rel="noreferrer noopener"><em>Drop me a line</em></a><em>.)</em>&nbsp;</p>
+
+
+
+<p>+ Enjoy this tale of the “joke” sound that accidentally <a href="https://www.youtube.com/watch?v=Pkh2KaFy5M0" target="_blank" rel="noreferrer noopener">defined 90s rave culture</a>. <br>+ Take a <a href="https://www.youtube.com/watch?v=5Hi2aJ6ElwY" target="_blank" rel="noreferrer noopener">nostalgic trip</a> through the websites of the early 00s. <br>+ One for animal lovers: <a href="https://apnews.com/article/sperm-whale-birth-video-drone-ad85d8ad8454d7bd25807304699d3c74" target="_blank" rel="noreferrer noopener">sperm whales</a> have teamed up to support a newborn. <br>+ Here’s a long overdue answer to a vital question: can the <a href="https://youtu.be/duebcAPYSa4?si=tjasmJuFk659hdyn" target="_blank" rel="noreferrer noopener">world&#8217;s largest mousetrap</a> catch a limousine? </p>
+]]></content:encoded>
+					
+		
+		
+		<post-id xmlns="com-wordpress:feed-additions:1">1135514</post-id>	</item>
+		<item>
+		<title>Is fake grass a bad idea? The AstroTurf wars are far from over.</title>
+		<link>https://www.technologyreview.com/2026/04/09/1135092/astroturf-fake-grass-artificial-heated-debates/</link>
+		
+		<dc:creator><![CDATA[Douglas Main]]></dc:creator>
+		<pubDate>Thu, 09 Apr 2026 10:00:00 +0000</pubDate>
+				<category><![CDATA[Climate change and energy]]></category>
+		<category><![CDATA[App]]></category>
+		<category><![CDATA[Features and Investigations]]></category>
+		<guid isPermaLink="false">https://www.technologyreview.com/?p=1135092</guid>
+
+					<description><![CDATA[A rare warm spell in January melted enough snow to uncover Cornell University’s newest athletic field, built for field hockey. Months before, it was a meadow teeming with birds and bugs; now it’s more than an acre of synthetic turf roughly the color of the felt on a pool table, almost digital in its saturation.&#8230;]]></description>
+										<content:encoded><![CDATA[
+<p>A rare warm spell in January melted enough snow to uncover Cornell University’s newest athletic field, built for field hockey. Months before, it was a meadow teeming with birds and bugs; now it’s more than an acre of synthetic turf roughly the color of the felt on a pool table, almost digital in its saturation. The day I walked up the hill from a nearby creek to take a look, the metal fence around the field was locked, but someone had left a hallway-size piece of the new simulated grass outside the perimeter. It was bristly and tough, but springy and squeaky under my booted feet. I could imagine running around on it, but it would definitely take some getting used to.</p>
+
+
+
+<p>My companion on this walk seemed even less favorably disposed to the thought. Yayoi Koizumi, a local environmental advocate, has been fighting synthetic-turf projects at Cornell since 2023. A petite woman dressed that day in a faded plum coat over a teal vest, with a scarf the colors of salmon, slate, and sunflowers, Koizumi compulsively picked up plastic trash as we walked: a red Solo cup, a polyethylene Dunkin’ container, a five-foot vinyl panel. She couldn’t bear to leave this stuff behind to fragment into microplastic bits—as she believes the new field will. “They’ve covered the living ground in plastic,” she said. “It’s really maddening.”&nbsp;</p>
+
+
+
+
+
+<p>The new pitch is one part of a $70 million plan to build more recreational space at the university. As of this spring, Cornell plans to install something like a quarter million square feet of synthetic grass—what people have colloquially called “astroturf” since the middle of the last century. University PR says it will be an important part of a “health-promoting campus” that is “supportive of holistic individual, social, and ecological well-being.” Koizumi runs an anti-plastic environmental group called Zero Waste Ithaca, which says that’s mostly nonsense.</p>
+
+
+
+<p>This fight is more than just the usual town-versus-gown tension. Synthetic turf used to be the stuff of professional sports arenas and maybe a suburban yard or two; today communities across the United States are debating whether to lay it down on playgrounds, parks, and dog runs. Proponents say it’s cheaper and hardier than grass, requiring less water, fertilizer, and maintenance—and that it offers a uniform surface for more hours and more days of the year than grass fields, a competitive advantage for athletes and schools hoping for a more robust athletic program.</p>
+
+
+
+<p>But while new generations of synthetic turf look and feel better than that mid-century stuff, it’s still just plastic. Some evidence suggests it sheds bits that endanger users and the environment, and that it contains PFAS “forever chemicals”—per- and polyfluoroalkyl substances, which are linked to a host of health issues. The padding within the plastic grass is usually made from shredded tires, which might also pose health risks. And plastic fields need to be replaced about once a decade, creating lots of waste.</p>
+
+
+
+<p>Yet people are buying a lot of the stuff. In 2001, Americans installed just over 7 million square meters of synthetic turf, just shy of 11,000 metric tons. By 2024, that number was 79 million square meters—enough to carpet all of Manhattan and then some, almost 120,000 metric tons. Synthetic turf covers 20,000 athletic fields and tens of thousands of parks, playgrounds, and backyards. And the US is just 20% of the global market.&nbsp;</p>
+
+
+
+<blockquote class="wp-block-quote is-layout-flow wp-block-quote-is-layout-flow">
+<p style="font-size:30px"><strong>Where real estate is limited and demand for athletic facilities is high, artificial turf is tempting. “It all comes down to land and demand.”</strong></p>
+<cite>Frank Rossi, professor of turf science, Cornell</cite></blockquote>
+
+
+
+<p>Those increases worry folks who study microplastics and environmental pollution. Any actual risk is hard to parse; the plastic-making industry insists that synthetic fields are safe if properly installed, but lots of researchers think that isn’t so. “They’re very expensive, they contain toxic chemicals, and they put kids at unnecessary risk,” says Philip Landrigan, a Boston College epidemiologist who has studied environmental toxins like lead and microplastics.</p>
+
+
+
+<p>But at Cornell, where real estate is limited and demand for athletic facilities is high, synthetic turf was a tempting option. As Frank Rossi, a professor of turf science at Cornell, told me: “It all comes down to land and demand.”</p>
+
+
+
+<hr class="wp-block-separator has-alpha-channel-opacity"/>
+
+
+
+<p>In 1965, Houston’s new, domed base­ball stadium was an icon of space-age design. But the Astrodome had a problem: the sun. Deep in the heart of Texas, it shined brightly through the Astrodome’s skylights—so much so that players kept missing fly balls. So the club painted over the skylights. Denied sunlight, the grass in the outfield withered and died.</p>
+
+
+
+<p>A replacement was already in the works. In the late 1950s a Ford Foundation–funded educational laboratory determined that a soft, grasslike surface material would give city kids more places to play outside and had prevailed upon the Monsanto corporation to invent one. The result was clipped blades of nylon stuck to a rubber base, which the company called ChemGrass. Down it went into Houston’s outfield, where it got a new, buzzier name: AstroTurf.</p>
+
+
+<div class="wp-block-image">
+<figure class="wp-block-image alignwide size-large"><img loading="lazy" decoding="async" width="2902" height="1707" src="https://wp.technologyreview.com/wp-content/uploads/2026/04/AP23278453062506.jpg?w=2902" alt="&quot;&quot;" class="wp-image-1135121" srcset="https://wp.technologyreview.com/wp-content/uploads/2026/04/AP23278453062506.jpg 2902w, https://wp.technologyreview.com/wp-content/uploads/2026/04/AP23278453062506.jpg?resize=300,176 300w, https://wp.technologyreview.com/wp-content/uploads/2026/04/AP23278453062506.jpg?resize=768,452 768w, https://wp.technologyreview.com/wp-content/uploads/2026/04/AP23278453062506.jpg?resize=1536,903 1536w, https://wp.technologyreview.com/wp-content/uploads/2026/04/AP23278453062506.jpg?resize=2048,1205 2048w" sizes="auto, (max-width: 2902px) 100vw, 2902px" /><figcaption class="wp-element-caption">Workers lay artificial turf at the Astrodome in Houston on July 13, 1966. Developed by Monsanto, the material was originally known as ChemGrass but was later renamed AstroTurf after the stadium.</figcaption><div class="image-credit">AP PHOTO/ED KOLENOVSKY, FILE</div>
+</figure>
+</div>
+
+
+<p>That first generation of simulated lawn was brittle and hard, but quality has improved. Today, there are a few competing products, but they’re all made by extruding a petroleum-based polymer—that’s plastic—through tiny holes and then stitching or fusing the resulting fibers to a carpetlike bottom. That gets attached to some kind of padding, also plastic. In the 1970s the industry started layering that over infill, usually sand; by the 1990s, “third generation” synthetic turf had switched to softer fibers made of polyethylene. Beneath that, they added infill that combined sand and a soft, cheap shredded rubber made from discarded automobile tires, which pile up by the hundreds of millions every year. This “crumb rubber” provides padding and fills spaces between the blades and the backing.</p>
+
+
+
+<p>In the early 1980s, nearly half the professional baseball and football fields in the US had synthetic turf. But many players didn’t like it. It got hotter than real grass, gave the ball different action, and seemed to be increasing the rate of injuries among athletes. Since the 1990s, most pro sports have shifted back toward grass—water and maintenance costs pale in comparison to the importance of keeping players happy or sparing them the risk of injury.&nbsp;</p>
+
+
+
+<p>But at the same time, more universities and high schools are buying the artificial stuff. The advantages are clear, especially in places where it rains either too much or not enough. A natural-grass field is usable for a little more than 800 hours a year at the most, spread across just eight months in the cooler, wetter northern US. An artificial-turf field can see 3,000 hours of activity per year. For sports like lacrosse, which begins in late winter, this makes artificial turf more appealing. Most lacrosse pitches are now synthetic. So are almost all field hockey pitches; players like the way the even, springy turf makes the ball bounce.</p>
+
+
+
+<p>Furthermore, supporters say synthetic turf needs less maintenance than grass, saving money and resources. That’s not always true; workers still have to decompact the playing surface and hose it off to remove bird poop or cool it down. Sometimes the infill needs topping up. But real grass allows less playing time, and because grass athletic fields often need to be rotated to avoid damage, synthetic ground cover can require less space. Hence the market’s explosive growth in the 21st century.</p>
+
+
+
+<hr class="wp-block-separator has-alpha-channel-opacity"/>
+
+
+
+<p>The city and town of Ithaca—two separate political entities with overlapping jurisdiction over Cornell construction projects—held multiple public meetings about the university’s new synthetic fields: the field hockey pitch and a complex called the Meinig Fieldhouse. Koizumi’s group turned up in force, and a few folks who worked at Cornell came to oppose the idea too—submitting pages of citations and studies on the risks of synthetic grass.</p>
+
+
+
+<p>At two of those meetings, dozens of Cornell athletes turned out to support the turf. Representatives of the university and the athletic department declined to speak with me for this story, citing an ongoing lawsuit from Zero Waste Ithaca. But before that, Nicki Moore, Cornell’s director of athletics, <a href="https://www.tompkinsweekly.com/news/cornell-coaches-look-forward-to-more-spaces-to-play-as-new-indoor-fieldhouse-faces-approval-process-15952">told a local newspaper</a> that demand from campus groups and sports teams meant the fields were constantly overcrowded. “Activities get bumped later and later, and sometimes varsity teams won’t start practicing until 10 at night, you know?” Moore told the paper. “Availability of all-weather space should normalize scheduling a great deal.”</p>
+
+
+
+<p>That argument wasn’t universally convincing. “It’s a bad idea, but that’s from the environmental perspective,” says Marianne Krasny, director of Cornell’s Civic Ecology Lab and one of the speakers at those hearings. “Obviously the athletic department thinks it’s a great idea.”</p>
+
+
+<div class="wp-block-image">
+<figure class="wp-block-image alignwide size-large"><img loading="lazy" decoding="async" height="2000" width="1984" src="https://wp.technologyreview.com/wp-content/uploads/2026/04/GettyImages-165708873.jpg?w=1984" alt="square patch of artificial turf" class="wp-image-1135125" srcset="https://wp.technologyreview.com/wp-content/uploads/2026/04/GettyImages-165708873.jpg 2976w, https://wp.technologyreview.com/wp-content/uploads/2026/04/GettyImages-165708873.jpg?resize=150,150 150w, https://wp.technologyreview.com/wp-content/uploads/2026/04/GettyImages-165708873.jpg?resize=298,300 298w, https://wp.technologyreview.com/wp-content/uploads/2026/04/GettyImages-165708873.jpg?resize=768,774 768w, https://wp.technologyreview.com/wp-content/uploads/2026/04/GettyImages-165708873.jpg?resize=1984,2000 1984w, https://wp.technologyreview.com/wp-content/uploads/2026/04/GettyImages-165708873.jpg?resize=1524,1536 1524w, https://wp.technologyreview.com/wp-content/uploads/2026/04/GettyImages-165708873.jpg?resize=2032,2048 2032w" sizes="auto, (max-width: 1984px) 100vw, 1984px" /><div class="image-credit">GETTY IMAGES</div>
+</figure>
+</div>
+
+
+
+
+<div class="flourish-embed flourish-chart" data-src="visualisation/28368035?1184216"><script src="https://public.flourish.studio/resources/embed.js"></script></div>
+
+
+
+<p>Members of Cornell on Fire, a climate action group with members from both the university and the town, joined in opposing the use of artificial turf, citing the fossil-fuel origins of the stuff. They described the nominal support of the project from student athletes as inauthentic, representing not grassroots support but, yes, an astroturf campaign.&nbsp;</p>
+
+
+
+<p>Sorting out the actual science here isn’t simple. Over time, the plastic that synthetic turf is made of sheds bits of itself into the environment. In <a href="https://www.sciencedirect.com/science/article/pii/S0269749123010965">one study</a>, published in 2023 in the journal <em>Environmental Pollution</em>, researchers found that 15% of the medium-­size and microplastic particles in a river and the Mediterranean Sea outside Barcelona, Spain, came from artificial turf, mostly in the form of tiny green fibers. Back in 2020, the European Chemicals Agency <a href="https://echa.europa.eu/documents/10162/23665416/restmicroplasticsopinionrac16339en.pdf/b4d383cd-24fc-82e9-cccf-6d9f66ee9089">estimated</a> that infill material from artificial-­turf fields in the European Union was contributing 16,000 metric tons of microplastics to the environment each year—38% of all annual microplastic pollution. Most of that came from the crumb rubber infill, which Europe now plans to ban by 2031.&nbsp;</p>
+
+
+
+<p>This pollution worries the Cornell activists. Ithaca is famous for scenic gorges and waterways. The new field hockey pitch is uphill from a local creek that empties into Cayuga Lake, the longest of the Finger Lakes and the source of drinking water for over 40,000 people.</p>
+
+
+
+<p>And it’s not just the plastic bits. When newer generations of synthetic turf switched to durable high-density polyethylene, the new material gunked up the extruders used in the manufacturing process. So turf makers started adding fluorinated polymers—a type of PFAS. Some of these environmentally persistent “forever chemicals” cause cancer, disrupt the endocrine system, or lead to other health problems. Research in several different labs has found PFAS in many types of plastic grass.</p>
+
+
+
+
+
+<p>But the key to assessing the threat here is exposure. Heather Whitehead, an analytical chemist then at the University of Notre Dame, found PFAS in synthetic turf at levels around five parts per billion—but estimated it’d be in water running off the fields at three parts per <em>trillion</em>; for context, the US Environmental Protection Agency’s legal drinking-water limit on one of the most widespread and dangerous PFAS chemicals is four parts per trillion. “These chemicals will wash off in small amounts for long periods of time,” says Graham Peaslee, Whitehead’s advisor and an emeritus nuclear physicist who studies PFAS concentrations. “I think it’s reason enough not to have artificial turf.”</p>
+
+
+
+<p>This gets confusing, though. There are over 16,000 different types of PFAS, few have been well studied, and different ­companies use different manufacturing techniques. Companies represented by the Synthetic Turf Council now “use zero intentionally added PFAS,” says Melanie Taylor, the group’s president. “This means that as the field rolls off the assembly line, there are zero PFAS-formulated materials present.”</p>
+
+
+
+<p>Some researchers are skeptical of the industry’s assurances. They’re hard to confirm, especially because there are a lot of ways to test for PFAS. The type of synthetic turf going onto the new field hockey pitch at Cornell is called GreenFields TX; the university had a sample tested using an EPA method that looks for 40 different PFAS compounds. It came back negative for all of them. The local activists countered that the test doesn’t detect the specific types they’re most concerned about, and in 2025 they paid for <a href="https://zerowasteithaca.org/independent-pfas-testing-of-cornell-synthetic-turf/">three more tests</a> on newly purchased synthetic turf. Two clearly found fluorine—the F in “PFAS”—and one identified two distinct PFAS compounds. (The company that makes GreenFields TX, TenCate, declined to comment, citing ongoing litigation.)</p>
+
+
+
+<p>PFAS isn’t the only potential problem. There’s also the crumb rubber made from tires. A billion tires get thrown out every year worldwide, and if they aren’t recycled they sit in giant piles that make great habitats for rats and mosquitoes; they also occasionally catch fire. Lots of the tires that go into turf are made of styrene-­butadiene rubber, or SBR. In bulk, that’s bad. Butadiene is a carcinogen that causes leukemia, and fumes from styrene can cause nervous system damage. <a href="https://link.springer.com/article/10.1007/s11270-018-3711-7">SBR also contains</a> high levels of lead.</p>
+
+
+
+<p>But how much of that comes out of synthetic-­turf infill? Again, that’s hotly debated. Researchers around the world have published suggestive studies finding potentially dangerous levels of heavy metals like zinc and lead in synthetic turf, with possible health risks to people using the fields. But a review of many of the relevant studies on turf and crumb rubber from Canada’s National Collaborating Centre for Environmental Health determined that most well-conducted health risk assessments over the last decade found exposures below levels of concern for cancer and certain other diseases. A <a href="https://echa.europa.eu/documents/10162/17220/annex-xv_report_rubber_granules_en.pdf/">2017 report</a> by the European Chemicals Agency—the same people who found all those microplastics in the environment—“found no reason to advise people against playing sports on synthetic turf containing recycled rubber granules as infill material.” And a multiyear study from the EPA, <a href="https://www.epa.gov/system/files/documents/2024-04/tcrs-exposure-characterization-volume-1.pdf">published in 2024</a>, found much the same thing—although the researchers said that levels of certain synthetic chemicals were elevated inside places that used indoor artificial turf. They also stressed that the paper was not a risk assessment.&nbsp;</p>
+
+
+
+<p>The problem is, the kinds of cancers these chemicals can cause may take decades to show up. Long-term studies haven’t been done yet. All the evidence available so far is anecdotal—like a series <a href="https://www.inquirer.com/news/inq2/astroturf-vet-artificial-turf-pfas-forever-chemicals-glioblastoma-cancer-phillies-1980-20230307.html">for the <em>Philadelphia Inquirer</em></a> that linked the deaths of six former Phillies players from a rare type of brain cancer called glioblastoma to years spent playing on PFAS-containing artificial turf. That’d be about three times the usual rate of glioblastoma among adult men, but the report comes with a lot of cautions—small sample size, lots of other potential causes, no way to establish causation.</p>
+
+
+
+<p>Synthetic turf has one negative that no one really disputes: It gets very hot in the sun—as hot as 150 °F (66 °C). This can actually burn players, so they often want to avoid using a field on very hot days.</p>
+
+
+<div class="wp-block-image">
+<figure class="wp-block-image alignwide size-large"><img loading="lazy" decoding="async" width="3000" height="1816" src="https://wp.technologyreview.com/wp-content/uploads/2026/04/GettyImages-2239427459.jpg?w=3000" alt="&quot;&quot;" class="wp-image-1135123" srcset="https://wp.technologyreview.com/wp-content/uploads/2026/04/GettyImages-2239427459.jpg 3000w, https://wp.technologyreview.com/wp-content/uploads/2026/04/GettyImages-2239427459.jpg?resize=300,182 300w, https://wp.technologyreview.com/wp-content/uploads/2026/04/GettyImages-2239427459.jpg?resize=768,465 768w, https://wp.technologyreview.com/wp-content/uploads/2026/04/GettyImages-2239427459.jpg?resize=1536,930 1536w, https://wp.technologyreview.com/wp-content/uploads/2026/04/GettyImages-2239427459.jpg?resize=2048,1240 2048w" sizes="auto, (max-width: 3000px) 100vw, 3000px" /><figcaption class="wp-element-caption">A field hockey player from Cornell University passes the ball during a game played on artificial turf at Bryant University in 2025. Cornell’s own turf field will be ready for the 2026 season.</figcaption><div class="image-credit">GETTY IMAGES</div>
+</figure>
+</div>
+
+
+<p>Athletes playing on artificial turf also have a <a href="https://pubmed.ncbi.nlm.nih.gov/35593739/">higher rate of foot and ankle injuries</a>, and elite-level football players seem to be more predisposed to knee injuries on those surfaces. But other studies have found rates of knee and hip injury to be roughly comparable on artificial and natural turf—a point the landscape architect working on the Cornell project made in the information packet the university sent to the city. Athletic departments and city parks departments say that the material’s upsides make it worthwhile, given that there’s no conclusive proof of harm.</p>
+
+
+
+<p>Back in Ithaca, Cornell hired an environmental consulting firm called Haley &amp; Aldrich to assess the evidence. The company concluded that none of the university’s proposed installations of artificial turf would have a negative environmental impact. People from Cornell on Fire and Zero Waste Ithaca told me they didn’t trust the firm’s findings; representatives from Haley &amp; Aldrich declined to comment.</p>
+
+
+
+<p>Longtime activists say that as global consumption of fossil fuels declines, petrochemical companies are desperate to find other markets. That means plastics. “There’s a big push to shift more petrochemicals into plastic products for an end market,” says Jeff Gearhart, a consumer product researcher at the Ecology Center. “Industry people, with a vested interest in petrochemicals, are looking to expand and build out alternative markets for this stuff.”</p>
+
+
+
+
+
+<p>All that and more went before the decision-­makers in Ithaca. In September 2024, the City of Ithaca Planning Board unanimously issued a judgment that the Meinig Fieldhouse would not have a significant environmental impact and thus would not need to complete a full environmental impact assessment. Six months later, the town made the same determination for the field hockey pitch.</p>
+
+
+
+<p>Zero Waste Ithaca sued in New York’s supreme court, which ruled against the group. Koizumi and lawyers from Pace University’s Environmental Litigation Clinic have appealed. She says she’s still hopeful the court might agree that Ithaca authorities made a mistake by not requiring an environmental impact statement from the college. “We have the science on our side,” she says.</p>
+
+
+
+<hr class="wp-block-separator has-alpha-channel-opacity"/>
+
+
+
+<p>Ithaca is a pretty rarefied place, an Ivy League university town. But these same tensions—potential long-term environmental and public health consequences versus the financial and maintenance concerns of the now—are pitting worried citizens against their representatives and city agencies around the country.&nbsp;</p>
+
+
+
+<p>New York City has 286 municipal synthetic-­turf fields, with more under construction. In Inwood, the northernmost neighborhood in Manhattan, two fields were approved via Zoom meetings during the pandemic, and Massimo Strino, a local artist who <a href="http://imagokaleidoscopes.com/">makes kaleidoscopes</a>, says he found out only when he saw signs announcing the work on one of his daily walks in Inwood Hill Park, along the Hudson River. He joined a campaign against the plan, gathering more than 4,300 signatures. “I was canvassing every weekend,” Strino says. “You can count on one hand, literally, the number of people who said they were in favor.”&nbsp;</p>
+
+
+
+<p>But that doesn’t include the group that pushed for one of those fields in the first place: Uptown Soccer, which offers free and low-cost lessons and games to 1,000 kids a year, mostly from underserved immigrant families. “It was turning an unused community space into a usable space,” says David Sykes, the group’s executive director. “That trumped the sort of abstract concerns about the environmental impacts. I’m not an expert in artificial turf, but the parks department assured me that there was no risk of health effects.”</p>
+
+
+
+<blockquote class="wp-block-quote is-layout-flow wp-block-quote-is-layout-flow">
+<p style="font-size:30px"><strong>Artificial turf doesn’t go away. “You’re going to be paying to get rid of it. Somebody will have to take it to a dump, where it will sit for a thousand years.”</strong></p>
+<cite>Graham Peaslee, emeritus nuclear physicist studying PFAS concentrations, University of Notre Dame</cite></blockquote>
+
+
+
+<p>New York City councilmember Christopher Marte disagrees. He has introduced a bill to ban new artificial turf from being installed in parks, and he hopes the proposal will be taken up by the Parks Committee this spring. Last session, the bill had 10 cosponsors—that’s a lot. Marte says he expects resistance from lobbyists, but there’s precedent. The city of Boston banned artificial turf in 2022. &nbsp;</p>
+
+
+
+<p>Upstate, in a Rochester suburb called Brighton, the school district included synthetic-­turf baseball and softball diamonds in a wide-ranging February 2024 capital improvement proposition. The measure passed. In a public meeting in November 2025, the school board acknowledged the intent to use synthetic grass—or, as concerned parents had it, “to rip up a quarter ­million square feet of this open space and replace it with artificial turf,” says David Masur, executive director of the environmental group PennEnvironment, whose kids attend school in Brighton. Parents and community members mobilized against the plan, further angered when contractors also cut down a beloved 200-year-old tree. School superintendent Kevin McGowan says it’s too late to change course. Masur has been working to oppose the plan nevertheless—he says school boards are making consequential decisions about turf without sharing information or getting input, even though these fields can cost millions of dollars of taxpayer money.</p>
+
+
+
+<p>In short, the fights can get tense. On Martha’s Vineyard, in Massachusetts, a meeting about plans to install an artificial field at a local high school had to be ended early amid verbal abuse. A staffer for the local board of health who voiced concern about PFAS in the turf quit the board after discovering bullet casings in her tote bag, she said, which she perceived as a death threat. After an eight-year fight, the board eventually banned artificial turf altogether.&nbsp;</p>
+
+
+
+<hr class="wp-block-separator has-alpha-channel-opacity"/>
+
+
+
+<p>What happens next? Well, outdoor artificial turf lasts only eight to 12 years before it needs to be taken up and replaced. The Synthetic Turf Council says it’s at least partially recyclable and cites a company called BestPLUS Plastic Lumber as a purveyor of products made from recycled turf. The company says one of its products, a liner called GreenBoard that artificial turf can be nailed into, is at least 40% recycled from fake grass. Joseph Sadlier, vice president and general manager of plastics recycling at BestPLUS, says the company recycles over 10 million pounds annually.&nbsp;</p>
+
+
+
+<p>Yet the material is piling up. In 2021, a Danish company called Re-Match announced plans to open a recycling plant in Pennsylvania and began amassing thousands of tons of used plastic turf in three locations. The company filed for bankruptcy in 2025.</p>
+
+
+
+<p>In Ithaca, university representatives told planning boards that it would be possible to recycle the old artificial turf they ripped out to make way for the Meinig Fieldhouse. That didn’t happen. An anonymous local activist tracked the old rolls to a hauling company a half-hour’s drive south of campus and shared pictures of them sitting on the lot, where they stayed for months. It’s unclear what their ultimate fate will be.</p>
+
+
+
+<p>That’s the real problem: Artificial turf just doesn’t go away. “You’re going to be paying to get rid of it,” says Peaslee, the PFAS expert. “Somebody will have to take it to a dump, where it will sit for a thousand years.” At minimum, real grass is a net carbon sink, even including installation and maintenance. Synthetic turf releases greenhouse gases. One life-­cycle analysis of a 2.2-acre synthetic field in Toronto determined that it would emit 55 metric tons of carbon dioxide over a decade. Plastic fields need less water to maintain, but it takes water to make plastic, and natural grass lets rainwater seep into the ground. Synthetic turf sends most of it away as runoff.</p>
+
+
+
+<p>It’s a boggling set of issues to factor into a decision. Rossi, the Cornell turf scientist, says he can understand why a school in the northern United States might go plastic, even when it cares about its students’ health. “It was the best bad option,” he says. Concerns about microplastics and PFAS are “significant issues we have not fully addressed.” And they need to be.&nbsp;</p>
+
+
+
+<p><em>Douglas Main is a journalist and former senior editor and writer at </em>National Geographic.</p>
+]]></content:encoded>
+					
+		
+		
+		<post-id xmlns="com-wordpress:feed-additions:1">1135092</post-id>	</item>
+		<item>
+		<title>Desalination technology, by the numbers</title>
+		<link>https://www.technologyreview.com/2026/04/09/1135495/desalination-technology-numbers/</link>
+		
+		<dc:creator><![CDATA[Casey Crownhart]]></dc:creator>
+		<pubDate>Thu, 09 Apr 2026 10:00:00 +0000</pubDate>
+				<category><![CDATA[Climate change and energy]]></category>
+		<category><![CDATA[App]]></category>
+		<category><![CDATA[The Spark]]></category>
+		<guid isPermaLink="false">https://www.technologyreview.com/?p=1135495</guid>
+
+					<description><![CDATA[When I started digging into desalination technology for a new story, I couldn’t help but obsess over the numbers. I’d known on some level that desalination—pulling salt out of seawater to produce fresh water—was an increasingly important technology, especially in water-stressed regions including the Middle East. But just how much some countries rely on desalination,&#8230;]]></description>
+										<content:encoded><![CDATA[
+<p>When I started digging into desalination technology for a new story, I couldn’t help but obsess over the numbers.</p>
+
+
+
+<p>I’d known on some level that desalination—pulling salt out of seawater to produce fresh water—was an increasingly important technology, especially in water-stressed regions including the Middle East. But just how much some countries rely on desalination, and how big a business it is, still surprised me.</p>
+
+
+
+<p>For more on how this crucial water infrastructure is increasingly vulnerable during the war in Iran, check out my <a href="https://www.technologyreview.com/2026/04/07/1135235/desalination-technology-water/" target="_blank" rel="noreferrer noopener">latest story</a>. Here, though, let’s look at the state of desalination technology, by the numbers.</p>
+
+
+
+<h3 class="wp-block-heading"><strong>Desalination produces 77% of all fresh water and 99% of drinking water in Qatar.</strong></h3>
+
+
+
+<p>Globally, we rely on desalination for just 1% of fresh-water withdrawals. But for some countries in the Middle East, and particularly for the Gulf Cooperation Council countries (Bahrain, Qatar, Kuwait, the United Arab Emirates, Saudi Arabia, and Oman), it’s crucial.</p>
+
+
+
+<p>Qatar, home to over 3 million people, is one of the most staggering examples, with nearly all its drinking water supplies <a href="https://www.aljazeera.com/news/2026/3/12/how-much-of-the-gulfs-water-comes-from-desalination-plants" target="_blank" rel="noreferrer noopener">coming from desalination</a>. But many major cities in the region couldn’t exist without the technology. There are no permanent rivers on the Arabian Peninsula, and supplies of fresh water are incredibly limited, so countries rely on facilities that can take in seawater and pull out the salt and other impurities.</p>
+
+
+
+<h3 class="wp-block-heading"><strong>The Middle East is home to just 6% of the world’s population and over 27% of its desalination facilities.</strong></h3>
+
+
+
+<p>The region has historically been water-scarce, and that trend is only continuing as climate change pushes temperatures higher and changes rainfall patterns.</p>
+
+
+
+<p>Of the 17,910 desalination facilities that are operational globally, 4,897 are located in the Middle East, <a href="https://www.nature.com/articles/s41545-026-00554-x">according to a 2026 study</a> in <em>npj Clean Water</em>. The technology supplies not only municipal water used by homes and businesses, but also industries including agriculture, manufacturing, and increasingly data centers.</p>
+
+
+
+<div class="flourish-embed flourish-chart" data-src="visualisation/28411876?1184216"><script src="https://public.flourish.studio/resources/embed.js"></script></div>
+
+
+
+<h3 class="wp-block-heading"><strong>One massive desalination plant in Saudi Arabia produces over 1 million cubic meters of fresh water per day.</strong></h3>
+
+
+
+<p>The <a href="https://www.power-technology.com/data-insights/power-plant-profile-ras-al-khair-iwpp-saudi-arabia/" target="_blank" rel="noreferrer noopener">Ras Al-Khair water and power plant</a> in Eastern Province, Saudi Arabia, is one of a growing number of gigantic plants that output upwards of a million cubic meters of water each day. That amount of water can meet the needs of millions of people in Riyadh City. Producing it takes a lot of power—the attached power plant has a capacity of 2.4 gigawatts.</p>
+
+
+
+<p>While this plant is just one of thousands across the region, it’s an example of a growing trend: The average size of a desalination plant is about 10 times what it was 15 years ago, according to <a href="https://www.iea.org/commentaries/wired-for-water-how-electrification-is-transforming-desalination" target="_blank" rel="noreferrer noopener">data</a> from the International Energy Agency. Communities are increasingly turning to larger plants, which can produce water more efficiently than smaller ones.</p>
+
+
+
+<h3 class="wp-block-heading"><strong>Between 2024 and 2028, the Middle East’s desalination capacity could grow by over 40%.</strong></h3>
+
+
+
+<p>Desalination is only going to be more crucial for life in the Middle East. The region is expected to spend over $25 billion on capital expenses for desalination facilities between 2024 and 2028, according to the 2026 <em>npj Clean Water</em> <a href="https://www.nature.com/articles/s41545-026-00554-x" target="_blank" rel="noreferrer noopener">study</a>. More massive plants are expected to come online in Saudi Arabia, Iraq, and Egypt during that time.</p>
+
+
+
+<p>All this growth could consume a lot of electricity. Between growth of the technology generally and the move toward plants that use electricity rather than fossil fuels, desalination could add 190 terawatt-hours of electricity demand globally by 2035, according to <a href="https://www.iea.org/commentaries/wired-for-water-how-electrification-is-transforming-desalination" target="_blank" rel="noreferrer noopener">IEA data</a>. That’s the equivalent of about 60 million households.</p>
+
+
+
+<p><em>This article is from The Spark, </em>MIT Technology Review<em>’s weekly climate newsletter. To receive it in your inbox every Wednesday, </em><a href="https://forms.technologyreview.com/newsletters/climate-energy-the-spark/" target="_blank" rel="noreferrer noopener"><em>sign up here</em></a><em>. </em></p>
+]]></content:encoded>
+					
+		
+		
+		<post-id xmlns="com-wordpress:feed-additions:1">1135495</post-id>	</item>
+		<item>
+		<title>Mustafa Suleyman: AI development won’t hit a wall anytime soon—here’s why</title>
+		<link>https://www.technologyreview.com/2026/04/08/1135398/mustafa-suleyman-ai-future/</link>
+		
+		<dc:creator><![CDATA[Mustafa Suleyman]]></dc:creator>
+		<pubDate>Wed, 08 Apr 2026 14:00:00 +0000</pubDate>
+				<category><![CDATA[Artificial intelligence]]></category>
+		<category><![CDATA[AI]]></category>
+		<category><![CDATA[App]]></category>
+		<category><![CDATA[artificial intelligence]]></category>
+		<category><![CDATA[Opinion]]></category>
+		<category><![CDATA[Subscriber-Only Stories]]></category>
+		<guid isPermaLink="false">https://www.technologyreview.com/?p=1135398</guid>
+
+					<description><![CDATA[We evolved for a linear world. If you walk for an hour, you cover a certain distance. Walk for two hours and you cover double that distance. This intuition served us well on the savannah. But it catastrophically fails when confronting AI and the core exponential trends at its heart. From the time I began&#8230;]]></description>
+										<content:encoded><![CDATA[
+<p><span id="docs-internal-guid-5e5a2a70-7fff-a08f-f865-6f5020e43e8c" style="white-space: normal;"><span style="font-size: 12pt; font-family: Arial, sans-serif; font-variant-ligatures: normal; font-variant-alternates: normal; font-variant-numeric: normal; font-variant-east-asian: normal; font-variant-position: normal; vertical-align: baseline; white-space: pre-wrap;">We evolved for a linear world. If you walk for an hour, you cover a certain distance. Walk for two hours and you cover double that distance. This intuition served us well on the savannah. But it catastrophically fails when confronting AI and the core exponential trends at its heart.</span></span></p>
+
+
+
+<p><span id="docs-internal-guid-5e5a2a70-7fff-a08f-f865-6f5020e43e8c" style="white-space: normal;"><p dir="ltr" style="line-height: 1.806546; margin-top: 0pt; margin-bottom: 0pt;"></p><span style="font-size: 12pt; font-family: Arial, sans-serif; font-variant-ligatures: normal; font-variant-alternates: normal; font-variant-numeric: normal; font-variant-east-asian: normal; font-variant-position: normal; vertical-align: baseline; white-space: pre-wrap;">From the time I began work on AI in 2010 to now, the amount of training data that goes into frontier AI models has grown by a staggering 1 trillion times—from roughly 10¹⁴ flops (floating-point operations‚ the core unit of computation) for early systems to over 10²⁶ flops for today’s largest models. This is an explosion. Everything else in AI follows from this fact.</span></span></p>
+
+
+
+<p><span id="docs-internal-guid-5e5a2a70-7fff-a08f-f865-6f5020e43e8c" style="white-space: normal;"><p dir="ltr" style="line-height: 1.806546; margin-top: 0pt; margin-bottom: 0pt;"></p><span style="font-size: 12pt; font-family: Arial, sans-serif; font-variant-ligatures: normal; font-variant-alternates: normal; font-variant-numeric: normal; font-variant-east-asian: normal; font-variant-position: normal; vertical-align: baseline; white-space: pre-wrap;">The skeptics keep predicting walls. And they keep being wrong in the face of this epic generational compute ramp. Often, they point out that Moore’s Law is slowing. They also mention a lack of data, or they cite limitations on energy.</span></span></p>
+
+
+
+<p><span id="docs-internal-guid-5e5a2a70-7fff-a08f-f865-6f5020e43e8c" style="white-space: normal;"><p dir="ltr" style="line-height: 1.806546; margin-top: 0pt; margin-bottom: 0pt;"><span style="font-size: 12pt; font-family: Arial, sans-serif; font-variant-ligatures: normal; font-variant-alternates: normal; font-variant-numeric: normal; font-variant-east-asian: normal; font-variant-position: normal; vertical-align: baseline; white-space: pre-wrap;"></span></p><p dir="ltr" style="line-height: 1.806546; margin-top: 0pt; margin-bottom: 0pt;"></p><span style="font-size: 12pt; font-family: Arial, sans-serif; font-variant-ligatures: normal; font-variant-alternates: normal; font-variant-numeric: normal; font-variant-east-asian: normal; font-variant-position: normal; vertical-align: baseline; white-space: pre-wrap;">But when you look at the combined forces driving this revolution, the exponential trend seems quite predictable. To understand why, it’s worth looking at the complex and fast-moving reality beneath the headlines.</span></span></p>
+
+
+
+<p><span id="docs-internal-guid-5e5a2a70-7fff-a08f-f865-6f5020e43e8c" style="white-space: normal;"><p dir="ltr" style="line-height: 1.806546; margin-top: 0pt; margin-bottom: 0pt;"></p><span style="font-size: 12pt; font-family: Arial, sans-serif; font-variant-ligatures: normal; font-variant-alternates: normal; font-variant-numeric: normal; font-variant-east-asian: normal; font-variant-position: normal; vertical-align: baseline; white-space: pre-wrap;">Think of AI training as a room full of people working calculators. For years, adding computational power meant adding more people with calculators to that room. Much of the time those workers sat idle, drumming their fingers on desks, waiting for the numbers to come through for their next calculation. Every pause was wasted potential. Today’s revolution goes beyond more and better calculators (although it delivers those); it is actually about ensuring that all those calculators never stop, and that they work together as one.</span></span></p>
+
+
+<p><span id="docs-internal-guid-5e5a2a70-7fff-a08f-f865-6f5020e43e8c" style="white-space: normal;"><span style="font-size: 12pt; font-family: Arial, sans-serif; font-variant-ligatures: normal; font-variant-alternates: normal; font-variant-numeric: normal; font-variant-east-asian: normal; font-variant-position: normal; vertical-align: baseline; white-space: pre-wrap;">Three advances are now converging to enable this. First, the basic calculators got faster. Nvidia’s chips have delivered an over sevenfold increase in raw performance in just six years, from</span><a style="text-decoration: none;" href="https://www.nvidia.com/en-us/data-center/a100/"> <span style="font-size: 12pt; font-family: Arial, sans-serif; color: #0000ff; font-variant-ligatures: normal; font-variant-alternates: normal; font-variant-numeric: normal; font-variant-east-asian: normal; font-variant-position: normal; vertical-align: baseline; white-space: pre-wrap;">312 teraflops in 2020</span></a><span style="font-size: 12pt; font-family: Arial, sans-serif; font-variant-ligatures: normal; font-variant-alternates: normal; font-variant-numeric: normal; font-variant-east-asian: normal; font-variant-position: normal; vertical-align: baseline; white-space: pre-wrap;"> to</span><a style="text-decoration: none;" href="https://www.nvidia.com/en-us/data-center/technologies/blackwell-architecture/"> <span style="font-size: 12pt; font-family: Arial, sans-serif; color: #0000ff; font-variant-ligatures: normal; font-variant-alternates: normal; font-variant-numeric: normal; font-variant-east-asian: normal; font-variant-position: normal; vertical-align: baseline; white-space: pre-wrap;">2,250 teraflops today</span></a><span style="font-size: 12pt; font-family: Arial, sans-serif; font-variant-ligatures: normal; font-variant-alternates: normal; font-variant-numeric: normal; font-variant-east-asian: normal; font-variant-position: normal; vertical-align: baseline; white-space: pre-wrap;">. Our own</span><a style="text-decoration: none;" href="https://blogs.microsoft.com/blog/2026/01/26/maia-200-the-ai-accelerator-built-for-inference/"> <span style="font-size: 12pt; font-family: Arial, sans-serif; color: #467886; font-variant-ligatures: normal; font-variant-alternates: normal; font-variant-numeric: normal; font-variant-east-asian: normal; font-variant-position: normal; vertical-align: baseline; white-space: pre-wrap;">Maia 200</span></a><span style="font-size: 12pt; font-family: Arial, sans-serif; font-variant-ligatures: normal; font-variant-alternates: normal; font-variant-numeric: normal; font-variant-east-asian: normal; font-variant-position: normal; vertical-align: baseline; white-space: pre-wrap;"> chip, launched this January, delivers 30% better performance per dollar than any other hardware in our fleet. Second, the numbers arrive faster thanks to a technology called HBM, or high bandwidth memory, which stacks chips vertically like tiny skyscrapers; the latest generation, HBM3, triples the bandwidth of its predecessor, feeding data to processors fast enough to keep them busy all the time. Third, the room of people with calculators became an office and then a whole campus or city. Technologies like</span><a style="text-decoration: none;" href="https://www.nvidia.com/en-us/data-center/nvlink/"> <span style="font-size: 12pt; font-family: Arial, sans-serif; color: #0000ff; font-variant-ligatures: normal; font-variant-alternates: normal; font-variant-numeric: normal; font-variant-east-asian: normal; font-variant-position: normal; vertical-align: baseline; white-space: pre-wrap;">NVLink</span></a><span style="font-size: 12pt; font-family: Arial, sans-serif; font-variant-ligatures: normal; font-variant-alternates: normal; font-variant-numeric: normal; font-variant-east-asian: normal; font-variant-position: normal; vertical-align: baseline; white-space: pre-wrap;"> and</span><a style="text-decoration: none;" href="https://www.nvidia.com/en-us/networking/products/infiniband/"> <span style="font-size: 12pt; font-family: Arial, sans-serif; color: #0000ff; font-variant-ligatures: normal; font-variant-alternates: normal; font-variant-numeric: normal; font-variant-east-asian: normal; font-variant-position: normal; vertical-align: baseline; white-space: pre-wrap;">InfiniBand</span></a><span style="font-size: 12pt; font-family: Arial, sans-serif; font-variant-ligatures: normal; font-variant-alternates: normal; font-variant-numeric: normal; font-variant-east-asian: normal; font-variant-position: normal; vertical-align: baseline; white-space: pre-wrap;"> connect hundreds of thousands of GPUs into warehouse-size supercomputers that function as single cognitive entities. A few years ago this was impossible.</span></span></p>
+
+
+<p><span id="docs-internal-guid-5e5a2a70-7fff-a08f-f865-6f5020e43e8c" style="white-space: normal;"><p dir="ltr" style="line-height: 1.806546; margin-top: 0pt; margin-bottom: 0pt;"></p><span style="font-size: 12pt; font-family: Arial, sans-serif; font-variant-ligatures: normal; font-variant-alternates: normal; font-variant-numeric: normal; font-variant-east-asian: normal; font-variant-position: normal; vertical-align: baseline; white-space: pre-wrap;">These gains all come together to deliver dramatically more compute. Where training a language model took 167 minutes on eight GPUs in 2020, it now takes under four minutes on equivalent modern hardware. To put this in perspective: </span><span style="font-size: 12pt; font-family: Arial, sans-serif; color: rgb(0, 0, 255); font-variant-ligatures: normal; font-variant-alternates: normal; font-variant-numeric: normal; font-variant-east-asian: normal; font-variant-position: normal; vertical-align: baseline; white-space: pre-wrap;">Moore’s Law would predict </span><span style="font-size: 12pt; font-family: Arial, sans-serif; font-variant-ligatures: normal; font-variant-alternates: normal; font-variant-numeric: normal; font-variant-east-asian: normal; font-variant-position: normal; vertical-align: baseline; white-space: pre-wrap;">only about a 5x improvement over this period. We saw 50x. We’ve gone from two GPUs training AlexNet, the image recognition model that kicked off the modern boom in deep learning in 2012, to over 100,000 GPUs in today’s largest clusters, each one individually far more powerful than its predecessors.</span></span></p>
+
+
+
+<p><span id="docs-internal-guid-5e5a2a70-7fff-a08f-f865-6f5020e43e8c" style="white-space: normal;"><p dir="ltr" style="line-height: 1.806546; margin-top: 0pt; margin-bottom: 0pt;"></p><span style="font-size: 12pt; font-family: Arial, sans-serif; font-variant-ligatures: normal; font-variant-alternates: normal; font-variant-numeric: normal; font-variant-east-asian: normal; font-variant-position: normal; vertical-align: baseline; white-space: pre-wrap;">Then there’s the revolution in software. Research from</span><a style="text-decoration: none;" href="https://epoch.ai/blog/compute-trends"><span style="font-size: 12pt; font-family: Arial, sans-serif; font-variant-ligatures: normal; font-variant-alternates: normal; font-variant-numeric: normal; font-variant-east-asian: normal; font-variant-position: normal; vertical-align: baseline; white-space: pre-wrap;"> </span><span style="font-size: 12pt; font-family: Arial, sans-serif; color: rgb(0, 0, 255); font-variant-ligatures: normal; font-variant-alternates: normal; font-variant-numeric: normal; font-variant-east-asian: normal; font-variant-position: normal; vertical-align: baseline; white-space: pre-wrap;">Epoch AI</span></a><span style="font-size: 12pt; font-family: Arial, sans-serif; font-variant-ligatures: normal; font-variant-alternates: normal; font-variant-numeric: normal; font-variant-east-asian: normal; font-variant-position: normal; vertical-align: baseline; white-space: pre-wrap;"> suggests that the compute required to reach a fixed performance level halves approximately every eight months, much faster than the traditional 18-to-24-month doubling of Moore’s Law. The costs of serving some recent models have collapsed by a factor of up to 900 on an annualized basis. AI is becoming radically cheaper to deploy.</span></span></p>
+
+
+
+<p><span id="docs-internal-guid-5e5a2a70-7fff-a08f-f865-6f5020e43e8c" style="white-space: normal;"><p dir="ltr" style="line-height: 1.806546; margin-top: 0pt; margin-bottom: 0pt;"></p><span style="font-size: 12pt; font-family: Arial, sans-serif; font-variant-ligatures: normal; font-variant-alternates: normal; font-variant-numeric: normal; font-variant-east-asian: normal; font-variant-position: normal; vertical-align: baseline; white-space: pre-wrap;">The numbers for the near future are just as staggering. Consider that leading labs are growing capacity at nearly 4x annually. Since 2020, the compute used to train frontier models has grown</span><a style="text-decoration: none;" href="https://epoch.ai/blog/training-compute-of-frontier-ai-models-grows-by-4-5x-per-year"><span style="font-size: 12pt; font-family: Arial, sans-serif; font-variant-ligatures: normal; font-variant-alternates: normal; font-variant-numeric: normal; font-variant-east-asian: normal; font-variant-position: normal; vertical-align: baseline; white-space: pre-wrap;"> </span><span style="font-size: 12pt; font-family: Arial, sans-serif; color: rgb(0, 0, 255); font-variant-ligatures: normal; font-variant-alternates: normal; font-variant-numeric: normal; font-variant-east-asian: normal; font-variant-position: normal; vertical-align: baseline; white-space: pre-wrap;">5x every year</span></a><span style="font-size: 12pt; font-family: Arial, sans-serif; font-variant-ligatures: normal; font-variant-alternates: normal; font-variant-numeric: normal; font-variant-east-asian: normal; font-variant-position: normal; vertical-align: baseline; white-space: pre-wrap;">. Global AI-relevant compute is forecast to hit 100 million H100-equivalents by 2027, a tenfold increase in three years. Put all this together and we’re looking at something like another 1,000x in effective compute by the end of 2028. It’s plausible that by 2030 we’ll bring an additional</span><a style="text-decoration: none;" href="https://www.dwarkesh.com/p/dylan-patel"><span style="font-size: 12pt; font-family: Arial, sans-serif; font-variant-ligatures: normal; font-variant-alternates: normal; font-variant-numeric: normal; font-variant-east-asian: normal; font-variant-position: normal; vertical-align: baseline; white-space: pre-wrap;"> </span><span style="font-size: 12pt; font-family: Arial, sans-serif; color: rgb(70, 120, 134); font-variant-ligatures: normal; font-variant-alternates: normal; font-variant-numeric: normal; font-variant-east-asian: normal; font-variant-position: normal; vertical-align: baseline; white-space: pre-wrap;">200 </span></a><span style="font-size: 12pt; font-family: Arial, sans-serif; font-variant-ligatures: normal; font-variant-alternates: normal; font-variant-numeric: normal; font-variant-east-asian: normal; font-variant-position: normal; vertical-align: baseline; white-space: pre-wrap;">gigawatts of compute online every year—akin to the peak energy use of the UK, France, Germany, and Italy put together.</span></span></p>
+
+
+
+<p><span id="docs-internal-guid-5e5a2a70-7fff-a08f-f865-6f5020e43e8c" style="white-space: normal;"><p dir="ltr" style="line-height: 1.806546; margin-top: 0pt; margin-bottom: 0pt;"></p><span style="font-size: 12pt; font-family: Arial, sans-serif; font-variant-ligatures: normal; font-variant-alternates: normal; font-variant-numeric: normal; font-variant-east-asian: normal; font-variant-position: normal; vertical-align: baseline; white-space: pre-wrap;">What does all this get us? I believe it will drive the transition from chatbots to nearly human-level agents—semiautonomous systems capable of writing code for days, carrying out weeks- and months-long projects, making calls, negotiating contracts, managing logistics. Forget basic assistants that answer questions. Think teams of AI workers that deliberate, collaborate, and execute. Right now we’re only in the foothills of this transition, and the implications stretch far beyond tech. Every industry built on cognitive work will be transformed.</span></span></p>
+
+
+
+<p><span id="docs-internal-guid-5e5a2a70-7fff-a08f-f865-6f5020e43e8c" style="white-space: normal;"><p dir="ltr" style="line-height: 1.806546; margin-top: 0pt; margin-bottom: 0pt;"></p><span style="font-size: 12pt; font-family: Arial, sans-serif; font-variant-ligatures: normal; font-variant-alternates: normal; font-variant-numeric: normal; font-variant-east-asian: normal; font-variant-position: normal; vertical-align: baseline; white-space: pre-wrap;">The obvious constraint here is energy. A single refrigerator-size AI rack consumes 120 kilowatts, equivalent to 100 homes. But this hunger collides with another exponential: </span><span style="font-size: 12pt; font-family: Arial, sans-serif; color: rgb(0, 0, 255); font-variant-ligatures: normal; font-variant-alternates: normal; font-variant-numeric: normal; font-variant-east-asian: normal; font-variant-position: normal; vertical-align: baseline; white-space: pre-wrap;"><a href="https://ourworldindata.org/grapher/solar-pv-prices">Solar costs</a></span><span style="font-size: 12pt; font-family: Arial, sans-serif; font-variant-ligatures: normal; font-variant-alternates: normal; font-variant-numeric: normal; font-variant-east-asian: normal; font-variant-position: normal; vertical-align: baseline; white-space: pre-wrap;"> have fallen by a factor of nearly 100 over 50 years;</span><a style="text-decoration: none;" href="https://ourworldindata.org/battery-price-decline"><span style="font-size: 12pt; font-family: Arial, sans-serif; font-variant-ligatures: normal; font-variant-alternates: normal; font-variant-numeric: normal; font-variant-east-asian: normal; font-variant-position: normal; vertical-align: baseline; white-space: pre-wrap;"> </span><span style="font-size: 12pt; font-family: Arial, sans-serif; color: rgb(0, 0, 255); font-variant-ligatures: normal; font-variant-alternates: normal; font-variant-numeric: normal; font-variant-east-asian: normal; font-variant-position: normal; vertical-align: baseline; white-space: pre-wrap;">battery prices</span></a><span style="font-size: 12pt; font-family: Arial, sans-serif; font-variant-ligatures: normal; font-variant-alternates: normal; font-variant-numeric: normal; font-variant-east-asian: normal; font-variant-position: normal; vertical-align: baseline; white-space: pre-wrap;"> have dropped 97% over three decades. There is a pathway to clean scaling coming into view.</span></span></p>
+
+
+
+<p><span id="docs-internal-guid-5e5a2a70-7fff-a08f-f865-6f5020e43e8c" style="white-space: normal;"><p dir="ltr" style="line-height: 1.806546; margin-top: 0pt; margin-bottom: 0pt;"></p><span style="font-size: 12pt; font-family: Arial, sans-serif; font-variant-ligatures: normal; font-variant-alternates: normal; font-variant-numeric: normal; font-variant-east-asian: normal; font-variant-position: normal; vertical-align: baseline; white-space: pre-wrap;">The capital is deployed. The engineering is delivering. The $100 billion clusters, the 10-gigawatt power draws, the warehouse-scale supercomputers &#8230; these are no longer science fiction. Ground is being broken for these projects now across the US and the world. As a result, we are heading toward true cognitive abundance. At Microsoft AI, this is the world our superintelligence lab is planning for and building.</span></span></p>
+
+
+
+<p><span id="docs-internal-guid-5e5a2a70-7fff-a08f-f865-6f5020e43e8c" style="white-space: normal;"><p dir="ltr" style="line-height: 1.806546; margin-top: 0pt; margin-bottom: 0pt;"></p><span style="font-size: 12pt; font-family: Arial, sans-serif; font-variant-ligatures: normal; font-variant-alternates: normal; font-variant-numeric: normal; font-variant-east-asian: normal; font-variant-position: normal; vertical-align: baseline; white-space: pre-wrap;">Skeptics accustomed to a linear world will continue predicting diminishing returns. They will continue being surprised. The compute explosion is the technological story of our time, full stop. And it is still only just beginning.</span></span></p>
+
+
+
+<p><span id="docs-internal-guid-5e5a2a70-7fff-a08f-f865-6f5020e43e8c" style="white-space: normal;"><span style="font-size: 12pt; font-family: Arial, sans-serif; font-style: italic; font-variant-ligatures: normal; font-variant-alternates: normal; font-variant-numeric: normal; font-variant-east-asian: normal; font-variant-position: normal; vertical-align: baseline; white-space: pre-wrap;"><em>Mustafa Suleyman is CEO of Microsoft AI.</em></span></span></p>
+]]></content:encoded>
+					
+		
+		
+		<post-id xmlns="com-wordpress:feed-additions:1">1135398</post-id>	</item>
+		<item>
+		<title>The Download: water threats in Iran and AI&#8217;s impact on what entrepreneurs make</title>
+		<link>https://www.technologyreview.com/2026/04/08/1135405/the-download-water-threats-iran-ais-impact-on-entrepreneurs-make/</link>
+		
+		<dc:creator><![CDATA[Thomas Macaulay]]></dc:creator>
+		<pubDate>Wed, 08 Apr 2026 12:10:00 +0000</pubDate>
+				<category><![CDATA[The Download]]></category>
+		<guid isPermaLink="false">https://www.technologyreview.com/?p=1135405</guid>
+
+					<description><![CDATA[This is today&#8217;s edition of The Download, our weekday newsletter that provides a daily dose of what&#8217;s going on in the world of technology. Desalination plants in the Middle East are increasingly vulnerable&#160; As the conflict in Iran has escalated, a crucial resource is under fire: the desalinization technology that supplies water in the region.&#160;&#160;President&#8230;]]></description>
+										<content:encoded><![CDATA[
+<p><em>This is today&#8217;s edition of </em><a href="https://forms.technologyreview.com/newsletters/briefing-the-download/?_ga=2.179569122.736533416.1649661040-405833893.1649413289"><em>The Download</em></a>,<em> our weekday newsletter that provides a daily dose of what&#8217;s going on in the world of technology.</em><br></p>
+
+
+
+<h3 class="wp-block-heading"><strong>Desalination plants in the Middle East are increasingly vulnerable</strong>&nbsp;</h3>
+
+
+
+<p>As the conflict in Iran has escalated, a crucial resource is under fire: the desalinization technology that supplies water in the region.&nbsp;<br>&nbsp;<br>President Donald Trump has threatened to destroy “possibly all desalinization plants” in Iran if the Strait of Hormuz is not reopened. The impact on farming, industry, and—crucially—drinking in the Middle East could be severe.&nbsp;<a href="https://www.technologyreview.com/2026/04/07/1135235/desalination-technology-water/?utm_source=the_download&amp;utm_medium=email&amp;utm_campaign=the_download.unpaid.engagement&amp;utm_term=*%7CSUBCLASS%7C*&amp;utm_content=*%7CDATE:m-d-Y%7C*" target="_blank" rel="noreferrer noopener">Find out why</a>.&nbsp;</p>
+
+
+
+<p><em>—Casey Crownhart</em>&nbsp;</p>
+
+
+
+<p><strong>This&nbsp;</strong><a href="https://www.technologyreview.com/2026/04/07/1135235/desalination-technology-water/?utm_source=the_download&amp;utm_medium=email&amp;utm_campaign=the_download.unpaid.engagement&amp;utm_term=*%7CSUBCLASS%7C*&amp;utm_content=*%7CDATE:m-d-Y%7C*" target="_blank" rel="noreferrer noopener"><strong>story</strong></a><strong>&nbsp;is part of MIT Technology Review Explains, our series untangling the complex, messy world of technology to help you understand&nbsp;what’s&nbsp;coming next.&nbsp;</strong><a href="https://www.technologyreview.com/tag/tech-review-explains?utm_source=the_download&amp;utm_medium=email&amp;utm_campaign=the_download.unpaid.engagement&amp;utm_term=*%7CSUBCLASS%7C*&amp;utm_content=*%7CDATE:m-d-Y%7C*" target="_blank" rel="noreferrer noopener"><strong>You can read more from the series here</strong></a><strong>.</strong>&nbsp;</p>
+
+
+
+<h3 class="wp-block-heading"><strong>AI is changing how small online sellers decide what to make</strong>&nbsp;</h3>
+
+
+
+<p>For small entrepreneurs, deciding what to sell and where to make it has traditionally been a slow,&nbsp;labor-intensive&nbsp;process. Now that work is increasingly being done by AI.&nbsp;&nbsp;&nbsp;</p>
+
+
+
+<p>Tools like Alibaba’s&nbsp;Accio&nbsp;compress weeks of product research and supplier hunting into a single chat. Business owners and e-commerce experts say&nbsp;they’re&nbsp;making sourcing more accessible—and slashing the time from product idea to launch.&nbsp;&nbsp;</p>
+
+
+
+<p><a href="https://www.technologyreview.com/2026/04/06/1135118/ai-online-seller-alibaba-accio/?utm_source=the_download&amp;utm_medium=email&amp;utm_campaign=the_download.unpaid.engagement&amp;utm_term=*%7CSUBCLASS%7C*&amp;utm_content=*%7CDATE:m-d-Y%7C*" target="_blank" rel="noreferrer noopener">Read the full story on how AI is leveling the path to global manufacturing</a>.&nbsp;</p>
+
+
+
+<p><em>—Caiwei&nbsp;Chen</em>&nbsp;</p>
+
+
+
+<h3 class="wp-block-heading"><strong>The gig workers who are training humanoid robots at home</strong>&nbsp;</h3>
+
+
+
+<p>When Zeus, a medical student in Nigeria, returns to his apartment from a long day at the hospital, he straps his iPhone to his forehead and records himself doing chores.&nbsp;&nbsp;<br>&nbsp;<br>Zeus is a data recorder for Micro1, which sells the data he collects to robotics firms. As these companies race to build humanoids, videos from workers like Zeus have become the hottest new way to train them.&nbsp;&nbsp;&nbsp;<br>&nbsp;<br>Micro1 has hired thousands of them in more than 50 countries, including India, Nigeria, and Argentina. The jobs pay well&nbsp;locally, but&nbsp;raise thorny questions around privacy and informed consent. The work can be challenging—and weird.&nbsp;<a href="https://www.technologyreview.com/2026/04/01/1134863/humanoid-data-training-gig-economy-2026-breakthrough-technology/?utm_source=the_download&amp;utm_medium=email&amp;utm_campaign=the_download.unpaid.engagement&amp;utm_term=*%7CSUBCLASS%7C*&amp;utm_content=*%7CDATE:m-d-Y%7C*" target="_blank" rel="noreferrer noopener">Read the full story</a>.&nbsp;&nbsp;</p>
+
+
+
+<p><em>—Michelle Kim</em>&nbsp;</p>
+
+
+
+<p><strong>This is our latest&nbsp;</strong><a href="https://www.technologyreview.com/2026/04/01/1134863/humanoid-data-training-gig-economy-2026-breakthrough-technology/?utm_source=the_download&amp;utm_medium=email&amp;utm_campaign=the_download.unpaid.engagement&amp;utm_term=*%7CSUBCLASS%7C*&amp;utm_content=*%7CDATE:m-d-Y%7C*" target="_blank" rel="noreferrer noopener"><strong>story</strong></a><strong>&nbsp;to be turned into an MIT Technology Review Narrated podcast, which&nbsp;we’re&nbsp;publishing each week on&nbsp;</strong><a href="https://open.spotify.com/show/6QefEeY1IKYVn5w6nUV83Y" target="_blank" rel="noreferrer noopener"><strong>Spotify</strong></a><strong>&nbsp;and&nbsp;</strong><a href="https://podcasts.apple.com/gb/podcast/mit-technology-review-narrated/id1523584878" target="_blank" rel="noreferrer noopener"><strong>Apple Podcasts</strong></a><strong>. Just navigate to MIT Technology Review Narrated on either platform,&nbsp;and&nbsp;follow us to get all our&nbsp;new content&nbsp;as&nbsp;it’s&nbsp;released.</strong>&nbsp;</p>
+
+
+
+<p class="has-medium-font-size"><strong>The must-reads </strong></p>
+
+
+
+<p><em>I’ve&nbsp;combed the internet to find you today’s most fun/important/scary/fascinating stories about technology.</em>&nbsp;</p>
+
+
+
+<p><strong>1 Anthropic’s new model found security problems in every OS and browser</strong> <br>Claude Mythos has been heralded as a cybersecurity “reckoning.” (<a href="https://www.theverge.com/ai-artificial-intelligence/908114/anthropic-project-glasswing-cybersecurity" target="_blank" rel="noreferrer noopener">The Verge</a>)  <br><em>+ Anthrophic is limiting the rollout over hacking fears.</em> (<a href="https://www.cnbc.com/2026/04/07/anthropic-claude-mythos-ai-hackers-cyberattacks.html" target="_blank" rel="noreferrer noopener">CNBC</a>) <br><em>+ It’s also launching a project that lets Mythos flag vulnerabilities.</em> (<a href="https://gizmodo.com/anthropic-launches-project-glasswing-to-stealthily-spot-cybersecurity-issues-for-rivals-2000743565" target="_blank" rel="noreferrer noopener">Gizmodo</a>) <br><em>+ Apple, Google, and Microsoft have joined the initiative. </em>(<a href="https://www.zdnet.com/article/project-glasswing-microsoft-google-apple-anthropic/" target="_blank" rel="noreferrer noopener">ZDNET</a>) </p>
+
+
+
+<p><strong>2 Iranian hackers are targeting American critical infrastructure</strong> <br>Their focus is on energy and water infrastructure.<em> </em>(<a href="https://www.wired.com/story/iran-linked-hackers-are-sabotaging-us-energy-and-water-infrastructure/" target="_blank" rel="noreferrer noopener">Wired</a>) <br><em>+ They’re targeting industrial control devices.</em> (<a href="https://techcrunch.com/2026/04/07/iranian-hackers-are-targeting-american-critical-infrastructure-u-s-agencies-warn/" target="_blank" rel="noreferrer noopener">TechCrunch</a>)  </p>
+
+
+
+<p><strong>3 Google’s AI Overviews deliver millions of incorrect answers per hour</strong> <br>Despite a 90% accuracy rate. (<a href="https://www.nytimes.com/2026/04/07/technology/google-ai-overviews-accuracy.html" target="_blank" rel="noreferrer noopener">NYT</a> $) <br><em>+ AI means the end of internet search as we’ve known it. </em>(<a href="https://www.technologyreview.com/2025/01/06/1108679/ai-generative-search-internet-breakthroughs/?utm_source=the_download&amp;utm_medium=email&amp;utm_campaign=the_download.unpaid.engagement&amp;utm_term=*%7CSUBCLASS%7C*&amp;utm_content=*%7CDATE:m-d-Y%7C*" target="_blank" rel="noreferrer noopener">MIT Technology Review</a>) </p>
+
+
+
+<p><strong>4 Elon Musk is trying to oust OpenAI CEO Sam Altman in a lawsuit</strong>&nbsp;<br>As remedies for Altman allegedly defrauding him. (<a href="https://www.cnbc.com/2026/04/07/elon-musk-seeks-ouster-of-openai-ceo-sam-altman-as-part-of-lawsuit.html" target="_blank" rel="noreferrer noopener">CNBC</a>)&nbsp;<br><em>+ Musk wants any damages given to OpenAI’s nonprofit arm.</em>&nbsp;(<a href="https://www.wsj.com/tech/ai/elon-musk-asks-for-openais-nonprofit-to-get-any-damages-from-his-lawsuit-76089f6f?mod=tech_lead_pos1" target="_blank" rel="noreferrer noopener">WSJ</a>&nbsp;$)&nbsp;</p>
+
+
+
+<p><strong>5 ICE has admitted it’s using powerful spyware</strong> <br>The tools that can intercept encrypted messages. (<a href="https://www.npr.org/2026/04/07/nx-s1-5776799/ice-spyware-privacy" target="_blank" rel="noreferrer noopener">NPR</a>) <br><em>+ Immigration agencies are also weaponizing AI videos.</em> (<a href="https://www.technologyreview.com/2026/01/29/1131938/dhs-is-using-google-and-adobe-ai-to-make-videos/?utm_source=the_download&amp;utm_medium=email&amp;utm_campaign=the_download.unpaid.engagement&amp;utm_term=*%7CSUBCLASS%7C*&amp;utm_content=*%7CDATE:m-d-Y%7C*" target="_blank" rel="noreferrer noopener">MIT Technology Review</a>) </p>
+
+
+
+<p><strong>6 Greece has joined the countries banning kids from social media</strong> <br>Under-15s will be blocked from 2027. (<a href="https://www.reuters.com/business/media-telecom/greece-ban-social-media-under-15s-2027-pm-says-2026-04-08/" target="_blank" rel="noreferrer noopener">Reuters</a>) <br><em>+ Australia introduced the world’s first social media ban for children.</em> (<a href="https://www.theguardian.com/australia-news/2026/mar/04/australia-social-media-ban-under-16s-three-month-review" target="_blank" rel="noreferrer noopener">Guardian</a>) <br><em>+ Indonesia recently rolled out the first one in Southeast Asia.</em> (<a href="https://www.dw.com/en/indonesia-rolls-out-social-media-ban-for-under-16s/a-76574803" target="_blank" rel="noreferrer noopener">DW</a>)  <br><em>+ Experts say they’re a lazy fix.</em> (<a href="https://www.cnbc.com/2026/04/08/teen-social-media-ban-countries-tech-experts-warning.html" target="_blank" rel="noreferrer noopener">CNBC</a>) </p>
+
+
+
+<p><strong>7 Intel will help Elon Musk build his Terafab in Texas</strong> <br>They aim to manufacture chips for AI projects. (<a href="https://www.engadget.com/ai/intel-gets-on-board-with-musks-terafab-project-182200144.html?src=rss" target="_blank" rel="noreferrer noopener">Engadget</a>) <br><em>+ Musk says it will be the largest-ever semiconductor factory. </em>(<a href="https://www.engadget.com/science/elon-musk-announces-terafab-project-he-claims-will-be-the-largest-chip-manufacturing-facility-ever-171718545.html" target="_blank" rel="noreferrer noopener">Engadget</a>) <br><em>+ Future AI chips could be built on glass.</em> (<a href="https://www.technologyreview.com/2026/03/13/1134230/future-ai-chips-could-be-built-on-glass/?utm_source=the_download&amp;utm_medium=email&amp;utm_campaign=the_download.unpaid.engagement&amp;utm_term=*%7CSUBCLASS%7C*&amp;utm_content=*%7CDATE:m-d-Y%7C*" target="_blank" rel="noreferrer noopener">MIT Technology Review</a>)  </p>
+
+
+
+<p><strong>8 TikTok is building a second billion-euro data center in Finland</strong> <br>It’s moving data storage for European users. (<a href="https://www.reuters.com/legal/litigation/tiktok-build-second-billion-euro-data-centre-finland-2026-04-08/" target="_blank" rel="noreferrer noopener">Reuters</a>) <br><em>+ Finland has become a magnet for data centers.</em> (<a href="https://www.bloomberg.com/news/features/2025-05-14/finland-s-data-centers-are-heating-cities-too" target="_blank" rel="noreferrer noopener">Bloomberg</a> $) <br><em>+ But nobody wants one in their backyard.</em> (<a href="https://www.technologyreview.com/2026/01/14/1131253/data-centers-are-amazing-everyone-hates-them/?utm_source=the_download&amp;utm_medium=email&amp;utm_campaign=the_download.unpaid.engagement&amp;utm_term=*%7CSUBCLASS%7C*&amp;utm_content=*%7CDATE:m-d-Y%7C*" target="_blank" rel="noreferrer noopener">MIT Technology Review</a>) </p>
+
+
+
+<p><strong>9 Plans for Canada’s first “virtual gated community” have sparked a row</strong> <br>The AI-powered surveillance system has divided neighbors. (<a href="https://www.theguardian.com/technology/2026/apr/07/toronto-rosedale-row-virtual-gated-community-ai-surveillance-flock" target="_blank" rel="noreferrer noopener">Guardian</a>) <br><em>+ Is the Pentagon allowed to surveil Americans with AI? </em>(<a href="https://www.technologyreview.com/2026/03/06/1134012/is-the-pentagon-allowed-to-surveil-americans-with-ai/?utm_source=the_download&amp;utm_medium=email&amp;utm_campaign=the_download.unpaid.engagement&amp;utm_term=*%7CSUBCLASS%7C*&amp;utm_content=*%7CDATE:m-d-Y%7C*" target="_blank" rel="noreferrer noopener">MIT Technology Review</a>) </p>
+
+
+
+<p><strong>10 The high-tech engineering of the &#8220;space toilet” has been revealed</strong>&nbsp;<br>Artemis II is the first mission to carry one around the world. (<a href="https://www.vox.com/podcasts/484925/artemis-ii-moon-mission-space-toilet-problems-nasa" target="_blank" rel="noreferrer noopener">Vox</a>)&nbsp;</p>
+
+
+
+<p class="has-medium-font-size"><strong>Quote of the day </strong></p>
+
+
+
+<h2 class="wp-block-heading"><strong>“This case has always been about Elon generating more power and more money for what he wants. His lawsuit&nbsp;remains&nbsp;nothing more than a harassment campaign&nbsp;that’s&nbsp;driven by ego,&nbsp;jealousy&nbsp;and a desire to slow down a competitor.”</strong>&nbsp;</h2>
+
+
+
+<p>—OpenAI criticizes Musk’s legal action in an&nbsp;<a href="https://x.com/OpenAINewsroom/status/2041648263078801765" target="_blank" rel="noreferrer noopener">X post</a>.&nbsp;</p>
+
+
+
+<p class="has-medium-font-size"><strong>One More Thing </strong></p>
+
+
+<div class="wp-block-image">
+<figure class="wp-block-image size-large"><img loading="lazy" decoding="async" width="3000" height="1687" src="https://wp.technologyreview.com/wp-content/uploads/2024/06/USWDS_SPREAD.jpg?w=3000" alt="" class="wp-image-1093868" srcset="https://wp.technologyreview.com/wp-content/uploads/2024/06/USWDS_SPREAD.jpg 3000w, https://wp.technologyreview.com/wp-content/uploads/2024/06/USWDS_SPREAD.jpg?resize=300,169 300w, https://wp.technologyreview.com/wp-content/uploads/2024/06/USWDS_SPREAD.jpg?resize=768,432 768w, https://wp.technologyreview.com/wp-content/uploads/2024/06/USWDS_SPREAD.jpg?resize=1536,864 1536w, https://wp.technologyreview.com/wp-content/uploads/2024/06/USWDS_SPREAD.jpg?resize=2048,1152 2048w" sizes="auto, (max-width: 3000px) 100vw, 3000px" /><div class="image-credit">USWDS</div>
+</figure>
+</div>
+
+
+<h4 class="wp-block-heading"><strong>Inside the US government’s brilliantly boring websites</strong>&nbsp;</h4>
+
+
+
+<p>You may not notice it, but your experience on every US government website is carefully crafted.&nbsp;</p>
+
+
+
+<p>Each site aligns an official web design and a custom typeface. They aim to make government websites not only good-looking but accessible and functional for all.&nbsp;</p>
+
+
+
+<p><em>MIT Technology Review</em>&nbsp;dug into the system’s history and features.&nbsp;<a href="https://www.technologyreview.com/2024/06/26/1093656/us-government-website-design-accessibility/?utm_source=the_download&amp;utm_medium=email&amp;utm_campaign=the_download.unpaid.engagement&amp;utm_term=*%7CSUBCLASS%7C*&amp;utm_content=*%7CDATE:m-d-Y%7C*" target="_blank" rel="noreferrer noopener">Find out what we discovered</a>.&nbsp;</p>
+
+
+
+<p><em>—Jon Keegan</em>&nbsp;</p>
+
+
+
+<p class="has-medium-font-size"><strong>We can still have nice things </strong></p>
+
+
+
+<p><em>A place for comfort, fun and distraction to brighten up your day. (Got any ideas?&nbsp;</em><a href="mailto:thomas.macaulay@technologyreview.com" target="_blank" rel="noreferrer noopener"><em>Drop me a line</em></a><em>.)</em>&nbsp;</p>
+
+
+
+<p>+ Rejoice in the&nbsp;splendor&nbsp;of the “<a href="https://www.bbc.co.uk/news/resources/idt-16b00b19-21d0-4108-96e8-38bb7e4846c6" target="_blank" rel="noreferrer noopener">Earthset</a>” image captured by Artemis II.&nbsp;<br>+ Meet the<a href="https://www.youtube.com/watch?v=27EdxVICHWo" target="_blank" rel="noreferrer noopener">&nbsp;fearless cat</a>&nbsp;chasing off bears.&nbsp;<br>+ This document vividly explains what makes<a href="https://www.youtube.com/watch?v=hxqkRQhWVx8" target="_blank" rel="noreferrer noopener">&nbsp;the octopus</a>&nbsp;so unique.&nbsp;<br>+ Revealed: the rhythmic secret that&nbsp;<a href="https://www.youtube.com/watch?v=rM05xaE6oDI" target="_blank" rel="noreferrer noopener">makes emo music so angsty</a>.&nbsp;</p>
+]]></content:encoded>
+					
+		
+		
+		<post-id xmlns="com-wordpress:feed-additions:1">1135405</post-id>	</item>
+		<item>
+		<title>Desalination plants in the Middle East are increasingly vulnerable</title>
+		<link>https://www.technologyreview.com/2026/04/07/1135235/desalination-technology-water/</link>
+		
+		<dc:creator><![CDATA[Casey Crownhart]]></dc:creator>
+		<pubDate>Tue, 07 Apr 2026 14:54:06 +0000</pubDate>
+				<category><![CDATA[Climate change and energy]]></category>
+		<category><![CDATA[App]]></category>
+		<category><![CDATA[Summary]]></category>
+		<guid isPermaLink="false">https://www.technologyreview.com/?p=1135235</guid>
+
+					<description><![CDATA[MIT Technology Review Explains: Let our writers untangle the complex, messy world of technology to help you understand what’s coming next. You can read more from the series here. As the conflict in Iran has escalated, a crucial resource is under fire: the desalination technology that supplies water across much of the region. In early&#8230;]]></description>
+										<content:encoded><![CDATA[<div data-chronoton-summary="&lt;ul&gt;&lt;br&gt;&lt;li&gt;&lt;strong&gt;Water as a weapon:&lt;/strong&gt; Desalination plants supplying drinking water to millions across the Middle East have become targets in the escalating US-Iran conflict, with plants in Iran, Bahrain, and Kuwait already reporting damage.&lt;/li&gt;&lt;br&gt;&lt;li&gt;&lt;strong&gt;Gulf states are most at risk:&lt;/strong&gt; While Iran gets just 3% of its municipal fresh water from desalination, Bahrain, Qatar, and Kuwait depend on it for over 90% of their drinking water—making them far more exposed to attacks.&lt;/li&gt;&lt;br&gt;&lt;li&gt;&lt;strong&gt;Bigger plants mean bigger consequences:&lt;/strong&gt; The average desalination facility is now ten times larger than it was 15 years ago. Taking one offline could impact the water supplies of many people in the area.&lt;/li&gt;&lt;br&gt;&lt;li&gt;&lt;strong&gt;The danger doesn&#039;t end with the war:&lt;/strong&gt; Climate change, oil spills, and algae blooms pose growing threats to these facilities—and experts warn the conflict may teach future actors just how effectively water infrastructure can be weaponized.&lt;/li&gt;&lt;br&gt;&lt;/ul&gt;" data-chronoton-post-id="1135235" data-chronoton-expand-collapse="1" data-chronoton-analytics-enabled="1"></div>
+
+
+<p><strong>MIT Technology Review <em>Explains: Let our writers untangle the complex, messy world of technology to help you understand what’s coming next. You can read more from the series <a href="https://www.technologyreview.com/tag/tech-review-explains/">here</a>.</em></strong></p>
+
+
+
+<p>As the conflict in Iran has escalated, a crucial resource is under fire: the desalination technology that supplies water across much of the region.</p>
+
+
+
+<p>In early March, Iran’s foreign minister accused the US of attacking a desalination plant on Qeshm Island in the Strait of Hormuz and disrupting the water supply to nearly <a href="https://foreignpolicy.com/2026/03/09/iran-water-drought-desalination/" target="_blank" rel="noreferrer noopener">30 villages</a>. (The US denied responsibility.) In the weeks since, both <a href="https://www.nytimes.com/2026/03/08/world/middleeast/desalination-plants-iran-bahrain.html" target="_blank" rel="noreferrer noopener">Bahrain</a> and <a href="https://www.wsj.com/livecoverage/iran-war-news-2026/card/drone-strikes-hit-kuwait-s-ministries-complex-khKnaY36wgG7N2NvxrOD?gaa_at=eafs&amp;gaa_n=AWEtsqcaKnSzYnTwlDjPzI0YEtwXgEXYc6avaf6jIXKaVAhbDsSPWCNtLPkXglr5RvM%3D&amp;gaa_ts=69d4f48f&amp;gaa_sig=-q-JNPpTE_B50uAfD_KsW76CU2eXeXujSWA0W9Pk1YpR9mn36iOHgKdwox4J3VAQAR62rhNO4WkX4LwheEaouQ%3D%3D">Kuwait</a> have reported damage to desalination plants and blamed Iran, though Iran also denied responsibility.</p>
+
+
+
+<p>In late March, President Donald Trump <a href="https://truthsocial.com/@realDonaldTrump/posts/116317880658472708" target="_blank" rel="noreferrer noopener">threatened</a> the destruction of “possibly all desalinization plants” in Iran if the Strait of Hormuz was not reopened. Since then, he’s <a href="https://www.politico.com/news/2026/04/07/trump-iran-deadline-threats-00861313" target="_blank" rel="noreferrer noopener">escalated his threats</a> against Iran, warning of plans to attack other crucial civilian infrastructure like power plants and bridges.</p>
+
+
+
+<p>Countries in the Middle East, particularly the Gulf states, rely on the technology to turn salt water into fresh water for farming, industry, and—crucially—drinking. The mounting attacks and threats to date highlight just how vital the industry is to the region—a situation made even more precarious by rising temperatures and extreme weather driven by climate change.</p>
+
+
+
+<p>Right now, 83% of the Middle East is under extremely high water stress, says Liz Saccoccia, a water security associate at the World Resources Institute. Future projections suggest that’s going to increase to about 100% by 2050, she adds: “This is a continuing trend, and it’s getting worse, not better.”</p>
+
+
+
+<p>Here’s a look at desalination technology in the Middle East and what wartime threats to the critical infrastructure could mean for people in the region.&nbsp;</p>
+
+
+
+<h3 class="wp-block-heading"><strong>A vital resource</strong></h3>
+
+
+
+<p>Desalination technology has helped provide water supplies in the Middle East since the early 20th century and became widespread in the 1960s and 1970s.</p>
+
+
+
+<p>There are two major categories of desalination plants. Thermal plants use heat to evaporate water, leaving salt and other impurities behind. The vapor can then be condensed into usable fresh water. The alternative is membrane-based technology like reverse osmosis, which pushes water through membranes that have tiny pores—so small that salt can’t get through.</p>
+
+
+
+<p>Early desalination plants in the Middle East were the first type, burning fossil fuels to evaporate water, leaving the salt behind. This technique is incredibly energy-intensive, and over time, processes that rely on filters became the dominant choice.</p>
+
+
+
+
+
+<p>Membrane technologies have made up essentially all new desalination capacity in recent years; the last major thermal plant built in the Gulf came online <a href="https://www.iea.org/commentaries/wired-for-water-how-electrification-is-transforming-desalination" target="_blank" rel="noreferrer noopener">in 2018</a>. Many reverse osmosis plants still rely on fossil fuels, but they’re more efficient. Since then, membrane technologies have added more than 15 million cubic meters of daily capacity—enough to supply water to millions of people.</p>
+
+
+
+<p>Capacity has expanded quickly in recent years; between 2006 and 2024, countries across the Middle East collectively spent over <a href="https://www.nature.com/articles/s41545-026-00554-x" target="_blank" rel="noreferrer noopener">$50 billion</a> building and upgrading desalination facilities, and nearly that much operating them.</p>
+
+
+
+<p>Today, there are nearly 5,000 desalination plants operational across the Middle East.</p>
+
+
+
+<p>And looking ahead, growth is continuing. Between 2024 and 2028, daily capacity is expected to grow from about 29 million cubic meters to 41 million cubic meters.</p>
+
+
+
+<h3 class="wp-block-heading"><strong>Uneven vulnerabilities</strong></h3>
+
+
+
+<p>Some countries rely on the technology more than others. Iran, for example, uses desalination for about 3% of its municipal fresh water. The country has access to groundwater and some surface water, including rivers, though these resources are being stretched thin by agriculture and extreme drought.</p>
+
+
+
+<p>Other nations in the region, particularly the Gulf countries (Bahrain, Qatar, Kuwait, the United Arab Emirates, Saudi Arabia, and Oman), have much more limited water resources and rely heavily on desalination. Across these six nations, all but the UAE get more than half their drinking water from desalination, and for Bahrain, Qatar, and Kuwait the <a href="https://www.csis.org/analysis/could-iran-disrupt-gulf-countries-desalinated-water-supplies" target="_blank" rel="noreferrer noopener">figure</a> is more than 90%.</p>
+
+
+
+<p>“The Gulf countries are much, much more vulnerable to attacks on their desalination plants than Iran is,” says David Michel, a senior associate in the global food and water security program at the Center for Strategic and International Studies.</p>
+
+
+
+<p>There are thousands of desalination facilities across the region, so the system wouldn’t collapse if a small number were taken offline, Michel says. However, in recent years there’s been a trend toward larger, more centralized plants.</p>
+
+
+
+<p>The average desalination plant is about 10 times larger than it was 15 years ago, according to <a href="https://www.iea.org/commentaries/wired-for-water-how-electrification-is-transforming-desalination" target="_blank" rel="noreferrer noopener">data</a> from the International Energy Agency. The largest desalination plants today can produce 1 million cubic meters of water daily, enough for hundreds of thousands of people. Taking one or more of these massive facilities offline could have a significant effect on the system, Michel says.</p>
+
+
+
+<h3 class="wp-block-heading"><strong>Escalating threats</strong></h3>
+
+
+
+<p>Desalination facilities are quite linear, meaning there are multiple steps and pieces of equipment that work in sequence—and the failure of a component in that chain can take an entire facility down. Attacks on water inlets, transportation networks, and power supplies can also disrupt the system, Michel says.&nbsp;</p>
+
+
+
+<p>During the Gulf War in 1991, Iraqi forces pumped oil into the gulf, contaminating the water and shutting down desalination plants in <a href="https://www.tampabay.com/archive/1991/02/05/iraq-s-desalination-plants-fouled-by-slick/" target="_blank" rel="noreferrer noopener">Kuwait</a>.&nbsp;</p>
+
+
+
+<p>The facilities are also generally located close to other targets in this conflict. Desalination is incredibly energy intensive, so about three-quarters of facilities in the region are next to power plants. Trump has repeatedly threatened <a href="https://www.cbsnews.com/live-updates/iran-war-trump-deadline-power-plants-bridges-ceasefire-push-air-force-rescue/#post-update-f66cf39b" target="_blank" rel="noreferrer noopener">power plants in Iran</a>. In response, <a href="https://www.theguardian.com/world/live/2026/apr/06/iran-war-live-updates-trump-hormuz-oil-netanyahu-israel?CMP=share_btn_url&amp;page=with%3Ablock-69d315518f08764b987caa58#block-69d315518f08764b987caa58" target="_blank" rel="noreferrer noopener">Iran’s military has said</a> that if civilian targets are hit, the country will respond with strikes that are “much more devastating and widespread.” Other governments and organizations, including the <a href="https://www.bloomberg.com/news/articles/2026-04-06/un-warns-that-attacks-on-iran-infrastructure-risk-violating-law" target="_blank" rel="noreferrer noopener">United Nations</a>, the <a href="https://www.theguardian.com/world/live/2026/apr/06/iran-war-live-updates-trump-hormuz-oil-netanyahu-israel?CMP=share_btn_url&amp;page=with%3Ablock-69d394c98f086bcf9a2a132e#block-69d394c98f086bcf9a2a132e" target="_blank" rel="noreferrer noopener">European Union</a>, and the <a href="https://www.barrons.com/news/red-cross-chief-condemns-deliberate-threats-against-civilians-in-mideast-war-3f8cc5dd?gaa_at=eafs&amp;gaa_n=AWEtsqekR7slhzvqiwnRVlZYVGdColRbGwTqwJVbgf-TCcysSCrL3oDbfRvac-AOxTc%3D&amp;gaa_ts=69d507ed&amp;gaa_sig=oj2pwvrl_h0_c5qBOWeA9rpLo4eGGMHdVrmKbPW1-3DDpTsuvufJfcmUMTFJ7hCrQurxZogalmmkJlY1QsXgJA%3D%3D" target="_blank" rel="noreferrer noopener">Red Cross</a>, have broadly condemned threats to infrastructure as illegal.&nbsp;</p>
+
+
+
+<p>But war isn’t the only danger facing these plants, even if it is the most immediate. Some <a href="https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2025EF007294" target="_blank" rel="noreferrer noopener">studies</a> have suggested that global warming could strengthen cyclones in the region, and these extreme weather events could force shutdowns or damage equipment.</p>
+
+
+
+<p>Water pollution could also cause shutdowns. Oil spills, whether accidental or intentional, as in the case of the Gulf War, can&nbsp; wreak havoc. And in 2009, a red algae bloom closed desalination plants in Oman and the United Arab Emirates for weeks. The algae fouled membranes and blocked the plants from being able to take water in from the Persian Gulf and the Gulf of Oman.</p>
+
+
+
+<p>Desalination facilities could become more resilient to threats in the future, and they may need to as their importance continues to grow.&nbsp;</p>
+
+
+
+<p>There’s increasing interest in running desalination facilities at least partially on solar power, which could help reduce dependence on the oil that powers most facilities today. The Hassyan seawater desalination project in the UAE, currently under construction, would be the largest reverse osmosis plant in the world to operate solely with renewable energy.&nbsp;</p>
+
+
+
+<p>Another way to increase resilience is for countries to build up more strategic water storage to meet demand. Qatar recently issued new policies that aim to improve management and storage of desalinated water, for example. Countries could also work together to invest in shared infrastructure and policies that help strengthen the water supply through the region.&nbsp;</p>
+
+
+
+<p>Preparedness, resilience, and cooperation will be key for the Middle East broadly as critical infrastructure, including the water supply, is increasingly under threat.&nbsp;</p>
+
+
+
+<p>“The longer the conflict goes on, the more likely we’ll see significant water infrastructure damage,” says Ginger Matchett, an assistant director at the Atlantic Council. “What worries me is that after this war ends, some of the lessons will show how water can be weaponized more strategically than previously imagined.”&nbsp;</p>
+]]></content:encoded>
+					
+		
+		
+		<post-id xmlns="com-wordpress:feed-additions:1">1135235</post-id>	</item>
+		<item>
+		<title>Enabling agent-first process redesign</title>
+		<link>https://www.technologyreview.com/2026/04/07/1134966/enabling-agent-first-process-redesign/</link>
+		
+		<dc:creator><![CDATA[MIT Technology Review Insights]]></dc:creator>
+		<pubDate>Tue, 07 Apr 2026 14:00:00 +0000</pubDate>
+				<category><![CDATA[Artificial intelligence]]></category>
+		<category><![CDATA[sponsored]]></category>
+		<guid isPermaLink="false">https://www.technologyreview.com/?p=1134966</guid>
+
+					<description><![CDATA[Unlike static, rules-based systems, AI agents can learn, adapt, and optimize processes dynamically. As they interact with data, systems, people, and other agents in real time, AI agents can execute entire workflows autonomously. But unlocking their potential requires redesigning processes around agents rather than bolting them onto fragmented legacy workflows using traditional optimization methods. Companies&#8230;]]></description>
+										<content:encoded><![CDATA[
+<p>Unlike static, rules-based systems, AI agents can learn, adapt, and optimize processes dynamically. As they interact with data, systems, people, and other agents in real time, AI agents can execute entire workflows autonomously. </p>
+
+
+
+<p>But unlocking their potential requires redesigning processes around agents rather than bolting them onto fragmented legacy workflows using traditional optimization methods. Companies must become agent first.</p>
+
+
+
+<figure class="wp-block-image size-large"><img loading="lazy" decoding="async" width="1200" height="660" src="https://wp.technologyreview.com/wp-content/uploads/2026/03/Deloitte-Landing-Page-Card.png?w=1200" alt="" class="wp-image-1135019" srcset="https://wp.technologyreview.com/wp-content/uploads/2026/03/Deloitte-Landing-Page-Card.png 1200w, https://wp.technologyreview.com/wp-content/uploads/2026/03/Deloitte-Landing-Page-Card.png?resize=300,165 300w, https://wp.technologyreview.com/wp-content/uploads/2026/03/Deloitte-Landing-Page-Card.png?resize=768,422 768w" sizes="auto, (max-width: 1200px) 100vw, 1200px" /></figure>
+
+
+
+<div class="wp-block-buttons is-content-justification-center is-layout-flex wp-container-core-buttons-is-layout-a89b3969 wp-block-buttons-is-layout-flex">
+<div class="wp-block-button has-custom-width wp-block-button__width-auto is-style-fill is-style-fill--2"><a class="wp-block-button__link has-mittr-white-color has-text-color has-background has-custom-font-size wp-element-button" href="https://wp.technologyreview.com/wp-content/uploads/2026/04/040626-Deloitte-Enabling-agent-first-process-redesign.pdf" style="border-radius:4px;background-color:#46828f;font-size:16px" target="_blank" rel="noreferrer noopener">DOWNLOAD THE ARTICLE</a></div>
+</div>
+
+
+
+<p>In an agent-first enterprise, AI systems operate processes while humans set goals, define policy constraints, and handle exceptions. </p>
+
+
+
+<p>“You need to shift the operating model to humans as governors and agents as operators,” says Scott Rodgers, global chief architect and U.S. CTO of the Deloitte Microsoft Technology Practice.</p>
+
+
+
+<h3 class="wp-block-heading">The agent-first imperative</h3>
+
+
+
+<p>With technology budgets for AI expected to increase more than 70% over the next two years, AI agents, powered by generative AI, are poised to fundamentally transform organizations and achieve results beyond traditional automation. These initiatives have the potential to produce significant performance gains, while shifting humans toward higher value work.</p>
+
+
+
+<p>AI is advancing so quickly that static approaches to task automation will likely only produce incremental gains. Because legacy processes aren’t built for autonomous systems, AI agents require machine-readable process definitions, explicit policy constraints, and structured data flows, according to Rodgers. </p>
+
+
+
+<figure class="wp-block-image aligncenter size-full"><img loading="lazy" decoding="async" width="730" height="660" src="https://wp.technologyreview.com/wp-content/uploads/2026/04/Deloitte-Graphic.png" alt="" class="wp-image-1135021" srcset="https://wp.technologyreview.com/wp-content/uploads/2026/04/Deloitte-Graphic.png 730w, https://wp.technologyreview.com/wp-content/uploads/2026/04/Deloitte-Graphic.png?resize=300,271 300w" sizes="auto, (max-width: 730px) 100vw, 730px" /></figure>
+
+
+
+<p>Further complicating matters, many organizations don’t understand the full economic drivers of their business, such as cost to serve and per-transaction costs. As a result, they have trouble prioritizing agents that can create the most value and instead focus on flashy pilots. To achieve structural change, executives should think differently. </p>
+
+
+
+<p>Companies must instead orchestrate outcomes faster than competitors. “The real risk isn’t that AI won’t work—it’s that competitors will redesign their operating models while you’re still piloting agents and copilots,” says Rodgers. “Nonlinear gains come when companies create agent-centric workflows with human governance and adaptive orchestration.” </p>
+
+
+
+<p>Routine and repetitive tasks are increasingly handled automatically, freeing employees to focus on higher value, creative, and strategic work. This shift improves operational efficiency, fosters stronger collaboration, and generates faster decision-making—helping organizations modernize the workplace without sacrificing enterprise security.</p>
+
+
+
+<p><em><a href="https://wp.technologyreview.com/wp-content/uploads/2026/04/040626-Deloitte-Enabling-agent-first-process-redesign.pdf" target="_blank" rel="noreferrer noopener">Download the article.</a></em></p>
+
+
+
+<p><em>This content was produced by Insights, the custom content arm of MIT Technology Review. It was not written by MIT Technology Review’s editorial staff. It was researched, designed, and written by human writers, editors, analysts, and illustrators. This includes the writing of surveys and collection of data for surveys. AI tools that may have been used were limited to secondary production processes that passed thorough human review.</em></p>
+
+
+
+<p></p>
+]]></content:encoded>
+					
+		
+		
+		<post-id xmlns="com-wordpress:feed-additions:1">1134966</post-id>	</item>
+	</channel>
+</rss>
