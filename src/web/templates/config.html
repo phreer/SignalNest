@@ -177,7 +177,7 @@
   
   {% if config_view.sources.rss_feeds %}
   <div style="margin-top: 24px;">
-    <h3 style="font-size: 14px; color: #4b5563; margin-bottom: 12px; border-bottom: 1px solid #e5e7eb; padding-bottom: 8px;">RSS Feeds ({{ config_view.sources.rss_feeds|length }})</h3>
+    <h3 class="h3-title">RSS Feeds ({{ config_view.sources.rss_feeds|length }})</h3>
     <table>
       <thead>
         <tr>
@@ -199,10 +199,10 @@
 
   {% if config_view.sources.youtube_channels %}
   <div style="margin-top: 24px;">
-    <h3 style="font-size: 14px; color: #4b5563; margin-bottom: 12px; border-bottom: 1px solid #e5e7eb; padding-bottom: 8px;">YouTube Channels ({{ config_view.sources.youtube_channels|length }})</h3>
+    <h3 class="h3-title">YouTube Channels ({{ config_view.sources.youtube_channels|length }})</h3>
     <div style="display: flex; flex-wrap: wrap; gap: 8px;">
       {% for channel in config_view.sources.youtube_channels %}
-      <a href="https://www.youtube.com/channel/{{ channel }}" target="_blank" rel="noreferrer" class="pill" style="color: #1d4ed8;">{{ channel }} ↗</a>
+      <a href="https://www.youtube.com/channel/{{ channel }}" target="_blank" rel="noreferrer" class="pill pill-link">{{ channel }} ↗</a>
       {% endfor %}
     </div>
   </div>

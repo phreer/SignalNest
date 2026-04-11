@@ -399,6 +399,109 @@
       .nav { gap: 8px; }
       .actions .field { min-width: 100%; }
     }
+
+    /* Additional utility classes */
+    .pill-selected {
+      background-color: #fef3c7;
+      border-color: #fcd34d;
+      color: #b45309;
+    }
+    .pill-link {
+      color: #1d4ed8;
+    }
+    .empty-title {
+      color: #4b5563;
+    }
+    .h3-title {
+      font-size: 14px;
+      color: #4b5563;
+      margin-bottom: 12px;
+      border-bottom: 1px solid #e5e7eb;
+      padding-bottom: 8px;
+    }
+
+    /* Dark Mode Overrides */
+    @media (prefers-color-scheme: dark) {
+      body { background: #111827; color: #e5e7eb; }
+      .card { background: #1f2937; border-color: #374151; box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.5); }
+      a { color: #60a5fa; }
+      .muted { color: #9ca3af !important; }
+      
+      .header { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5); }
+      .nav a { color: rgba(255,255,255,0.7); }
+      .nav a.active { background: rgba(255,255,255,0.1); color: #fff; }
+      
+      .sidebar-title { color: #9ca3af; }
+      .sidebar-menu a { color: #d1d5db; }
+      .sidebar-menu a:hover { background: #374151; color: #f9fafb; }
+      .sidebar-menu a.active { background: rgba(59, 130, 246, 0.15); color: #60a5fa; border-color: rgba(59, 130, 246, 0.3); }
+      .sidebar-search input { background: #111827; border-color: #4b5563; color: #f9fafb; }
+      .sidebar-search input:focus { background: #1f2937; border-color: #60a5fa; }
+
+      input, select, button { background: #374151; border-color: #4b5563; color: #f9fafb; }
+      button { background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); border-color: transparent; }
+      
+      th { color: #9ca3af; }
+      th, td { border-bottom-color: #374151; }
+      
+      .pill { background: #374151; border-color: #4b5563; color: #d1d5db; }
+      .pill.active-filter { background: rgba(59, 130, 246, 0.15); border-color: rgba(59, 130, 246, 0.3); color: #60a5fa; }
+      .pill-selected { background-color: rgba(217, 119, 6, 0.2) !important; border-color: rgba(217, 119, 6, 0.3) !important; color: #fcd34d !important; }
+      .pill-link { color: #60a5fa; }
+      
+      .alert-success { background: rgba(6, 95, 70, 0.3); color: #6ee7b7; border-color: rgba(6, 95, 70, 0.5); }
+      .alert-error { background: rgba(153, 27, 27, 0.3); color: #fca5a5; border-color: rgba(153, 27, 27, 0.5); }
+      .pre { background: #111827; border-color: #374151; }
+      details.inline-details > summary { color: #d1d5db; }
+
+      .section-title { border-bottom-color: #374151; }
+      .section-title.status { border-color: #8b5cf6; color: #c4b5fd; }
+      .section-title.jobs { border-color: #f59e0b; color: #fde68a; }
+      .section-title.digest { border-color: #0ea5e9; color: #7dd3fc; }
+      .section-title.news { border-color: #10b981; color: #6ee7b7; }
+
+      .h3-title { color: #d1d5db; border-bottom-color: #374151; }
+      .empty-title { color: #d1d5db; }
+
+      .soft-box { background: rgba(37, 99, 235, 0.1); border-left-color: #3b82f6; }
+      .focus-box { background: rgba(139, 92, 246, 0.1); border-left-color: #a78bfa; color: #ddd6fe; }
+      .focus-label { color: #c4b5fd; }
+      .summary-box { background: rgba(14, 165, 233, 0.1); color: #bae6fd; border: 1px solid rgba(14, 165, 233, 0.2); }
+
+      .score-high   { background: rgba(6, 95, 70, 0.3); color: #6ee7b7; }
+      .score-medium { background: rgba(146, 64, 14, 0.3); color: #fcd34d; }
+      .score-low    { background: #374151; color: #9ca3af; }
+
+      .source-github  { background: #374151; color: #e5e7eb; }
+      .source-rss     { background: #9a3412; color: #ffedd5; }
+      .source-youtube { background: #991b1b; color: #fee2e2; }
+
+      .news-item { border-bottom-color: #374151; }
+      .news-title-main { color: #f3f4f6; }
+      .news-title-translation { color: #9ca3af; }
+      .news-origin-link { color: #9ca3af; }
+      .news-origin-link:hover { color: #60a5fa; }
+      .news-summary { color: #d1d5db; }
+
+      .status-ok, .status-succeeded { color: #34d399; }
+      .status-running, .status-queued { color: #fbbf24; }
+      .status-failed, .status-error { color: #f87171; }
+
+      .schedule-table tr:not(:last-child) td { border-bottom-color: #374151; }
+      .time-cell { color: #d1d5db; }
+      .title-cell { color: #f3f4f6; }
+      .location-tag { background: #374151; color: #d1d5db; }
+      .project-block { border-left-color: #4b5563; }
+      .project-title { color: #f3f4f6; }
+      .due { background: #374151; color: #d1d5db; }
+      .due.due-overdue  { background: rgba(153, 27, 27, 0.3); color: #fca5a5; }
+      .due.due-today    { background: rgba(146, 64, 14, 0.3); color: #fcd34d; }
+      .due.due-upcoming { background: rgba(30, 58, 138, 0.3); color: #93c5fd; }
+      .task-item { border-left-color: #4b5563; color: #d1d5db; }
+      .task-due-ai { color: #6b7280; }
+      
+      .footer { border-top-color: #374151; color: #6b7280; }
+    }
   </style>
 </head>
 <body>

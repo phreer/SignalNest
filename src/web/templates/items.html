@@ -57,14 +57,14 @@
     <div class="card" style="margin-bottom: 16px; padding: 16px 24px;">
       <div class="section-title news" style="margin: 0; padding-bottom: 0; border-bottom: none;">
         🗃 Collected Items
-        <span style="font-weight:400; font-size:13px; color:#6b7280; margin-left: 8px;">共 {{ total_items }} 条</span>
+        <span class="muted" style="font-weight:400; font-size:13px; margin-left: 8px;">共 {{ total_items }} 条</span>
       </div>
       {% if active_filters %}
       <div class="toolbar-meta" style="margin-top: 12px;">
         {% for filter in active_filters %}
         <span class="pill active-filter">{{ filter.label }}: {{ filter.value }}</span>
         {% endfor %}
-        <a href="{{ clear_filters_url }}" style="font-size: 13px; margin-left: 4px; color: #6b7280; text-decoration: underline;">清空筛选</a>
+        <a href="{{ clear_filters_url }}" class="muted" style="font-size: 13px; margin-left: 4px; text-decoration: underline;">清空筛选</a>
       </div>
       {% endif %}
     </div>
@@ -80,7 +80,7 @@
           {% endif %}
           <span class="source-tag source-{{ item.source }}">{{ item.source }}</span>
           {% if item.source_name %}<span class="muted" style="font-size: 12px;">{{ item.source_name }}</span>{% endif %}
-          {% if item.selected_for_digest %}<span class="pill" style="background-color: #fef3c7; border-color: #fcd34d; color: #b45309; padding: 1px 6px;">selected</span>{% endif %}
+          {% if item.selected_for_digest %}<span class="pill pill-selected" style="padding: 1px 6px;">selected</span>{% endif %}
           {% if item.author %}<span class="muted" style="font-size: 12px;">{{ item.author }}</span>{% endif %}
           {% set item_time = item.published_at or item.collected_at %}
           <span class="muted" style="font-size: 12px; margin-left: auto;" title="{{ item_time | datetime_local }}">{{ item_time | datetime_relative }}</span>
@@ -110,13 +110,13 @@
     {% if total_pages > 1 %}
     <div style="display: flex; justify-content: center; gap: 8px; margin-top: 24px; margin-bottom: 24px; align-items: center;">
       {% if current_page > 1 %}
-      <a href="{{ update_query(page=current_page-1) }}" class="pill" style="color: #4b5563; text-decoration: none; padding: 6px 12px;">上一页</a>
+      <a href="{{ update_query(page=current_page-1) }}" class="pill" style="text-decoration: none; padding: 6px 12px;">上一页</a>
       {% endif %}
       
-      <span style="font-size: 14px; color: #6b7280; margin: 0 8px;">第 {{ current_page }} / {{ total_pages }} 页</span>
+      <span class="muted" style="font-size: 14px; margin: 0 8px;">第 {{ current_page }} / {{ total_pages }} 页</span>
       
       {% if current_page < total_pages %}
-      <a href="{{ update_query(page=current_page+1) }}" class="pill" style="color: #4b5563; text-decoration: none; padding: 6px 12px;">下一页</a>
+      <a href="{{ update_query(page=current_page+1) }}" class="pill" style="text-decoration: none; padding: 6px 12px;">下一页</a>
       {% endif %}
     </div>
     {% endif %}
@@ -124,7 +124,7 @@
     {% else %}
     <div class="card empty-state" style="text-align: center; padding: 48px 16px;">
       <div style="font-size: 32px; margin-bottom: 12px;">📭</div>
-      <div style="color: #4b5563; font-weight: 500; margin-bottom: 8px;">当前筛选条件下没有结果</div>
+      <div class="empty-title" style="font-weight: 500; margin-bottom: 8px;">当前筛选条件下没有结果</div>
       {% if active_filters %}
       <div><a href="{{ clear_filters_url }}">清空筛选后重试</a></div>
       {% endif %}

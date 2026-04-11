@@ -78,20 +78,20 @@
     {% for item in items %}
     <div class="news-item">
       <div class="news-meta">
-        <span style="font-size:11px;color:#9ca3af;font-weight:600">{{ loop.index }}/{{ items|length }}</span>
+        <span class="muted" style="font-size:11px;font-weight:600">{{ loop.index }}/{{ items|length }}</span>
         {% set score = item.get("ai_score", 0) %}
         <span class="score-badge {% if score >= 8 %}score-high{% elif score >= 6 %}score-medium{% else %}score-low{% endif %}">
           ★ {{ score }}/10
         </span>
         <span class="source-tag source-{{ item.get('source', '') }}">{{ item.get("source", "") }}</span>
         {% if item.get("source") == "github" and item.get("stars") %}
-        <span style="font-size:12px;color:#6b7280">⭐ {{ '{:,}'.format(item.get("stars")) }}</span>
+        <span class="muted" style="font-size:12px;">⭐ {{ '{:,}'.format(item.get("stars")) }}</span>
         {% endif %}
         {% if item.get("source") == "rss" and item.get("feed_title") %}
-        <span style="font-size:12px;color:#6b7280">{{ item.get("feed_title") }}</span>
+        <span class="muted" style="font-size:12px;">{{ item.get("feed_title") }}</span>
         {% endif %}
         {% if item.get("source") == "youtube" and item.get("channel") %}
-        <span style="font-size:12px;color:#6b7280">{{ item.get("channel") }}</span>
+        <span class="muted" style="font-size:12px;">{{ item.get("channel") }}</span>
         {% endif %}
       </div>
       <p class="news-title">
