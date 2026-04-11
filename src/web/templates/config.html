@@ -174,6 +174,39 @@
       <tr><th>GitHub Trending Since</th><td>{{ config_view.sources.github_since }}</td></tr>
     </tbody>
   </table>
+  
+  {% if config_view.sources.rss_feeds %}
+  <div style="margin-top: 24px;">
+    <h3 style="font-size: 14px; color: #4b5563; margin-bottom: 12px; border-bottom: 1px solid #e5e7eb; padding-bottom: 8px;">RSS Feeds ({{ config_view.sources.rss_feeds|length }})</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>URL</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for feed in config_view.sources.rss_feeds %}
+        <tr>
+          <td style="width: 30%;">{{ feed.name | default(feed.id) }}</td>
+          <td><a href="{{ feed.url }}" target="_blank" rel="noreferrer" class="muted">{{ feed.url }}</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+  {% if config_view.sources.youtube_channels %}
+  <div style="margin-top: 24px;">
+    <h3 style="font-size: 14px; color: #4b5563; margin-bottom: 12px; border-bottom: 1px solid #e5e7eb; padding-bottom: 8px;">YouTube Channels ({{ config_view.sources.youtube_channels|length }})</h3>
+    <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+      {% for channel in config_view.sources.youtube_channels %}
+      <a href="https://www.youtube.com/channel/{{ channel }}" target="_blank" rel="noreferrer" class="pill" style="color: #1d4ed8;">{{ channel }} ↗</a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
 </div>
 
 {% endblock %}

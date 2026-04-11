@@ -444,7 +444,9 @@ def _build_config_view(config: dict) -> dict[str, Any]:
         "notifications": channels,
         "sources": {
             "rss_feed_count": len(rss_sources),
+            "rss_feeds": rss_sources,
             "youtube_channel_count": len(youtube_channels),
+            "youtube_channels": youtube_channels,
             "github_since": github_cfg.get("trending_since", "daily"),
         },
     }
