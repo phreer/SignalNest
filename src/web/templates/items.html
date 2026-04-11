@@ -87,12 +87,14 @@
         </div>
         <div class="news-title">
           {% set translated_title = item.translated_title or '' %}
-          <a href="/items/{{ item.id }}">
+          {% if item.url %}
+          <a href="{{ item.url }}" target="_blank" rel="noreferrer">
             <span class="news-title-main">{{ item.title }}</span>
           </a>
-          {% if item.url %}
-          <a class="news-origin-link" href="{{ item.url }}" target="_blank" rel="noreferrer">↗</a>
+          {% else %}
+          <span class="news-title-main">{{ item.title }}</span>
           {% endif %}
+          <a class="news-origin-link" href="/items/{{ item.id }}">详情 ↗</a>
           {% if translated_title and translated_title != item.title %}
           <div class="news-title-translation">{{ translated_title }}</div>
           {% endif %}

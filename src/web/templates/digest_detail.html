@@ -97,20 +97,19 @@
       <p class="news-title">
         {% set translated_title = item.get("translated_title", "") %}
         {% set item_id = url_to_item_id.get(item.get('url', '')) %}
-        {% if item_id %}
-        <a href="/items/{{ item_id }}">
-          <span class="news-title-main">{{ item.get("title", "") }}</span>
-        </a>
-        {% elif item.get("url") %}
+        
+        {% if item.get("url") %}
         <a href="{{ item.get('url') }}" target="_blank" rel="noreferrer">
           <span class="news-title-main">{{ item.get("title", "") }}</span>
         </a>
         {% else %}
         <span class="news-title-main">{{ item.get("title", "") }}</span>
         {% endif %}
-        {% if item.get("url") %}
-        <a class="muted news-origin-link" href="{{ item.get('url') }}" target="_blank" rel="noreferrer">查看原文 ↗</a>
+        
+        {% if item_id %}
+        <a class="news-origin-link" href="/items/{{ item_id }}">详情 ↗</a>
         {% endif %}
+        
         {% if translated_title and translated_title != item.get("title", "") %}
         <span class="news-title-translation">{{ translated_title }}</span>
         {% endif %}
