@@ -1073,6 +1073,28 @@ class AppStateStore:
             conn.close()
         return ids
 
+    def lookup_raw_item_ids(self, items: list[dict[str, Any]]) -> list[int]:
+        """Return existing raw_item ids by dedup_key without mutating seen_count."""
+        conn = self._connect()
+        ids: list[int] = []
+        try:
+            for item in items:
+                dedup_key = _make_dedup_key(
+                    str(item.get("source", "unknown")).strip().lower(),
+                    str(item.get("url", "")).strip(),
+                    str(item.get("title", "")).strip(),
+                    video_id=item.get("raw", {}).get("video_id", ""),
+                    external_id=item.get("external_id", ""),
+                    repo_full_name=item.get("raw", {}).get("repo_full_name", ""),
+                )
+                row = conn.execute(
+                    "SELECT id FROM raw_items WHERE dedup_key=?", (dedup_key,)
+                ).fetchone()
+                ids.append(int(row["id"]) if row else 0)
+        finally:
+            conn.close()
+        return ids
+
     def list_raw_items_missing_translation(
         self, limit: int = 100
     ) -> list[dict[str, Any]]:

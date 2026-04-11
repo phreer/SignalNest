@@ -18,11 +18,15 @@ import threading
 from datetime import date, datetime
 from pathlib import Path
 from typing import Any, Callable
+from uuid import uuid4
 from zoneinfo import ZoneInfo
 
 import uvicorn
 
 from src.ai.dedup import stable_history_key
+from src.collectors.github_collector import collect_github
+from src.collectors.rss_collector import collect_rss
+from src.collectors.youtube_collector import collect_youtube
 from src.config_loader import load_config
 
 logger = logging.getLogger("signalnest")
@@ -72,7 +76,9 @@ def _build_agent_schedule_message(schedule: dict, *, dry_run: bool) -> str:
     if wants_news:
         source_list = "、".join(sources) if sources else "所有来源"
         focus_note = f"，重点关注：{focus}" if focus else ""
-        parts.append(f"从 {source_list} 收集今日资讯{focus_note}，筛选出最有价值的内容")
+        parts.append(
+            f"基于已收集的 {source_list} 原始资讯{focus_note}，筛选出最有价值的内容"
+        )
     if wants_schedule:
         parts.append("读取今日日程安排")
     if wants_todos:
@@ -87,10 +93,75 @@ def _build_agent_schedule_message(schedule: dict, *, dry_run: bool) -> str:
 
     return (
         f"请帮我准备「{schedule_name}」：{intent}。"
+        "抓取阶段已由系统按配置预先完成，state.raw_items 已准备好；不要再调用 collect_github / collect_rss / collect_youtube。"
         f"完成后组装日报（schedule_name={schedule_name!r}，"
         f"subject_prefix={subject_prefix!r}，focus={focus!r}），"
         f"然后{dispatch_note}"
     )
+
+
+def _merge_prefetched_items(*groups: list[dict]) -> list[dict]:
+    seen_urls: set[str] = set()
+    merged: list[dict] = []
+    for group in groups:
+        for item in group:
+            url = str(item.get("url", "")).strip()
+            key = url or json.dumps(
+                item, ensure_ascii=False, sort_keys=True, default=str
+            )
+            if key in seen_urls:
+                continue
+            seen_urls.add(key)
+            merged.append(item)
+    return merged
+
+
+def _prefetch_schedule_raw_items(schedule: dict, config: dict) -> list[dict]:
+    content_blocks = [
+        str(block).strip().lower()
+        for block in schedule.get("content", [])
+        if str(block).strip()
+    ]
+    if content_blocks and "news" not in content_blocks:
+        return []
+
+    sources = [
+        str(s).strip().lower() for s in schedule.get("sources", []) if str(s).strip()
+    ]
+    if not sources:
+        sources = ["github", "youtube", "rss"]
+
+    prefetched: list[list[dict]] = []
+    focus = str(schedule.get("focus", "") or "")
+
+    if "github" in sources:
+        prefetched.append(collect_github(config))
+    if "rss" in sources:
+        prefetched.append(collect_rss(config))
+    if "youtube" in sources:
+        prefetched.append(collect_youtube(config, focus=focus))
+
+    return _merge_prefetched_items(*prefetched)
+
+
+def _build_candidate_raw_items(raw_items: list[dict], config: dict) -> list[dict]:
+    rss_cfg = config.get("collectors", {}).get("rss", {})
+    rss_per_feed_initial = int(rss_cfg.get("max_items_per_feed_initial", 20) or 20)
+
+    candidates: list[dict] = []
+    rss_counts: dict[str, int] = {}
+    for item in raw_items:
+        if item.get("source") != "rss":
+            candidates.append(item)
+            continue
+
+        feed_key = str(item.get("feed_title") or item.get("url") or "")
+        current = rss_counts.get(feed_key, 0)
+        if current >= rss_per_feed_initial:
+            continue
+        rss_counts[feed_key] = current + 1
+        candidates.append(item)
+    return candidates
 
 
 def _render_session_title(template: str, schedule_name: str) -> str:
@@ -116,6 +187,8 @@ def run_schedule(
     """Run one scheduled task through the local agent kernel."""
     from src.agent.kernel import AgentRunOptions, run_agent_turn
     from src.agent.session_store import AgentSessionStore
+    from src.web.content import build_indexed_items
+    from src.web.store import AppStateStore
 
     _apply_pending_feedback(config)
 
@@ -133,11 +206,45 @@ def run_schedule(
 
     run_config = copy.deepcopy(config)
     run_config["agent"]["policy"]["allow_side_effects"] = schedule_allow_side_effects
+    deny_tools = set(run_config["agent"]["policy"].get("deny_tools") or [])
+    deny_tools.update({"collect_github", "collect_rss", "collect_youtube"})
+    run_config["agent"]["policy"]["deny_tools"] = sorted(deny_tools)
+
+    prefetched_raw_items = _prefetch_schedule_raw_items(schedule, config)
+    if prefetched_raw_items:
+        store = AppStateStore.from_config(config)
+        store.init_db()
+        store.upsert_raw_items(
+            build_indexed_items(raw_items=prefetched_raw_items, news_items=[])
+        )
+
+    session_store = AgentSessionStore(
+        Path(config.get("storage", {}).get("data_dir", "/app/data"))
+        / "agent_sessions.db"
+    )
+    session_id = str(uuid4())
+    session_store.ensure_session(session_id, title=session_title)
+    session_store.save_state(
+        session_id,
+        {
+            "raw_items": prefetched_raw_items,
+            "candidate_raw_items": _build_candidate_raw_items(
+                prefetched_raw_items, config
+            ),
+            "raw_items_prefetched": True,
+            "news_items": [],
+            "schedule_entries": [],
+            "projects": [],
+            "digest_summary": "",
+            "payload": {},
+        },
+    )
 
     result = run_agent_turn(
         message,
         run_config,
         options=AgentRunOptions(
+            session_id=session_id,
             max_steps=schedule_max_steps,
             dry_run=dry_run,
             session_title=session_title,

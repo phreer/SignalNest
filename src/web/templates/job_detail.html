@@ -295,6 +295,37 @@
           <ul class="result-list">{% for t in r.get("sample_titles", []) %}<li>{{ t }}</li>{% endfor %}</ul>
         </div>
         {% endif %}
+        {% if tn == "collect_rss" and r.get("feed_diagnostics") %}
+        <div style="margin-top:10px">
+          <div class="result-key" style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:#6b7280;margin-bottom:6px;">Feed diagnostics</div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Feed</th>
+                  <th>Kept</th>
+                  <th>Entries</th>
+                  <th>Old</th>
+                  <th>Newest</th>
+                  <th>Reason</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for fd in r.get("feed_diagnostics", []) %}
+                <tr>
+                  <td>{{ fd.get("configured_name") or fd.get("feed_title") or fd.get("feed_url") }}</td>
+                  <td>{{ fd.get("kept_count", 0) }}</td>
+                  <td>{{ fd.get("entry_count", 0) }}</td>
+                  <td>{{ fd.get("old_count", 0) }}</td>
+                  <td>{{ fd.get("newest_published_at") or "—" }}</td>
+                  <td>{{ fd.get("failure_reason") or "ok" }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        {% endif %}
 
         {% elif tn == "summarize_news" %}
         <div class="result-grid">
@@ -355,7 +386,7 @@
         {% else %}
         {# Fallback: generic key-value grid for unknown tools #}
         <div class="result-grid">
-          {% for k, v in r.items() if k not in ("sample_titles",) %}
+          {% for k, v in r.items() if k not in ("sample_titles", "feed_diagnostics") %}
           <div class="result-field">
             <div class="result-key">{{ k }}</div>
             <div class="result-val">{{ v }}</div>

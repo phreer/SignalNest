@@ -376,13 +376,17 @@ def run_tracked_schedule(
         news_items = (
             state.get("news_items") if isinstance(state.get("news_items"), list) else []
         )
+        raw_items_prefetched = bool(state.get("raw_items_prefetched"))
         indexed_items: list = []
         if raw_items:
             indexed_items = build_indexed_items(
                 raw_items=raw_items, news_items=news_items
             )
-            # Upsert all collected items into the persistent raw_items table
-            raw_ids = store.upsert_raw_items(indexed_items)
+            if raw_items_prefetched:
+                raw_ids = store.lookup_raw_item_ids(indexed_items)
+            else:
+                # Upsert all collected items into the persistent raw_items table
+                raw_ids = store.upsert_raw_items(indexed_items)
 
             # Build per-run AI annotations and store them
             annotations = []

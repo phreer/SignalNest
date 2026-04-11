@@ -80,6 +80,9 @@ def _tool_collect_github(args: dict[str, Any], rt: ToolRuntime) -> dict[str, Any
 
     items = collect_github(cfg, max_repos=args.get("max_repos"))
     rt.state["raw_items"] = _merge_items(rt.state.get("raw_items", []), items)
+    rt.state["candidate_raw_items"] = _merge_items(
+        rt.state.get("candidate_raw_items", []), items
+    )
 
     return {
         "source": "github",
@@ -95,14 +98,23 @@ def _tool_collect_rss(args: dict[str, Any], rt: ToolRuntime) -> dict[str, Any]:
     if "days_back" in args:
         rss_cfg["days_lookback"] = args["days_back"]
 
-    items = collect_rss(cfg, max_total=args.get("max_total"))
+    items, diagnostics = collect_rss(
+        cfg,
+        max_total=args.get("max_total"),
+        return_diagnostics=True,
+    )
     rt.state["raw_items"] = _merge_items(rt.state.get("raw_items", []), items)
+    rt.state["candidate_raw_items"] = _merge_items(
+        rt.state.get("candidate_raw_items", []), items
+    )
 
     return {
         "source": "rss",
+        "effective_days_back": rss_cfg.get("days_lookback"),
         "fetched_count": len(items),
         "raw_items_total": len(rt.state["raw_items"]),
         "sample_titles": _compact_news_preview(items),
+        "feed_diagnostics": diagnostics,
     }
 
 
@@ -113,6 +125,9 @@ def _tool_collect_youtube(args: dict[str, Any], rt: ToolRuntime) -> dict[str, An
         max_total=args.get("max_total"),
     )
     rt.state["raw_items"] = _merge_items(rt.state.get("raw_items", []), items)
+    rt.state["candidate_raw_items"] = _merge_items(
+        rt.state.get("candidate_raw_items", []), items
+    )
 
     return {
         "source": "youtube",
@@ -123,12 +138,31 @@ def _tool_collect_youtube(args: dict[str, Any], rt: ToolRuntime) -> dict[str, An
 
 
 def _tool_summarize_news(args: dict[str, Any], rt: ToolRuntime) -> dict[str, Any]:
-    raw_items = rt.state.get("raw_items", [])
+    raw_items = rt.state.get("candidate_raw_items") or rt.state.get("raw_items", [])
     if not raw_items:
-        raise ValueError("state.raw_items is empty; run a collect tool first")
+        raise ValueError(
+            "state.candidate_raw_items/state.raw_items is empty; run a collect tool first"
+        )
 
     raw_items = translate_item_titles(raw_items, rt.config)
-    rt.state["raw_items"] = raw_items
+    rt.state["candidate_raw_items"] = raw_items
+
+    # Keep translated titles in the persisted raw_items superset as well.
+    translated_by_key = {_item_key(item): item for item in raw_items}
+    full_raw_items = rt.state.get("raw_items", [])
+    if full_raw_items:
+        merged_full: list[dict] = []
+        for item in full_raw_items:
+            translated = translated_by_key.get(_item_key(item))
+            if translated is not None:
+                merged_item = dict(item)
+                merged_item["translated_title"] = translated.get(
+                    "translated_title", item.get("translated_title", "")
+                )
+                merged_full.append(merged_item)
+            else:
+                merged_full.append(item)
+        rt.state["raw_items"] = merged_full
 
     ai_cfg = rt.config.get("ai", {})
     raw_cap = ai_cfg.get("max_items_per_digest", 15)
@@ -323,6 +357,7 @@ def build_agent_tools() -> dict[str, ToolSpec]:
             name="collect_rss",
             description=(
                 "从 config.yaml 中配置的 RSS 订阅源抓取文章，结果追加到 state.raw_items。"
+                "通常直接按配置抓取；只有在明确需要缩小或放大时间窗口时才传 days_back。"
                 "参数：days_back 控制向前追溯天数（默认按配置），max_total 限制总条数。"
                 "调用前无需其他工具，可与 collect_github、collect_youtube 并列使用。"
             ),
@@ -331,7 +366,7 @@ def build_agent_tools() -> dict[str, ToolSpec]:
                 "type": "object",
                 "properties": {
                     "max_total": {"type": "integer", "minimum": 1, "maximum": 500},
-                    "days_back": {"type": "integer", "minimum": 1, "maximum": 30},
+                    "days_back": {"type": "integer", "minimum": 1, "maximum": 365000},
                 },
                 "additionalProperties": False,
             },

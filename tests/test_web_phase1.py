@@ -76,7 +76,19 @@ def _fake_schedule_run(
                 "tool_name": "collect_rss",
                 "arguments": {},
                 "success": True,
-                "result": {"fetched_count": 1},
+                "result": {
+                    "fetched_count": 1,
+                    "feed_diagnostics": [
+                        {
+                            "configured_name": "MIT Technology Review",
+                            "kept_count": 0,
+                            "entry_count": 10,
+                            "old_count": 10,
+                            "newest_published_at": "2026-04-10T14:04:20+00:00",
+                            "failure_reason": "all_entries_outside_lookback",
+                        }
+                    ],
+                },
             }
         )
         progress_callback(
@@ -176,6 +188,27 @@ class AppStateStoreTests(unittest.TestCase):
             self.assertEqual(store.get_job(job_id)["status"], "running")
             self.assertEqual(len(store.list_job_logs(job_id)), 1)
             self.assertEqual(store.get_latest_digest()["summary_text"], "summary")
+
+    def test_job_detail_api_exposes_rss_feed_diagnostics(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            config = _sample_config(tmp)
+            with patch(
+                "src.web.runtime._execute_schedule", side_effect=_fake_schedule_run
+            ):
+                result = run_tracked_schedule("早间日报", config, dry_run=True)
+
+            app = create_app(config, store=bootstrap_app_state(config))
+            client = TestClient(app)
+            resp = client.get(f"/api/jobs/{result['job_run_id']}/logs")
+            self.assertEqual(resp.status_code, 200)
+            payload = resp.json()
+            tool_finish = next(
+                log for log in payload["logs"] if log["event_type"] == "tool_finish"
+            )
+            self.assertEqual(
+                tool_finish["extra"]["result"]["feed_diagnostics"][0]["failure_reason"],
+                "all_entries_outside_lookback",
+            )
 
     def test_stale_running_job_is_recovered_as_lost(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

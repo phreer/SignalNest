@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import tempfile
 import unittest
 from unittest.mock import MagicMock, patch
 
 from src import main
+from src.web.store import AppStateStore
 from src.web.app import create_app
 
 
@@ -105,6 +107,121 @@ class MainEntrypointTests(unittest.TestCase):
         config = _sample_config()
         with self.assertRaises(TypeError):
             create_app(config)
+
+    def test_run_schedule_prefetches_raw_items_and_denies_collect_tools(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            config = _sample_config()
+            config["storage"]["data_dir"] = tmp
+
+            observed = {}
+
+            def _fake_run_agent_turn(message, run_config, options):
+                observed["message"] = message
+                observed["deny_tools"] = run_config["agent"]["policy"]["deny_tools"]
+                observed["session_id"] = options.session_id
+                return {
+                    "session_id": options.session_id,
+                    "turn_index": 1,
+                    "status": "ok",
+                    "response": "done",
+                    "steps": [],
+                }
+
+            with (
+                patch(
+                    "src.main.collect_rss",
+                    return_value=[
+                        {
+                            "source": "rss",
+                            "title": "Example item",
+                            "url": "https://example.com/item",
+                            "feed_title": "Feed",
+                            "published_at": "2026-04-08T10:00:00+08:00",
+                        }
+                    ],
+                ),
+                patch(
+                    "src.agent.kernel.run_agent_turn", side_effect=_fake_run_agent_turn
+                ),
+            ):
+                result = main.run_schedule("早间日报", config, dry_run=True)
+
+            self.assertEqual(result["status"], "ok")
+            self.assertIn(
+                "不要再调用 collect_github / collect_rss / collect_youtube",
+                observed["message"],
+            )
+            self.assertIn("collect_rss", observed["deny_tools"])
+            self.assertIn("collect_github", observed["deny_tools"])
+            self.assertIn("collect_youtube", observed["deny_tools"])
+
+            store = AppStateStore.from_config(config)
+            store.init_db()
+            items = store.list_items(limit=10)
+            self.assertEqual(len(items), 1)
+            self.assertEqual(items[0]["title"], "Example item")
+            conn = store._connect()
+            try:
+                row = conn.execute(
+                    "SELECT seen_count FROM raw_items WHERE url=?",
+                    ("https://example.com/item",),
+                ).fetchone()
+            finally:
+                conn.close()
+            self.assertIsNotNone(row)
+            self.assertEqual(row["seen_count"], 1)
+
+    def test_run_schedule_keeps_full_raw_items_but_caps_rss_candidates(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            config = _sample_config()
+            config["storage"]["data_dir"] = tmp
+            config["collectors"] = {"rss": {"max_items_per_feed_initial": 2}}
+
+            observed = {}
+
+            def _fake_run_agent_turn(message, run_config, options):
+                from src.agent.session_store import AgentSessionStore
+                from pathlib import Path
+
+                store = AgentSessionStore(Path(tmp) / "agent_sessions.db")
+                state = store.load_state(options.session_id)
+                observed["raw_items"] = state.get("raw_items", [])
+                observed["candidate_raw_items"] = state.get("candidate_raw_items", [])
+                return {
+                    "session_id": options.session_id,
+                    "turn_index": 1,
+                    "status": "ok",
+                    "response": "done",
+                    "steps": [],
+                }
+
+            rss_items = [
+                {
+                    "source": "rss",
+                    "title": f"Item {i}",
+                    "url": f"https://example.com/item-{i}",
+                    "feed_title": "Feed",
+                    "published_at": "2026-04-08T10:00:00+08:00",
+                }
+                for i in range(3)
+            ]
+
+            with (
+                patch("src.main.collect_rss", return_value=rss_items),
+                patch(
+                    "src.agent.kernel.run_agent_turn", side_effect=_fake_run_agent_turn
+                ),
+            ):
+                result = main.run_schedule("早间日报", config, dry_run=True)
+
+            self.assertEqual(result["status"], "ok")
+            self.assertEqual(len(observed["raw_items"]), 3)
+            self.assertEqual(len(observed["candidate_raw_items"]), 2)
+
+            store = AppStateStore.from_config(config)
+            store.init_db()
+            items = store.list_items(limit=10)
+            self.assertEqual(len(items), 3)
 
 
 if __name__ == "__main__":
