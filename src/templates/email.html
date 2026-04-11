@@ -194,6 +194,15 @@
   .news-title { font-size: 15px; font-weight: 600; margin: 0 0 6px 0; }
   .news-title a { color: #1d4ed8; text-decoration: none; }
   .news-title a:hover { text-decoration: underline; }
+  .news-title-main { display: block; }
+  .news-title-original {
+    display: block;
+    margin-top: 4px;
+    font-size: 12px;
+    font-weight: 400;
+    color: #6b7280;
+    line-height: 1.5;
+  }
   .news-summary { font-size: 13px; color: #374151; margin: 0 0 4px 0; }
   .news-reason { font-size: 12px; color: #6b7280; margin: 0; }
   .news-extra { font-size: 12px; color: #9ca3af; margin-top: 4px; }
@@ -321,7 +330,8 @@
       <span style="font-size:12px;color:#6b7280">▶ {{ '{:,}'.format(item.view_count) }} 次</span>
       {% endif %}
     </div>
-    <p class="news-title"><a href="{{ item.url }}" target="_blank">{{ item.title }}</a></p>
+    {% set translated_title = item.translated_title or '' %}
+    <p class="news-title"><a href="{{ item.url }}" target="_blank"><span class="news-title-main">{{ translated_title if translated_title and translated_title != item.title else item.title }}</span>{% if translated_title and translated_title != item.title %}<span class="news-title-original">{{ item.title }}</span>{% endif %}</a></p>
     {% if item.ai_summary %}
     <p class="news-summary">{{ item.ai_summary }}</p>
     {% endif %}
@@ -347,4 +357,3 @@
 
 </body>
 </html>
-

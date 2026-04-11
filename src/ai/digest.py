@@ -45,9 +45,15 @@ def generate_digest_summary(
     for i, item in enumerate(news_items, 1):
         source = item.get("source", "").upper()
         title = item.get("title", "")
+        translated_title = str(item.get("translated_title") or "").strip()
         summary = item.get("ai_summary", "")
         score = item.get("ai_score", "?")
-        items_text += f"{i}. [{source}][{score}/10] {title}\n"
+        if translated_title and translated_title != title:
+            items_text += (
+                f"{i}. [{source}][{score}/10] {translated_title}（原始标题：{title}）\n"
+            )
+        else:
+            items_text += f"{i}. [{source}][{score}/10] {title}\n"
         if summary:
             items_text += f"   {summary}\n"
 

@@ -51,7 +51,13 @@
         {% if item.author %}<span class="muted">{{ item.author }}</span>{% endif %}
       </div>
       <p class="news-title">
-        <a href="/items/{{ item.id }}">{{ item.title }}</a>
+        {% set translated_title = item.translated_title or '' %}
+        <a href="/items/{{ item.id }}">
+          <span class="news-title-main">{{ translated_title if translated_title and translated_title != item.title else item.title }}</span>
+          {% if translated_title and translated_title != item.title %}
+          <span class="news-title-original">{{ item.title }}</span>
+          {% endif %}
+        </a>
         {% if item.url %}
         <a class="muted" style="font-size:12px;margin-left:8px" href="{{ item.url }}" target="_blank" rel="noreferrer">查看原文 ↗</a>
         {% endif %}

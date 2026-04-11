@@ -43,8 +43,12 @@ def batch_select_by_titles(
     for i, item in enumerate(items):
         source = item.get("source", "unknown").upper()
         title = item.get("title", "")
+        translated_title = str(item.get("translated_title") or "").strip()
         desc = (item.get("description") or item.get("content_snippet") or "")[:80]
-        items_text += f"[{i}] [{source}] {title}"
+        display_title = title
+        if translated_title and translated_title != title:
+            display_title = f"{translated_title}（原始标题：{title}）"
+        items_text += f"[{i}] [{source}] {display_title}"
         if desc:
             items_text += f"  —  {desc}"
         items_text += "\n"
@@ -79,13 +83,20 @@ def batch_select_by_titles(
 
     try:
         messages = [
-            {"role": "system", "content": f"你是内容筛选助手，请用{lang_label}思考，只输出 JSON。"},
+            {
+                "role": "system",
+                "content": f"你是内容筛选助手，请用{lang_label}思考，只输出 JSON。",
+            },
             {"role": "user", "content": user_message},
         ]
         raw_text = _call_ai(messages, backend, {**call_kwargs, "max_tokens": 256})
         parsed = parse_json_dict(raw_text)
         if parsed and isinstance(parsed.get("selected"), list):
-            valid = [i for i in parsed["selected"] if isinstance(i, int) and 0 <= i < len(items)]
+            valid = [
+                i
+                for i in parsed["selected"]
+                if isinstance(i, int) and 0 <= i < len(items)
+            ]
             logger.info(f"  第一阶段筛选：{len(items)} → {len(valid)} 条入围")
             return valid[:max_keep]
     except Exception as e:
@@ -109,9 +120,9 @@ def ai_pick_fill_candidates(
 
     lang_label = "中文" if language == "zh" else "English"
     current_preview = "\n".join(
-        f"- {str(item.get('title', '')).strip()}"
+        f"- {str(item.get('translated_title') or item.get('title', '')).strip()}"
         for item in current_candidates[:30]
-        if str(item.get("title", "")).strip()
+        if str(item.get("translated_title") or item.get("title", "")).strip()
     )
     pool = remaining_pool[:120]
     pool_text = "\n".join(short_item_line(i, item) for i, item in enumerate(pool))
@@ -130,7 +141,10 @@ def ai_pick_fill_candidates(
 
     try:
         messages = [
-            {"role": "system", "content": f"你是内容补全助手，请用{lang_label}思考，只输出 JSON。"},
+            {
+                "role": "system",
+                "content": f"你是内容补全助手，请用{lang_label}思考，只输出 JSON。",
+            },
             {"role": "user", "content": user_message},
         ]
         raw_text = _call_ai(messages, backend, {**call_kwargs, "max_tokens": 500})
@@ -147,12 +161,16 @@ def ai_pick_fill_candidates(
                 selected.append(idx)
                 if len(selected) >= need_count:
                     break
-            logger.info(f"  补全候选（AI）：pool={len(pool)} need={need_count} selected={len(selected)}")
+            logger.info(
+                f"  补全候选（AI）：pool={len(pool)} need={need_count} selected={len(selected)}"
+            )
             return selected
     except Exception as e:
         logger.warning(f"补全候选 AI 失败，跳过补全: {e}")
 
-    logger.info(f"  补全候选（fallback）：pool={len(pool)} need={need_count} selected=0")
+    logger.info(
+        f"  补全候选（fallback）：pool={len(pool)} need={need_count} selected=0"
+    )
     return []
 
 
@@ -196,7 +214,9 @@ def ensure_source_candidates(
 
     added_counts: dict[str, int] = {}
     for source, minimum in source_minimums.items():
-        current = sum(1 for idx in selected if raw_items[idx].get("source", "") == source)
+        current = sum(
+            1 for idx in selected if raw_items[idx].get("source", "") == source
+        )
         need = max(0, minimum - current)
         if need == 0:
             continue

@@ -11,6 +11,9 @@ pip install -r requirements.txt
 # Copy env template (local dev reads .env at repo root, NOT docker/.env)
 cp docker/.env.example .env
 
+# Use the repository virtualenv for all Python commands
+# Prefer .venv/bin/python -m ... over system python
+
 # Run a scheduled digest (dry-run: no actual notifications sent)
 python -m src.main --schedule-name "早间日报" --dry-run
 
@@ -20,12 +23,16 @@ python -m src.main --schedule-name "早间日报"
 # Interactive query mode (no notifications, side-effects disabled)
 python -m src.main --query "今天 GitHub Trending 上有什么值得关注的？"
 
+# Run regression tests
+python -m unittest tests.test_title_translation_regressions
+
 # Docker (production)
 cd docker && docker compose up -d --build
 docker logs -f signalnest
 ```
 
-There are no automated tests in this project.
+The repository uses `.venv` as the canonical local Python environment for tests and validation.
+Prefer `.venv/bin/python -m ...` for any local checks to avoid mixing system Python and project dependencies.
 
 ## Architecture
 

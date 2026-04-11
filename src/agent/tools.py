@@ -13,6 +13,7 @@ from typing import Any, Callable
 from zoneinfo import ZoneInfo
 
 from src.ai.summarizer import generate_digest_summary, summarize_items
+from src.ai.title_translator import translate_item_titles
 from src.collectors.github_collector import collect_github
 from src.collectors.rss_collector import collect_rss
 from src.collectors.youtube_collector import collect_youtube
@@ -129,6 +130,9 @@ def _tool_summarize_news(args: dict[str, Any], rt: ToolRuntime) -> dict[str, Any
     raw_items = rt.state.get("raw_items", [])
     if not raw_items:
         raise ValueError("state.raw_items is empty; run a collect tool first")
+
+    raw_items = translate_item_titles(raw_items, rt.config)
+    rt.state["raw_items"] = raw_items
 
     ai_cfg = rt.config.get("ai", {})
     raw_cap = ai_cfg.get("max_items_per_digest", 15)

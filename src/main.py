@@ -263,6 +263,7 @@ def _save_last_digest(
                 "schedule_name": schedule_name,
                 "source": item.get("source", ""),
                 "title": item.get("title", ""),
+                "translated_title": item.get("translated_title", ""),
                 "url": item.get("url", ""),
                 "video_id": item.get("video_id", ""),
                 "repo_full_name": item.get("repo_full_name", item.get("title", "")),

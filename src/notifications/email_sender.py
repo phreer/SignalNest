@@ -95,13 +95,17 @@ def _build_ai_call_kwargs(config: dict) -> dict[str, Any]:
     return kwargs
 
 
-def _generate_opening_line_with_ai(recipient_name: str, payload: dict, config: dict) -> str:
+def _generate_opening_line_with_ai(
+    recipient_name: str, payload: dict, config: dict
+) -> str:
     """
     用 AI 生成收件人开场句（单句短文案）。
     """
     from src.ai.cli_backend import _call_ai
 
-    backend = os.environ.get("AI_BACKEND") or config.get("ai", {}).get("backend", "litellm")
+    backend = os.environ.get("AI_BACKEND") or config.get("ai", {}).get(
+        "backend", "litellm"
+    )
     call_kwargs = _build_ai_call_kwargs(config)
 
     if backend == "litellm" and not call_kwargs.get("api_key"):
@@ -109,9 +113,9 @@ def _generate_opening_line_with_ai(recipient_name: str, payload: dict, config: d
         return ""
 
     news_titles = [
-        str(item.get("title", "")).strip()
+        str(item.get("translated_title") or item.get("title", "")).strip()
         for item in (payload.get("news_items") or [])[:2]
-        if str(item.get("title", "")).strip()
+        if str(item.get("translated_title") or item.get("title", "")).strip()
     ]
     schedule_entries = payload.get("schedule_entries") or []
     projects = payload.get("projects") or []
@@ -155,7 +159,9 @@ def _generate_opening_line_with_ai(recipient_name: str, payload: dict, config: d
     return line
 
 
-def _build_opening_line_for_recipient(recipient_name: str, payload: dict, config: dict) -> str:
+def _build_opening_line_for_recipient(
+    recipient_name: str, payload: dict, config: dict
+) -> str:
     """
     开场句策略：
     1) 仅对 EMAIL_OPENING_AI_NAMES 名单中的收件人生效（默认 yy）
@@ -291,7 +297,9 @@ def _build_recipient_payload(
     else:
         paths = _resolve_personal_file_paths(config, recipient_name)
         try:
-            blocks = _load_personal_blocks_for_recipient(recipient_name, base_payload, config)
+            blocks = _load_personal_blocks_for_recipient(
+                recipient_name, base_payload, config
+            )
         except Exception as e:
             logger.warning(
                 "收件人专属文件解析失败，回退新闻版: name=%s email=%s schedule=%s projects=%s error=%s",
@@ -316,12 +324,20 @@ def _build_recipient_payload(
                 final_payload = _news_only_payload(base_payload)
                 payload_label = "新闻版"
 
-    opening_line = _build_opening_line_for_recipient(recipient_name, final_payload, config)
+    opening_line = _build_opening_line_for_recipient(
+        recipient_name, final_payload, config
+    )
     return {**final_payload, "opening_line": opening_line}, payload_label
 
 
-def _smtp_send(smtp_server: str, smtp_port: int, smtp_user: str, smtp_pass: str,
-               recipients: list[str], msg: MIMEMultipart) -> None:
+def _smtp_send(
+    smtp_server: str,
+    smtp_port: int,
+    smtp_user: str,
+    smtp_pass: str,
+    recipients: list[str],
+    msg: MIMEMultipart,
+) -> None:
     if smtp_port == 465:
         with smtplib.SMTP_SSL(smtp_server, smtp_port) as server:
             server.login(smtp_user, smtp_pass)
@@ -350,10 +366,10 @@ def send_email(payload: dict, config: dict) -> bool:
         True 表示至少一封邮件发送成功
     """
     smtp_server = os.environ.get("EMAIL_SMTP_SERVER", "smtp.qq.com")
-    smtp_port   = int(os.environ.get("EMAIL_SMTP_PORT", "465"))
-    smtp_user   = os.environ.get("EMAIL_FROM", "")
-    smtp_pass   = os.environ.get("EMAIL_PASSWORD", "")
-    recipients  = _get_recipients(config)
+    smtp_port = int(os.environ.get("EMAIL_SMTP_PORT", "465"))
+    smtp_user = os.environ.get("EMAIL_FROM", "")
+    smtp_pass = os.environ.get("EMAIL_PASSWORD", "")
+    recipients = _get_recipients(config)
     recipient_map = _get_recipient_map(config)
 
     if not smtp_user or not smtp_pass:
@@ -365,7 +381,9 @@ def send_email(payload: dict, config: dict) -> bool:
         return False
 
     today: date = payload["date"]
-    subject = f"{payload.get('subject_prefix', 'SignalNest')} · {today.strftime('%Y-%m-%d')}"
+    subject = (
+        f"{payload.get('subject_prefix', 'SignalNest')} · {today.strftime('%Y-%m-%d')}"
+    )
     success = False
 
     def _make_msg(html: str, to: list[str]) -> MIMEMultipart:
@@ -409,8 +427,14 @@ def send_email(payload: dict, config: dict) -> bool:
         for item in grouped_messages.values():
             to_addrs = item["recipients"]
             html = item["html"]
-            _smtp_send(smtp_server, smtp_port, smtp_user, smtp_pass,
-                       to_addrs, _make_msg(html, to_addrs))
+            _smtp_send(
+                smtp_server,
+                smtp_port,
+                smtp_user,
+                smtp_pass,
+                to_addrs,
+                _make_msg(html, to_addrs),
+            )
             label = " / ".join(sorted(item["labels"]))
             logger.info(f"邮件已发送（{label}）: {subject} → {_fmt(to_addrs)}")
             success = True
@@ -423,4 +447,3 @@ def send_email(payload: dict, config: dict) -> bool:
         return False
 
     return success
-

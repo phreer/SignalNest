@@ -1,8 +1,12 @@
 {% extends "base.html" %}
 {% block content %}
 {% if item %}
+{% set translated_title = item.translated_title or '' %}
 <div class="card">
-  <div class="section-title news">📰 {{ item.title }}</div>
+  <div class="section-title news">📰 {{ translated_title if translated_title and translated_title != item.title else item.title }}</div>
+  {% if translated_title and translated_title != item.title %}
+  <p class="muted" style="margin-top:-4px;margin-bottom:12px;">原始标题：{{ item.title }}</p>
+  {% endif %}
   <div class="news-meta">
     {% if item.ai_score is not none %}
     {% set score = item.ai_score %}

@@ -13,6 +13,14 @@ MAX_TEXT_BYTES = 28000  # 飞书单条消息上限约 30KB，留余量
 WEEKDAY_ZH = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
 
 
+def _render_item_title(item: dict) -> str:
+    original = str(item.get("title") or "").strip()
+    translated = str(item.get("translated_title") or "").strip()
+    if translated and translated != original:
+        return f"{translated}\n  原始标题：{original}"
+    return original
+
+
 def _build_text(payload: dict) -> str:
     today = payload["date"]
     date_str = today.strftime("%Y-%m-%d")
@@ -65,7 +73,9 @@ def _build_text(payload: dict) -> str:
         for i, item in enumerate(news, 1):
             score = item.get("ai_score", "?")
             source = item.get("source", "").upper()
-            lines.append(f"[{i}/{len(news)}][{score}/10][{source}] {item['title']}")
+            lines.append(
+                f"[{i}/{len(news)}][{score}/10][{source}] {_render_item_title(item)}"
+            )
             if item.get("ai_summary"):
                 lines.append(f"  {item['ai_summary']}")
             lines.append(f"  {item['url']}")
@@ -106,7 +116,7 @@ def send_feishu(payload: dict, config: dict) -> bool:
                 logger.error(f"飞书 Webhook 返回错误: {result}")
                 success = False
             else:
-                logger.info(f"飞书消息已发送 ({i+1}/{len(chunks)})")
+                logger.info(f"飞书消息已发送 ({i + 1}/{len(chunks)})")
         except Exception as e:
             logger.error(f"飞书发送失败: {e}")
             success = False
@@ -137,4 +147,3 @@ def _split_text(text: str, max_bytes: int) -> list[str]:
         chunks.append("\n".join(current_lines))
 
     return chunks
-

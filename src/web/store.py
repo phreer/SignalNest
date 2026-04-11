@@ -125,6 +125,7 @@ class AppStateStore:
                     source          TEXT NOT NULL,
                     url             TEXT NOT NULL,
                     title           TEXT NOT NULL,
+                    translated_title TEXT,
                     dedup_key       TEXT NOT NULL,
                     external_id     TEXT,
                     author          TEXT,
@@ -187,6 +188,7 @@ class AppStateStore:
                 """
             )
             self._ensure_job_runs_columns(conn)
+            self._ensure_raw_items_columns(conn)
             self._migrate_collected_items_to_raw(conn)
             conn.executescript(
                 """
@@ -219,6 +221,14 @@ class AppStateStore:
             except sqlite3.OperationalError:
                 pass
 
+    def _ensure_raw_items_columns(self, conn: sqlite3.Connection) -> None:
+        migrations = ["ALTER TABLE raw_items ADD COLUMN translated_title TEXT"]
+        for sql in migrations:
+            try:
+                conn.execute(sql)
+            except sqlite3.OperationalError:
+                pass
+
     def _migrate_collected_items_to_raw(self, conn: sqlite3.Connection) -> None:
         """One-time migration: move collected_items data into raw_items + item_annotations.
 
@@ -240,11 +250,11 @@ class AppStateStore:
         conn.execute(
             """
             INSERT OR IGNORE INTO raw_items (
-                source, url, title, dedup_key, external_id, author, feed_title,
+                source, url, title, translated_title, dedup_key, external_id, author, feed_title,
                 language, published_at, first_seen_at, last_seen_at, seen_count, raw_json
             )
             SELECT
-                source, url, title,
+                source, url, title, NULL,
                 lower(source) || ':' || lower(url) AS dedup_key,
                 external_id, author, feed_title, language, published_at,
                 MIN(collected_at) AS first_seen_at,
@@ -903,6 +913,7 @@ class AppStateStore:
                 source = str(item.get("source", "unknown")).strip().lower()
                 url = str(item.get("url", "")).strip()
                 title = str(item.get("title", "")).strip()
+                translated_title = str(item.get("translated_title", "")).strip()
                 dedup_key = _make_dedup_key(source, url, title)
                 raw_json = json.dumps(
                     item.get("raw", item), ensure_ascii=False, default=_json_default
@@ -910,10 +921,11 @@ class AppStateStore:
                 conn.execute(
                     """
                     INSERT INTO raw_items (
-                        source, url, title, dedup_key, external_id, author, feed_title,
+                        source, url, title, translated_title, dedup_key, external_id, author, feed_title,
                         language, published_at, first_seen_at, last_seen_at, seen_count, raw_json
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)
                     ON CONFLICT(dedup_key) DO UPDATE SET
+                        translated_title = COALESCE(excluded.translated_title, raw_items.translated_title),
                         last_seen_at = excluded.last_seen_at,
                         seen_count   = seen_count + 1,
                         raw_json     = excluded.raw_json
@@ -922,6 +934,7 @@ class AppStateStore:
                         source,
                         url,
                         title,
+                        translated_title or None,
                         dedup_key,
                         item.get("external_id", "") or None,
                         item.get("author", "") or None,
@@ -1040,9 +1053,9 @@ class AppStateStore:
         if keyword:
             keyword_like = f"%{keyword}%"
             clauses.append(
-                "(r.title LIKE ? OR ia.ai_summary LIKE ? OR r.feed_title LIKE ?)"
+                "(r.title LIKE ? OR r.translated_title LIKE ? OR ia.ai_summary LIKE ? OR r.feed_title LIKE ?)"
             )
-            params.extend([keyword_like, keyword_like, keyword_like])
+            params.extend([keyword_like, keyword_like, keyword_like, keyword_like])
         if source:
             clauses.append("r.source=?")
             params.append(source)
@@ -1343,6 +1356,9 @@ class AppStateStore:
 
         job_run_id = _col("ann_job_run_id") or _col("job_run_id")
         digest_id = _col("ann_digest_id") or _col("digest_id")
+        translated_title = _col("translated_title") or ""
+        if not translated_title and isinstance(raw, dict):
+            translated_title = str(raw.get("translated_title") or "")
 
         return {
             "id": int(row["id"]),
@@ -1351,6 +1367,7 @@ class AppStateStore:
             "source": row["source"],
             "external_id": row["external_id"] or "",
             "title": row["title"],
+            "translated_title": translated_title,
             "url": row["url"],
             "author": row["author"] or "",
             "feed_title": row["feed_title"] or "",

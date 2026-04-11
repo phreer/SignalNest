@@ -186,6 +186,11 @@ def build_indexed_items(
                 "source": source,
                 "external_id": external_id,
                 "title": str(raw.get("title", "")),
+                "translated_title": str(
+                    raw.get("translated_title")
+                    or merged_raw.get("translated_title")
+                    or ""
+                ),
                 "url": url,
                 "author": str(raw.get("channel") or ""),
                 "feed_title": str(raw.get("feed_title") or ""),

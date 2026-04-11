@@ -16,6 +16,9 @@ logger = logging.getLogger(__name__)
 def _make_item_text(item: dict) -> str:
     source = item.get("source", "unknown")
     lines = [f"**来源**: {source.upper()}", f"**标题**: {item.get('title', '')}"]
+    translated_title = str(item.get("translated_title") or "").strip()
+    if translated_title and translated_title != str(item.get("title", "")).strip():
+        lines.append(f"**中文标题**: {translated_title}")
 
     if item.get("url"):
         lines.append(f"**链接**: {item['url']}")
@@ -51,7 +54,9 @@ def _make_item_text(item: dict) -> str:
     return "\n".join(lines)
 
 
-def build_scoring_system_prompt(taste_examples: list[dict], language: str = "zh", focus: str = "") -> str:
+def build_scoring_system_prompt(
+    taste_examples: list[dict], language: str = "zh", focus: str = ""
+) -> str:
     lang_label = "中文" if language == "zh" else "English"
     base = f"""你是一个专业的内容策展助手，负责为用户筛选和摘要每日信息流。
 
@@ -110,7 +115,7 @@ def score_single_item(
     对单条内容调用 AI 打分+摘要。
     Returns: (high_score_item, low_score_item)，有分数的一侧非 None，失败时均为 None。
     """
-    logger.info(f"  摘要进度: {idx+1}/{total} - {item.get('title', '')[:50]}")
+    logger.info(f"  摘要进度: {idx + 1}/{total} - {item.get('title', '')[:50]}")
     item_text = _make_item_text(item)
     user_message = f"""请对以下内容进行评估，并以 JSON 格式返回结果：
 

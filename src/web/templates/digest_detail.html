@@ -93,13 +93,27 @@
         {% endif %}
       </div>
       <p class="news-title">
+        {% set translated_title = item.get("translated_title", "") %}
         {% set item_id = url_to_item_id.get(item.get('url', '')) %}
         {% if item_id %}
-        <a href="/items/{{ item_id }}">{{ item.get("title", "") }}</a>
+        <a href="/items/{{ item_id }}">
+          <span class="news-title-main">{{ translated_title if translated_title and translated_title != item.get("title", "") else item.get("title", "") }}</span>
+          {% if translated_title and translated_title != item.get("title", "") %}
+          <span class="news-title-original">{{ item.get("title", "") }}</span>
+          {% endif %}
+        </a>
         {% elif item.get("url") %}
-        <a href="{{ item.get('url') }}" target="_blank" rel="noreferrer">{{ item.get("title", "") }}</a>
+        <a href="{{ item.get('url') }}" target="_blank" rel="noreferrer">
+          <span class="news-title-main">{{ translated_title if translated_title and translated_title != item.get("title", "") else item.get("title", "") }}</span>
+          {% if translated_title and translated_title != item.get("title", "") %}
+          <span class="news-title-original">{{ item.get("title", "") }}</span>
+          {% endif %}
+        </a>
         {% else %}
-        {{ item.get("title", "") }}
+        <span class="news-title-main">{{ translated_title if translated_title and translated_title != item.get("title", "") else item.get("title", "") }}</span>
+        {% if translated_title and translated_title != item.get("title", "") %}
+        <span class="news-title-original">{{ item.get("title", "") }}</span>
+        {% endif %}
         {% endif %}
         {% if item.get("url") %}
         <a class="muted" style="font-size:12px;margin-left:8px" href="{{ item.get('url') }}" target="_blank" rel="noreferrer">查看原文 ↗</a>
