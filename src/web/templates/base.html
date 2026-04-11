@@ -22,10 +22,9 @@
     .header {
       background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%);
       color: white;
-      border-radius: 16px;
-      padding: 24px 28px;
-      margin-bottom: 24px;
-      box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.1), 0 2px 4px -2px rgba(37, 99, 235, 0.1);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 16px;
     }
     .header h1 {
       margin: 0 0 8px 0;
@@ -50,7 +49,7 @@
       font-size: 14px;
       font-weight: 500;
       padding: 6px 10px;
-      border-radius: 999px;
+      border-radius: 6px;
     }
     .nav a.active {
       background: rgba(255,255,255,0.18);
@@ -85,12 +84,12 @@
     }
     .sidebar-menu a {
       display: block;
-      padding: 8px 12px;
-      color: #4b5563;
+      padding: 6px 10px;
+      color: #374151;
       text-decoration: none;
-      border-radius: 8px;
+      border-radius: 6px;
       font-size: 14px;
-      transition: all 0.15s ease;
+      transition: background 0.1s;
       word-break: break-all;
       border: 1px solid transparent;
     }
@@ -101,15 +100,15 @@
     .sidebar-menu a.active {
       background: #eff6ff;
       color: #1d4ed8;
-      font-weight: 600;
+      font-weight: 500;
       border-color: #bfdbfe;
     }
     .sidebar-search input {
       width: 100%;
       box-sizing: border-box;
-      padding: 10px 14px;
-      margin-bottom: 24px;
-      border-radius: 8px;
+      padding: 8px 10px;
+      margin-bottom: 12px;
+      border-radius: 6px;
       border: 1px solid #d1d5db;
       background: #f9fafb;
       font-size: 14px;
@@ -125,9 +124,9 @@
     .card {
       background: #ffffff;
       border-radius: 12px;
-      padding: 20px;
-      border: 1px solid #e5e7eb;
-      box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.03);
+      padding: 24px;
+      margin-bottom: 16px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
     }
     .card h2, .card h3 { margin-top: 0; }
     .muted { color: #6b7280; }
@@ -143,8 +142,8 @@
       background: #ffffff;
       color: #111827;
       border: 1px solid #d1d5db;
-      border-radius: 8px;
-      padding: 10px 12px;
+      border-radius: 6px;
+      padding: 8px 12px;
       font: inherit;
     }
     button {
@@ -156,17 +155,16 @@
     .pill {
       display: inline-block;
       border: 1px solid #e5e7eb;
-      border-radius: 999px;
-      padding: 4px 10px;
-      font-size: 13px;
-      color: #4b5563;
+      border-radius: 6px;
+      padding: 2px 8px;
+      font-size: 12px;
+      color: #6b7280;
       background: #f9fafb;
     }
     .pill.active-filter {
       background: #eff6ff;
       border-color: #bfdbfe;
       color: #1d4ed8;
-      font-weight: 500;
     }
     .toolbar {
       display: flex;
@@ -188,7 +186,7 @@
     }
     .alert {
       margin-bottom: 16px;
-      border-radius: 12px;
+      border-radius: 8px;
       padding: 12px 14px;
       border: 1px solid transparent;
     }
@@ -271,14 +269,14 @@
     .source-tag {
       font-size: 11px;
       font-weight: 600;
-      padding: 3px 8px;
-      border-radius: 6px;
+      padding: 2px 7px;
+      border-radius: 4px;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
+      letter-spacing: 0.3px;
     }
-    .source-github  { background: #f3f4f6; color: #374151; }
-    .source-rss     { background: #ffedd5; color: #c2410c; }
-    .source-youtube { background: #fee2e2; color: #b91c1c; }
+    .source-github  { background: #1f2937; color: #fff; }
+    .source-rss     { background: #ea580c; color: #fff; }
+    .source-youtube { background: #dc2626; color: #fff; }
     .summary-box {
       background: #f0f9ff;
       border-radius: 8px;
@@ -289,31 +287,21 @@
       white-space: pre-line;
     }
     .news-item {
-      padding: 16px 0;
+      padding: 20px 0;
       border-bottom: 1px solid #f3f4f6;
-    }
-    .news-item.card {
-      padding: 20px 24px;
-      border-bottom: none;
-      transition: box-shadow 0.2s ease, border-color 0.2s ease;
-    }
-    .news-item.card:hover {
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
-      border-color: #d1d5db;
     }
     .news-item:last-child { border-bottom: none; }
     .news-meta {
       display: flex;
       align-items: center;
-      gap: 10px;
-      margin-bottom: 8px;
+      gap: 8px;
+      margin-bottom: 6px;
       flex-wrap: wrap;
     }
     .news-title {
-      font-size: 16px;
+      font-size: 15px;
       font-weight: 600;
       margin: 0 0 6px 0;
-      line-height: 1.5;
     }
     .news-title-main {
       display: inline;
@@ -322,23 +310,22 @@
     .news-title-translation {
       display: block;
       margin-top: 4px;
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 400;
       color: #6b7280;
-      line-height: 1.5;
+      line-height: 1.4;
     }
     .news-origin-link {
       margin-left: 8px;
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 400;
       white-space: nowrap;
-      color: #3b82f6;
+      color: #1d4ed8;
     }
     .news-summary {
-      font-size: 14px;
-      color: #4b5563;
-      margin: 0 0 8px 0;
-      line-height: 1.6;
+      font-size: 13px;
+      color: #374151;
+      margin: 0 0 4px 0;
     }
     .news-reason {
       font-size: 12px;

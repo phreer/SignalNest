@@ -54,27 +54,26 @@
   </aside>
 
   <main>
-    <div class="card" style="margin-bottom: 24px; padding: 16px 24px;">
-      <div class="toolbar" style="margin-bottom: 0;">
-        <div class="toolbar-meta">
-          <span class="pill" style="font-weight: 600; color: #374151;">共 {{ total_items }} 条</span>
-          {% if total_items >= 200 %}<span class="pill">当前最多展示前 200 条</span>{% endif %}
-        </div>
-        <div class="toolbar-meta">
-          {% if active_filters %}
-          {% for filter in active_filters %}
-          <span class="pill active-filter">{{ filter.label }}: {{ filter.value }}</span>
-          {% endfor %}
-          <a href="{{ clear_filters_url }}" style="font-size: 13px; margin-left: 4px; color: #6b7280; text-decoration: underline;">清空筛选</a>
-          {% endif %}
-        </div>
+    <div class="card" style="margin-bottom: 16px; padding: 16px 24px;">
+      <div class="section-title news" style="margin: 0; padding-bottom: 0; border-bottom: none;">
+        🗃 Collected Items
+        <span style="font-weight:400; font-size:13px; color:#6b7280; margin-left: 8px;">共 {{ total_items }} 条</span>
+        {% if total_items >= 200 %}<span class="pill" style="margin-left: 8px;">当前最多展示前 200 条</span>{% endif %}
       </div>
+      {% if active_filters %}
+      <div class="toolbar-meta" style="margin-top: 12px;">
+        {% for filter in active_filters %}
+        <span class="pill active-filter">{{ filter.label }}: {{ filter.value }}</span>
+        {% endfor %}
+        <a href="{{ clear_filters_url }}" style="font-size: 13px; margin-left: 4px; color: #6b7280; text-decoration: underline;">清空筛选</a>
+      </div>
+      {% endif %}
     </div>
 
     {% if items %}
-    <div class="grid">
+    <div class="card">
       {% for item in items %}
-      <div class="news-item card">
+      <div class="news-item">
         <div class="news-meta">
           {% if item.ai_score is not none %}
           {% set score = item.ai_score %}
