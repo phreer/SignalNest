@@ -54,7 +54,7 @@
         <td>{{ job.trigger_type }}{% if job.dry_run %} · dry-run{% endif %}</td>
         <td class="status-{{ job.status }}">{{ job.status }}</td>
         <td>{{ job.current_stage }}<br><span class="muted">{{ job.current_message }}</span></td>
-        <td>{{ job.updated_at }}</td>
+        <td title="{{ job.updated_at | datetime_local }}">{{ job.updated_at | datetime_relative }}</td>
       </tr>
       {% endfor %}
     </tbody>

@@ -5,7 +5,7 @@ import re
 import threading
 from contextlib import asynccontextmanager
 from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 from zoneinfo import ZoneInfo
@@ -31,6 +31,74 @@ _SENSITIVE_ENV_PATTERNS = re.compile(
 
 def _template_dir() -> Path:
     return Path(__file__).with_name("templates")
+
+
+def _parse_datetime(value: Any) -> datetime | None:
+    if isinstance(value, datetime):
+        return value
+
+    text = str(value or "").strip()
+    if not text:
+        return None
+
+    normalized = text.replace("Z", "+00:00")
+    try:
+        return datetime.fromisoformat(normalized)
+    except ValueError:
+        return None
+
+
+def _to_local_datetime(value: Any, tz: ZoneInfo) -> datetime | None:
+    dt = _parse_datetime(value)
+    if dt is None:
+        return None
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=tz)
+    return dt.astimezone(tz)
+
+
+def _format_datetime_local(value: Any, tz: ZoneInfo) -> str:
+    dt = _to_local_datetime(value, tz)
+    if dt is None:
+        return "—"
+    return dt.strftime("%Y-%m-%d %H:%M")
+
+
+def _format_datetime_relative(
+    value: Any, tz: ZoneInfo, *, now: datetime | None = None
+) -> str:
+    dt = _to_local_datetime(value, tz)
+    if dt is None:
+        return "—"
+
+    now = (now or datetime.now(timezone.utc)).astimezone(tz)
+    delta_seconds = int((now - dt).total_seconds())
+    future = delta_seconds < 0
+    seconds = abs(delta_seconds)
+
+    if seconds < 60:
+        return "即将发生" if future else "刚刚"
+
+    if seconds < 3600:
+        minutes = max(1, seconds // 60)
+        return f"{minutes} 分钟后" if future else f"{minutes} 分钟前"
+
+    if dt.date() == now.date():
+        hours = max(1, seconds // 3600)
+        if hours <= 6:
+            return f"{hours} 小时后" if future else f"{hours} 小时前"
+        return f"今天 {dt:%H:%M}"
+
+    days = (dt.date() - now.date()).days
+    if days == -1:
+        return f"昨天 {dt:%H:%M}"
+    if days == 1:
+        return f"明天 {dt:%H:%M}"
+    if -7 < days < 0:
+        return f"{abs(days)} 天前"
+    if 0 < days < 7:
+        return f"{days} 天后"
+    return dt.strftime("%Y-%m-%d %H:%M")
 
 
 def _compute_next_runs(config: dict) -> list[dict[str, str]]:
@@ -361,6 +429,13 @@ def create_app(config: dict | None = None) -> FastAPI:
     store.sync_output_archives(resolved_config)
 
     templates = Jinja2Templates(directory=str(_template_dir()))
+    app_tz = ZoneInfo(resolved_config.get("app", {}).get("timezone", "Asia/Shanghai"))
+    templates.env.filters["datetime_local"] = lambda value: _format_datetime_local(
+        value, app_tz
+    )
+    templates.env.filters["datetime_relative"] = lambda value: (
+        _format_datetime_relative(value, app_tz)
+    )
     deep_summary_executor = ThreadPoolExecutor(
         max_workers=2, thread_name_prefix="signalnest-deep-summary"
     )

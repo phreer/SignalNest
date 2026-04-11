@@ -129,9 +129,9 @@
   </div>
   <div class="card">
     <div class="section-title status">⏱ Timing</div>
-    <p>Started: {{ job.started_at or "—" }}</p>
-    <p>Ended: {{ job.ended_at or "—" }}</p>
-    <p>Updated: {{ job.updated_at }}</p>
+    <p>Started: {{ job.started_at | datetime_local if job.started_at else "—" }}</p>
+    <p>Ended: {{ job.ended_at | datetime_local if job.ended_at else "—" }}</p>
+    <p>Updated: <span title="{{ job.updated_at | datetime_local }}">{{ job.updated_at | datetime_relative }}</span></p>
     <p style="font-size:13px">Session: {% if job.session_id %}<code>{{ job.session_id[:16] }}…</code>{% else %}—{% endif %}</p>
     {% if digest %}
     <p><a href="/digests/{{ digest.id }}">Open digest →</a></p>
@@ -231,7 +231,7 @@
       <span class="tool-dur">{{ card.duration_ms }}ms</span>
       {% endif %}
       {% if card.ts %}
-      <span class="tool-ts">{{ card.ts[11:19] if card.ts|length > 10 else card.ts }}</span>
+      <span class="tool-ts" title="{{ card.ts | datetime_local }}">{{ card.ts | datetime_relative }}</span>
       {% endif %}
       {% if card.success is none %}
       <span class="tool-badge badge-pend">running</span>

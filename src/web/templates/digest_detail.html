@@ -8,7 +8,8 @@
 {% set focus = payload.get("focus", "") %}
 <div class="card">
   <div class="section-title digest">💡 {{ digest.schedule_name }}</div>
-  <p class="muted">{{ digest.digest_datetime or digest.created_at }}</p>
+  {% set digest_time = digest.digest_datetime or digest.created_at %}
+  <p class="muted" title="{{ digest_time | datetime_local }}">{{ digest_time | datetime_local }}</p>
   {% if focus %}
   <div class="focus-box" style="margin-bottom: 14px;">
     <div class="focus-label">🎯 AI 筛选方向</div>

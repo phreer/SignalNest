@@ -31,7 +31,8 @@
       <tr>
         <td><a href="/digests/{{ digest.id }}">#{{ digest.id }}</a></td>
         <td>{{ digest.schedule_name }}</td>
-        <td>{{ digest.digest_datetime or digest.created_at }}</td>
+        {% set digest_time = digest.digest_datetime or digest.created_at %}
+        <td title="{{ digest_time | datetime_local }}">{{ digest_time | datetime_relative }}</td>
         <td>{{ digest.summary_text[:180] }}{% if digest.summary_text|length > 180 %}...{% endif %}</td>
       </tr>
       {% endfor %}

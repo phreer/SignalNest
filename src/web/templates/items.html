@@ -65,7 +65,8 @@
       {% if item.ai_summary %}
       <p class="news-summary">{{ item.ai_summary }}</p>
       {% endif %}
-      <p class="muted">{{ item.published_at or item.collected_at }}</p>
+      {% set item_time = item.published_at or item.collected_at %}
+      <p class="muted" title="{{ item_time | datetime_local }}">{{ item_time | datetime_relative }}</p>
     </div>
     {% endfor %}
   </div>

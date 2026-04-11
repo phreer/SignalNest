@@ -16,7 +16,7 @@
     {% if item.selected_for_digest %}<span class="pill">selected for digest</span>{% endif %}
   </div>
   <p><a href="{{ item.url }}" target="_blank" rel="noreferrer">{{ item.url }}</a></p>
-  <p class="muted">Published: {{ item.published_at or "-" }} · Collected: {{ item.collected_at }}</p>
+  <p class="muted">Published: {{ item.published_at | datetime_local if item.published_at else "—" }} · Collected: {{ item.collected_at | datetime_local }}</p>
   {% if item.ai_summary %}
   <div class="summary-box">{{ item.ai_summary }}</div>
   {% endif %}
