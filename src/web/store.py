@@ -1008,6 +1008,22 @@ class AppStateStore:
         finally:
             conn.close()
 
+    def get_selected_dedup_keys(self) -> set[str]:
+        """Return dedup_keys for all raw_items that have ever been selected for a digest."""
+        conn = self._connect()
+        try:
+            rows = conn.execute(
+                """
+                SELECT DISTINCT r.dedup_key
+                FROM raw_items r
+                JOIN item_annotations ia ON ia.raw_item_id = r.id
+                WHERE ia.selected_for_digest = 1
+                """
+            ).fetchall()
+            return {row["dedup_key"] for row in rows}
+        finally:
+            conn.close()
+
     def replace_items_for_job(
         self,
         *,

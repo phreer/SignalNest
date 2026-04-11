@@ -148,21 +148,21 @@ def _tool_summarize_news(args: dict[str, Any], rt: ToolRuntime) -> dict[str, Any
 
     focus = args.get("focus", "")
 
-    # Load already-annotated dedup keys so we don't re-score items we've seen before
-    already_annotated_keys: set[str] = set()
+    # Load previously selected dedup keys so the same item never re-enters the digest.
+    already_selected_keys: set[str] = set()
     try:
         from pathlib import Path
         from src.web.store import AppStateStore
 
         store = AppStateStore.from_config(rt.config)
-        already_annotated_keys = store.get_annotated_dedup_keys()
-        if already_annotated_keys:
+        already_selected_keys = store.get_selected_dedup_keys()
+        if already_selected_keys:
             logger.info(
-                "summarize_news: %d items already annotated, will skip re-scoring",
-                len(already_annotated_keys),
+                "summarize_news: %d items were already selected, will skip them",
+                len(already_selected_keys),
             )
     except Exception as exc:
-        logger.warning("summarize_news: could not load annotated keys: %s", exc)
+        logger.warning("summarize_news: could not load selected keys: %s", exc)
 
     news_items = summarize_items(
         raw_items,
@@ -171,7 +171,7 @@ def _tool_summarize_news(args: dict[str, Any], rt: ToolRuntime) -> dict[str, Any
         max_output=None,
         focus=focus,
         schedule_name=args.get("schedule_name", ""),
-        already_annotated_keys=already_annotated_keys,
+        already_selected_keys=already_selected_keys,
     )
     if len(news_items) > config_cap:
         logger.warning(
