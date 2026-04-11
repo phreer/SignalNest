@@ -500,6 +500,116 @@ class ApiTests(unittest.TestCase):
             self.assertEqual([item["source"] for item in payload["items"]], ["rss"])
             self.assertEqual(payload["available_sources"], ["github", "rss"])
 
+    def test_items_api_can_filter_by_source_name(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            config = _sample_config(tmp)
+            store = AppStateStore.from_config(config)
+            store.init_db()
+            job_id = store.create_job_run(
+                schedule_name="早间日报", trigger_type="manual", dry_run=True
+            )
+            store.replace_items_for_job(
+                job_run_id=job_id,
+                digest_id=None,
+                items=[
+                    {
+                        "source": "rss",
+                        "external_id": "",
+                        "title": "rss item one",
+                        "url": "https://example.com/rss-1",
+                        "author": "",
+                        "feed_title": "Feed Alpha",
+                        "language": "",
+                        "published_at": "2026-04-08T10:00:00+08:00",
+                        "selected_for_digest": True,
+                        "ai_score": 8,
+                        "ai_summary": "recent",
+                        "ai_reason": "",
+                        "raw": {"source": "rss", "url": "https://example.com/rss-1"},
+                    },
+                    {
+                        "source": "rss",
+                        "external_id": "",
+                        "title": "rss item two",
+                        "url": "https://example.com/rss-2",
+                        "author": "",
+                        "feed_title": "Feed Beta",
+                        "language": "",
+                        "published_at": "2026-04-08T11:00:00+08:00",
+                        "selected_for_digest": False,
+                        "ai_score": 5,
+                        "ai_summary": "repo",
+                        "ai_reason": "",
+                        "raw": {"source": "rss", "url": "https://example.com/rss-2"},
+                    },
+                ],
+            )
+
+            app = create_app(copy.deepcopy(config))
+            client = TestClient(app)
+            resp = client.get("/api/items?source=rss&source_name=Feed%20Alpha")
+            self.assertEqual(resp.status_code, 200)
+            payload = resp.json()
+            self.assertEqual(payload["total"], 1)
+            self.assertEqual(
+                [item["title"] for item in payload["items"]], ["rss item one"]
+            )
+            self.assertEqual(
+                payload["available_source_names"], ["Feed Alpha", "Feed Beta"]
+            )
+
+    def test_items_page_can_filter_by_source_name(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            config = _sample_config(tmp)
+            store = AppStateStore.from_config(config)
+            store.init_db()
+            job_id = store.create_job_run(
+                schedule_name="早间日报", trigger_type="manual", dry_run=True
+            )
+            store.replace_items_for_job(
+                job_run_id=job_id,
+                digest_id=None,
+                items=[
+                    {
+                        "source": "rss",
+                        "external_id": "",
+                        "title": "alpha item",
+                        "url": "https://example.com/a",
+                        "author": "",
+                        "feed_title": "Feed Alpha",
+                        "language": "",
+                        "published_at": "2026-04-08T10:00:00+08:00",
+                        "selected_for_digest": True,
+                        "ai_score": 8,
+                        "ai_summary": "alpha",
+                        "ai_reason": "",
+                        "raw": {"source": "rss", "url": "https://example.com/a"},
+                    },
+                    {
+                        "source": "rss",
+                        "external_id": "",
+                        "title": "beta item",
+                        "url": "https://example.com/b",
+                        "author": "",
+                        "feed_title": "Feed Beta",
+                        "language": "",
+                        "published_at": "2026-04-08T11:00:00+08:00",
+                        "selected_for_digest": False,
+                        "ai_score": 5,
+                        "ai_summary": "beta",
+                        "ai_reason": "",
+                        "raw": {"source": "rss", "url": "https://example.com/b"},
+                    },
+                ],
+            )
+
+            app = create_app(copy.deepcopy(config))
+            client = TestClient(app)
+            resp = client.get("/items?source=rss&source_name=Feed%20Alpha")
+            self.assertEqual(resp.status_code, 200)
+            self.assertIn("alpha item", resp.text)
+            self.assertNotIn("beta item", resp.text)
+
     def test_item_deep_summary_api(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             config = _sample_config(tmp)

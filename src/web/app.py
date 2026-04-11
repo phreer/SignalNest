@@ -627,14 +627,17 @@ def create_app(config: dict | None = None) -> FastAPI:
         request: Request,
         keyword: str = "",
         source: str = "",
+        source_name: str = "",
         time_range: str = "",
         selected_only: str = "false",
     ) -> HTMLResponse:
         selected_only_flag = _bool_query_flag(selected_only)
         available_sources = app.state.store.list_item_sources()
+        available_source_names = app.state.store.list_item_source_names(source=source)
         total_items = app.state.store.count_items(
             keyword=keyword,
             source=source,
+            source_name=source_name,
             time_range=time_range,
             selected_only=selected_only_flag,
         )
@@ -642,6 +645,7 @@ def create_app(config: dict | None = None) -> FastAPI:
             limit=200,
             keyword=keyword,
             source=source,
+            source_name=source_name,
             time_range=time_range,
             selected_only=selected_only_flag,
         )
@@ -652,14 +656,17 @@ def create_app(config: dict | None = None) -> FastAPI:
                 "items": items,
                 "selected_keyword": keyword,
                 "selected_source": source,
+                "selected_source_name": source_name,
                 "selected_time_range": time_range,
                 "selected_only": selected_only_flag,
                 "available_sources": available_sources,
+                "available_source_names": available_source_names,
                 "total_items": total_items,
                 "active_filters": _active_filters(
                     [
                         ("关键词", keyword),
-                        ("来源", source),
+                        ("平台", source),
+                        ("来源", source_name),
                         ("时间", time_range),
                         ("仅已入选", "是" if selected_only_flag else ""),
                     ]
@@ -767,6 +774,7 @@ def create_app(config: dict | None = None) -> FastAPI:
     def api_items(
         keyword: str = "",
         source: str = "",
+        source_name: str = "",
         time_range: str = "",
         selected_only: str = "false",
     ) -> dict[str, Any]:
@@ -776,16 +784,21 @@ def create_app(config: dict | None = None) -> FastAPI:
                 limit=200,
                 keyword=keyword,
                 source=source,
+                source_name=source_name,
                 time_range=time_range,
                 selected_only=selected_only_flag,
             ),
             "total": app.state.store.count_items(
                 keyword=keyword,
                 source=source,
+                source_name=source_name,
                 time_range=time_range,
                 selected_only=selected_only_flag,
             ),
             "available_sources": app.state.store.list_item_sources(),
+            "available_source_names": app.state.store.list_item_source_names(
+                source=source
+            ),
         }
 
     @app.get("/api/items/{item_id}")

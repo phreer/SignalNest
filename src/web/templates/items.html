@@ -8,11 +8,20 @@
       <input id="keyword" name="keyword" value="{{ selected_keyword }}" placeholder="title / summary / feed">
     </div>
     <div class="field">
-      <label for="source">Source</label><br>
+      <label for="source">Platform</label><br>
       <select id="source" name="source">
         <option value="">All</option>
         {% for value in available_sources %}
         <option value="{{ value }}" {% if selected_source == value %}selected{% endif %}>{{ value }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="field">
+      <label for="source_name">Source</label><br>
+      <select id="source_name" name="source_name">
+        <option value="">All</option>
+        {% for value in available_source_names %}
+        <option value="{{ value }}" {% if selected_source_name == value %}selected{% endif %}>{{ value }}</option>
         {% endfor %}
       </select>
     </div>
@@ -66,8 +75,8 @@
         <span class="score-badge {% if score >= 8 %}score-high{% elif score >= 6 %}score-medium{% else %}score-low{% endif %}">★ {{ score }}/10</span>
         {% endif %}
         <span class="source-tag source-{{ item.source }}">{{ item.source }}</span>
+        {% if item.source_name %}<span class="muted">{{ item.source_name }}</span>{% endif %}
         {% if item.selected_for_digest %}<span class="pill">selected</span>{% endif %}
-        {% if item.feed_title %}<span class="muted">{{ item.feed_title }}</span>{% endif %}
         {% if item.author %}<span class="muted">{{ item.author }}</span>{% endif %}
       </div>
       <p class="news-title">

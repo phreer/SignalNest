@@ -23,6 +23,16 @@ def _sqlite_datetime_range_expr(column: str) -> str:
     return f"COALESCE(datetime({column}), datetime(collected_at))"
 
 
+def _item_source_name_expr(alias: str = "r") -> str:
+    return (
+        f"COALESCE(NULLIF({alias}.feed_title, ''), "
+        f"NULLIF({alias}.author, ''), "
+        f"NULLIF({alias}.external_id, ''), "
+        f"NULLIF({alias}.title, ''), "
+        f"{alias}.url)"
+    )
+
+
 def _make_dedup_key(source: str, url: str, title: str = "", **extra: Any) -> str:
     return dedup_key_for_item(
         {
@@ -1180,6 +1190,7 @@ class AppStateStore:
         limit: int = 100,
         keyword: str = "",
         source: str = "",
+        source_name: str = "",
         time_range: str = "",
         selected_only: bool = False,
     ) -> list[dict[str, Any]]:
@@ -1187,6 +1198,7 @@ class AppStateStore:
         where_sql, params, time_expr = self._build_item_filters(
             keyword=keyword,
             source=source,
+            source_name=source_name,
             time_range=time_range,
             selected_only=selected_only,
         )
@@ -1227,12 +1239,14 @@ class AppStateStore:
         *,
         keyword: str = "",
         source: str = "",
+        source_name: str = "",
         time_range: str = "",
         selected_only: bool = False,
     ) -> int:
         where_sql, params, _time_expr = self._build_item_filters(
             keyword=keyword,
             source=source,
+            source_name=source_name,
             time_range=time_range,
             selected_only=selected_only,
         )
@@ -1267,20 +1281,47 @@ class AppStateStore:
         finally:
             conn.close()
 
+    def list_item_source_names(self, *, source: str = "") -> list[str]:
+        clauses = [f"COALESCE({_item_source_name_expr()}, '') != ''"]
+        params: list[Any] = []
+        normalized_source = str(source or "").strip().lower()
+        if normalized_source:
+            clauses.append("LOWER(r.source)=?")
+            params.append(normalized_source)
+        where_sql = f"WHERE {' AND '.join(clauses)}"
+
+        conn = self._connect()
+        try:
+            rows = conn.execute(
+                f"""
+                SELECT DISTINCT {_item_source_name_expr()} AS source_name
+                FROM raw_items r
+                {where_sql}
+                ORDER BY LOWER(source_name) ASC
+                """,
+                params,
+            ).fetchall()
+            return [str(row["source_name"]) for row in rows if row["source_name"]]
+        finally:
+            conn.close()
+
     def _build_item_filters(
         self,
         *,
         keyword: str = "",
         source: str = "",
+        source_name: str = "",
         time_range: str = "",
         selected_only: bool = False,
     ) -> tuple[str, list[Any], str]:
         clauses: list[str] = []
         params: list[Any] = []
         time_expr = "COALESCE(datetime(r.published_at), datetime(r.first_seen_at))"
+        source_name_expr = _item_source_name_expr()
 
         normalized_keyword = str(keyword or "").strip()
         normalized_source = str(source or "").strip().lower()
+        normalized_source_name = str(source_name or "").strip().lower()
 
         if normalized_keyword:
             keyword_like = f"%{normalized_keyword}%"
@@ -1291,6 +1332,9 @@ class AppStateStore:
         if normalized_source:
             clauses.append("LOWER(r.source)=?")
             params.append(normalized_source)
+        if normalized_source_name:
+            clauses.append(f"LOWER({source_name_expr})=?")
+            params.append(normalized_source_name)
         if selected_only:
             clauses.append("ia.selected_for_digest=1")
         if time_range in {"1d", "7d", "30d"}:
@@ -1574,6 +1618,13 @@ class AppStateStore:
             "url": row["url"],
             "author": row["author"] or "",
             "feed_title": row["feed_title"] or "",
+            "source_name": (
+                row["feed_title"]
+                or row["author"]
+                or row["external_id"]
+                or row["title"]
+                or row["url"]
+            ),
             "language": row["language"] or "",
             "published_at": row["published_at"] or "",
             # Expose first_seen_at as collected_at for template compatibility
