@@ -34,7 +34,7 @@ def generate_digest_summary(
     api_key = os.environ.get("AI_API_KEY", "")
     language = config.get("app", {}).get("language", "zh")
 
-    call_kwargs: dict = dict(model=model, api_key=api_key, max_tokens=600)
+    call_kwargs: dict = dict(model=model, api_key=api_key, max_tokens=8000)
     if api_base:
         call_kwargs["api_base"] = api_base
 
