@@ -17,11 +17,10 @@ from typing import Optional
 
 from src.ai.dedup import (
     ai_dedup_across_candidates,
-    ai_dedup_against_history,
     item_key,
 )
 from src.ai.digest import generate_digest_summary
-from src.ai.feedback import load_recent_history_records, load_taste_examples
+from src.ai.feedback import load_taste_examples
 from src.ai.filter import (
     ai_pick_fill_candidates,
     batch_select_by_titles,
@@ -133,34 +132,7 @@ def summarize_items(
     max_workers = ai_cfg.get("max_workers", 5)
 
     taste_examples = load_taste_examples(config, limit=taste_limit)
-    history_records = load_recent_history_records(config, days=7, limit=600)
-
-    history_titles: list[str] = []
-    seen_history_titles: set[str] = set()
-    for rec in history_records:
-        title = str(rec.get("title", "")).strip()
-        if not title or title in seen_history_titles:
-            continue
-        seen_history_titles.add(title)
-        history_titles.append(title)
-        if len(history_titles) >= 120:
-            break
-
-    # ── 阶段 A：历史去重 ──────────────────────────────────────────────────────
-    kept_indices = ai_dedup_against_history(
-        raw_items,
-        history_records,
-        call_kwargs=call_kwargs,
-        language=language,
-        backend=backend,
-    )
-    items_after_history = [raw_items[i] for i in kept_indices]
-    logger.info(f"  after_history_dedup_count={len(items_after_history)}")
-    if not items_after_history:
-        logger.info(
-            f"  新闻筛选完成: final_count=0 effective_cap={effective_max_output}"
-        )
-        return []
+    items_after_history = list(raw_items)
 
     # ── 阶段 A2：跳过曾入选过 digest 的 items ────────────────────────────────
     if already_selected_keys:
@@ -187,7 +159,6 @@ def summarize_items(
         language,
         max_keep,
         backend=backend,
-        history_titles=history_titles,
     )
     selected_indices = ensure_source_candidates(
         items_after_history, selected_indices, source_minimums, max_keep

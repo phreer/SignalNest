@@ -29,7 +29,6 @@ def batch_select_by_titles(
     language: str,
     max_keep: int,
     backend: str = "litellm",
-    history_titles: list[str] | None = None,
 ) -> list[int]:
     """
     第一阶段：仅凭标题+简介，一次 API 调用批量筛选值得深读的条目。
@@ -62,17 +61,8 @@ def batch_select_by_titles(
             taste_hint += f"- {ex['title']}\n"
         taste_hint += "\n"
 
-    history_hint = ""
-    if history_titles:
-        capped = history_titles[:200]
-        history_hint = "以下是过去7天已推送过的内容标题，请避免推荐语义上相似的内容：\n"
-        for t in capped:
-            history_hint += f"- {t}\n"
-        history_hint += "\n"
-        logger.info(f"  历史去重：加载 {len(capped)} 条历史标题到 Stage 1 提示词")
-
     user_message = (
-        f"{focus_line}{taste_hint}{history_hint}"
+        f"{focus_line}{taste_hint}"
         f"以下是 {len(items)} 条待筛选内容（格式：[序号] [来源] 标题  —  简介）：\n\n"
         f"{items_text}\n"
         f"请从中选出最多 {max_keep} 条最值得深度阅读的内容。\n\n"
