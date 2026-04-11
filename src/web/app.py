@@ -645,6 +645,7 @@ def create_app(config: dict | None = None) -> FastAPI:
         source_name: str = "",
         time_range: str = "",
         selected_only: str = "false",
+        page: int = 1,
     ) -> HTMLResponse:
         selected_only_flag = _bool_query_flag(selected_only)
         available_sources = app.state.store.list_item_sources()
@@ -656,8 +657,18 @@ def create_app(config: dict | None = None) -> FastAPI:
             time_range=time_range,
             selected_only=selected_only_flag,
         )
+
+        page = max(1, page)
+        limit = 50
+        offset = (page - 1) * limit
+        total_pages = max(1, (total_items + limit - 1) // limit)
+        if page > total_pages:
+            page = total_pages
+            offset = (page - 1) * limit
+
         items = app.state.store.list_items(
-            limit=200,
+            limit=limit,
+            offset=offset,
             keyword=keyword,
             source=source,
             source_name=source_name,
@@ -677,6 +688,9 @@ def create_app(config: dict | None = None) -> FastAPI:
                 "available_sources": available_sources,
                 "available_source_names": available_source_names,
                 "total_items": total_items,
+                "current_page": page,
+                "total_pages": total_pages,
+                "limit": limit,
                 "active_filters": _active_filters(
                     [
                         ("关键词", keyword),
@@ -792,11 +806,18 @@ def create_app(config: dict | None = None) -> FastAPI:
         source_name: str = "",
         time_range: str = "",
         selected_only: str = "false",
+        page: int = 1,
+        limit: int = 200,
     ) -> dict[str, Any]:
         selected_only_flag = _bool_query_flag(selected_only)
+        page = max(1, page)
+        limit = min(500, max(1, limit))
+        offset = (page - 1) * limit
+
         return {
             "items": app.state.store.list_items(
-                limit=200,
+                limit=limit,
+                offset=offset,
                 keyword=keyword,
                 source=source,
                 source_name=source_name,
@@ -810,6 +831,8 @@ def create_app(config: dict | None = None) -> FastAPI:
                 time_range=time_range,
                 selected_only=selected_only_flag,
             ),
+            "page": page,
+            "limit": limit,
             "available_sources": app.state.store.list_item_sources(),
             "available_source_names": app.state.store.list_item_source_names(
                 source=source

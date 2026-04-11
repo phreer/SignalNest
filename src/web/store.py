@@ -1188,6 +1188,7 @@ class AppStateStore:
         self,
         *,
         limit: int = 100,
+        offset: int = 0,
         keyword: str = "",
         source: str = "",
         source_name: str = "",
@@ -1226,9 +1227,9 @@ class AppStateStore:
                 )
                 {where_sql}
                 ORDER BY {time_expr} DESC, r.id DESC
-                LIMIT ?
+                LIMIT ? OFFSET ?
                 """,
-                (*params, limit),
+                (*params, limit, offset),
             ).fetchall()
             return [self._raw_item_row_to_dict(row) for row in rows]
         finally:
