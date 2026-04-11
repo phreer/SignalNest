@@ -151,6 +151,20 @@ def _active_filters(filters: list[tuple[str, str]]) -> list[dict[str, str]]:
     ]
 
 
+def _update_query_params(request: Request, **kwargs: Any) -> str:
+    from urllib.parse import urlencode
+
+    params = dict(request.query_params)
+    for key, value in kwargs.items():
+        if value is None or str(value) == "":
+            params.pop(key, None)
+        else:
+            params[key] = str(value)
+    if not params:
+        return str(request.url.path)
+    return f"{request.url.path}?{urlencode(params, doseq=True)}"
+
+
 def _mask_email(email: str) -> str:
     """Partially mask an email address: p***e@example.com."""
     if not email or "@" not in email:
@@ -495,6 +509,7 @@ def create_app(config: dict | None = None) -> FastAPI:
             "current_path": current_path,
             "flash_message": request.query_params.get("message", "").strip(),
             "flash_error": request.query_params.get("error", "").strip(),
+            "update_query": lambda **kwargs: _update_query_params(request, **kwargs),
         }
         base_context.update(context)
         return templates.TemplateResponse(request, template_name, base_context)

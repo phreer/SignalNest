@@ -58,6 +58,55 @@
     }
     .grid { display: grid; gap: 16px; }
     .grid.cards { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+    
+    .grid-sidebar {
+      display: grid;
+      grid-template-columns: 240px 1fr;
+      gap: 24px;
+      align-items: start;
+    }
+    .sidebar-group { margin-bottom: 24px; }
+    .sidebar-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 10px;
+    }
+    .sidebar-menu {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .sidebar-menu a {
+      display: block;
+      padding: 6px 10px;
+      color: #374151;
+      text-decoration: none;
+      border-radius: 6px;
+      font-size: 14px;
+      transition: background 0.1s;
+      word-break: break-all;
+    }
+    .sidebar-menu a:hover {
+      background: #f3f4f6;
+    }
+    .sidebar-menu a.active {
+      background: #eff6ff;
+      color: #1d4ed8;
+      font-weight: 500;
+    }
+    .sidebar-search input {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 8px 10px;
+      margin-bottom: 12px;
+    }
+
     .card {
       background: #ffffff;
       border-radius: 16px;
@@ -322,6 +371,7 @@
     .task-due-ai { color: #9ca3af; font-style: italic; }
     @media (max-width: 720px) {
       .layout { padding: 18px 12px 28px; }
+      .grid-sidebar { grid-template-columns: 1fr; }
       .card { padding: 14px; }
       .nav { gap: 8px; }
       .actions .field { min-width: 100%; }

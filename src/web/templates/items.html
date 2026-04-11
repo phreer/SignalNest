@@ -1,108 +1,119 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="card">
-  <div class="section-title news">🗃 Collected Items</div>
-  <form class="actions" method="get" action="/items">
-    <div class="field">
-      <label for="keyword">Keyword</label><br>
-      <input id="keyword" name="keyword" value="{{ selected_keyword }}" placeholder="title / summary / feed">
-    </div>
-    <div class="field">
-      <label for="source">Platform</label><br>
-      <select id="source" name="source">
-        <option value="">All</option>
-        {% for value in available_sources %}
-        <option value="{{ value }}" {% if selected_source == value %}selected{% endif %}>{{ value }}</option>
-        {% endfor %}
-      </select>
-    </div>
-    <div class="field">
-      <label for="source_name">Source</label><br>
-      <select id="source_name" name="source_name">
-        <option value="">All</option>
-        {% for value in available_source_names %}
-        <option value="{{ value }}" {% if selected_source_name == value %}selected{% endif %}>{{ value }}</option>
-        {% endfor %}
-      </select>
-    </div>
-    <div class="field">
-      <label for="time_range">Time</label><br>
-      <select id="time_range" name="time_range">
-        <option value="">All</option>
-        {% for value in ["1d", "7d", "30d"] %}
-        <option value="{{ value }}" {% if selected_time_range == value %}selected{% endif %}>{{ value }}</option>
-        {% endfor %}
-      </select>
-    </div>
-    <div class="field">
-      <label for="selected_only">Digest status</label><br>
-      <select id="selected_only" name="selected_only">
-        <option value="false" {% if not selected_only %}selected{% endif %}>全部</option>
-        <option value="true" {% if selected_only %}selected{% endif %}>仅已入选 digest</option>
-      </select>
-    </div>
-    <div>
-      <button type="submit">Filter</button>
-    </div>
-    {% if active_filters %}
-    <div>
-      <a href="{{ clear_filters_url }}">清空筛选</a>
-    </div>
-    {% endif %}
-  </form>
+<div class="grid-sidebar">
+  <aside>
+    <div class="card">
+      <form class="sidebar-search" method="get" action="/items">
+        <input type="text" name="keyword" value="{{ selected_keyword }}" placeholder="Search titles, summary...">
+        <input type="hidden" name="source" value="{{ selected_source }}">
+        <input type="hidden" name="source_name" value="{{ selected_source_name }}">
+        <input type="hidden" name="time_range" value="{{ selected_time_range }}">
+        <input type="hidden" name="selected_only" value="{{ 'true' if selected_only else 'false' }}">
+      </form>
 
-  <div class="toolbar" style="margin-top: 16px;">
-    <div class="toolbar-meta">
-      <span class="pill">共 {{ total_items }} 条</span>
-      {% if total_items >= 200 %}<span class="pill">当前最多展示前 200 条</span>{% endif %}
+      <div class="sidebar-group">
+        <div class="sidebar-title">Digest Status</div>
+        <ul class="sidebar-menu">
+          <li><a href="{{ update_query(selected_only='false') }}" class="{% if not selected_only %}active{% endif %}">全部</a></li>
+          <li><a href="{{ update_query(selected_only='true') }}" class="{% if selected_only %}active{% endif %}">仅已入选 digest</a></li>
+        </ul>
+      </div>
+
+      <div class="sidebar-group">
+        <div class="sidebar-title">Time Range</div>
+        <ul class="sidebar-menu">
+          <li><a href="{{ update_query(time_range='') }}" class="{% if not selected_time_range %}active{% endif %}">不限</a></li>
+          <li><a href="{{ update_query(time_range='1d') }}" class="{% if selected_time_range == '1d' %}active{% endif %}">过去 24 小时</a></li>
+          <li><a href="{{ update_query(time_range='7d') }}" class="{% if selected_time_range == '7d' %}active{% endif %}">过去 7 天</a></li>
+          <li><a href="{{ update_query(time_range='30d') }}" class="{% if selected_time_range == '30d' %}active{% endif %}">过去 30 天</a></li>
+        </ul>
+      </div>
+
+      <div class="sidebar-group">
+        <div class="sidebar-title">Platform</div>
+        <ul class="sidebar-menu">
+          <li><a href="{{ update_query(source='', source_name='') }}" class="{% if not selected_source %}active{% endif %}">所有平台</a></li>
+          {% for value in available_sources %}
+          <li><a href="{{ update_query(source=value, source_name='') }}" class="{% if selected_source == value %}active{% endif %}">{{ value }}</a></li>
+          {% endfor %}
+        </ul>
+      </div>
+
+      {% if available_source_names %}
+      <div class="sidebar-group" style="margin-bottom: 0;">
+        <div class="sidebar-title">Source</div>
+        <ul class="sidebar-menu" style="max-height: 320px; overflow-y: auto;">
+          <li><a href="{{ update_query(source_name='') }}" class="{% if not selected_source_name %}active{% endif %}">所有来源</a></li>
+          {% for value in available_source_names %}
+          <li><a href="{{ update_query(source_name=value) }}" class="{% if selected_source_name == value %}active{% endif %}">{{ value }}</a></li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
     </div>
-    {% if active_filters %}
-    <div class="toolbar-meta">
-      {% for filter in active_filters %}
-      <span class="pill active-filter">{{ filter.label }}: {{ filter.value }}</span>
+  </aside>
+
+  <main>
+    <div class="card" style="margin-bottom: 16px; padding: 12px 16px;">
+      <div class="toolbar" style="margin-bottom: 0;">
+        <div class="toolbar-meta">
+          <span class="pill" style="font-weight: 600; color: #374151;">共 {{ total_items }} 条</span>
+          {% if total_items >= 200 %}<span class="pill">当前最多展示前 200 条</span>{% endif %}
+        </div>
+        <div class="toolbar-meta">
+          {% if active_filters %}
+          {% for filter in active_filters %}
+          <span class="pill active-filter">{{ filter.label }}: {{ filter.value }}</span>
+          {% endfor %}
+          <a href="{{ clear_filters_url }}" style="font-size: 13px; margin-left: 4px; color: #6b7280; text-decoration: underline;">清空筛选</a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    {% if items %}
+    <div class="grid">
+      {% for item in items %}
+      <div class="card news-item">
+        <div class="news-meta">
+          {% if item.ai_score is not none %}
+          {% set score = item.ai_score %}
+          <span class="score-badge {% if score >= 8 %}score-high{% elif score >= 6 %}score-medium{% else %}score-low{% endif %}">★ {{ score }}/10</span>
+          {% endif %}
+          <span class="source-tag source-{{ item.source }}">{{ item.source }}</span>
+          {% if item.source_name %}<span class="muted">{{ item.source_name }}</span>{% endif %}
+          {% if item.selected_for_digest %}<span class="pill" style="background-color: #fef3c7; border-color: #fcd34d; color: #b45309;">selected</span>{% endif %}
+          {% if item.author %}<span class="muted">{{ item.author }}</span>{% endif %}
+        </div>
+        <p class="news-title">
+          {% set translated_title = item.translated_title or '' %}
+          <a href="/items/{{ item.id }}">
+            <span class="news-title-main">{{ item.title }}</span>
+          </a>
+          {% if item.url %}
+          <a class="muted news-origin-link" href="{{ item.url }}" target="_blank" rel="noreferrer">查看原文 ↗</a>
+          {% endif %}
+          {% if translated_title and translated_title != item.title %}
+          <span class="news-title-translation">{{ translated_title }}</span>
+          {% endif %}
+        </p>
+        {% if item.ai_summary %}
+        <p class="news-summary">{{ item.ai_summary }}</p>
+        {% endif %}
+        {% set item_time = item.published_at or item.collected_at %}
+        <p class="muted" title="{{ item_time | datetime_local }}">{{ item_time | datetime_relative }}</p>
+      </div>
       {% endfor %}
     </div>
-    {% endif %}
-  </div>
-
-  <div style="margin-top: 16px;">
-    {% if items %}
-    {% for item in items %}
-    <div class="news-item">
-      <div class="news-meta">
-        {% if item.ai_score is not none %}
-        {% set score = item.ai_score %}
-        <span class="score-badge {% if score >= 8 %}score-high{% elif score >= 6 %}score-medium{% else %}score-low{% endif %}">★ {{ score }}/10</span>
-        {% endif %}
-        <span class="source-tag source-{{ item.source }}">{{ item.source }}</span>
-        {% if item.source_name %}<span class="muted">{{ item.source_name }}</span>{% endif %}
-        {% if item.selected_for_digest %}<span class="pill">selected</span>{% endif %}
-        {% if item.author %}<span class="muted">{{ item.author }}</span>{% endif %}
-      </div>
-      <p class="news-title">
-        {% set translated_title = item.translated_title or '' %}
-        <a href="/items/{{ item.id }}">
-          <span class="news-title-main">{{ item.title }}</span>
-        </a>
-        {% if item.url %}
-        <a class="muted news-origin-link" href="{{ item.url }}" target="_blank" rel="noreferrer">查看原文 ↗</a>
-        {% endif %}
-        {% if translated_title and translated_title != item.title %}
-        <span class="news-title-translation">{{ translated_title }}</span>
-        {% endif %}
-      </p>
-      {% if item.ai_summary %}
-      <p class="news-summary">{{ item.ai_summary }}</p>
-      {% endif %}
-      {% set item_time = item.published_at or item.collected_at %}
-      <p class="muted" title="{{ item_time | datetime_local }}">{{ item_time | datetime_relative }}</p>
-    </div>
-    {% endfor %}
     {% else %}
-    <div class="empty-state">
-      当前筛选条件下没有结果。{% if active_filters %}<a href="{{ clear_filters_url }}">清空筛选后重试</a>{% endif %}
+    <div class="card empty-state" style="text-align: center; padding: 48px 16px;">
+      <div style="font-size: 32px; margin-bottom: 12px;">📭</div>
+      <div style="color: #4b5563; font-weight: 500; margin-bottom: 8px;">当前筛选条件下没有结果</div>
+      {% if active_filters %}
+      <div><a href="{{ clear_filters_url }}">清空筛选后重试</a></div>
+      {% endif %}
     </div>
     {% endif %}
-  </div>
+  </main>
 </div>
 {% endblock %}
