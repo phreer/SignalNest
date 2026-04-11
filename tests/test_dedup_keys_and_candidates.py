@@ -40,7 +40,7 @@ def test_dedup_key_for_item_normalizes_generic_urls() -> None:
     assert dedup_key_for_item(item) == "https://example.com/post?a=1"
 
 
-def test_ai_dedup_across_candidates_prefers_programmatic_result(monkeypatch) -> None:
+def test_ai_dedup_across_candidates_uses_ai_when_available(monkeypatch) -> None:
     candidates = [
         {
             "source": "rss",
@@ -61,13 +61,49 @@ def test_ai_dedup_across_candidates_prefers_programmatic_result(monkeypatch) -> 
 
     called = {"value": False}
 
-    def _never_call_ai(*args, **kwargs):
+    def _fake_call_ai(*args, **kwargs):
         called["value"] = True
-        raise AssertionError(
-            "AI should not be called when programmatic candidate dedup already found duplicates"
-        )
+        return '{"keep": [1, 2], "groups": [{"keep": 1, "drop": [0], "reason": "same event"}]}'
 
-    monkeypatch.setattr("src.ai.dedup._call_ai", _never_call_ai)
+    monkeypatch.setattr("src.ai.dedup._call_ai", _fake_call_ai)
+
+    kept = ai_dedup_across_candidates(
+        candidates,
+        focus="",
+        call_kwargs={"model": "test", "api_key": "test"},
+        language="zh",
+        backend="litellm",
+    )
+
+    assert len(kept) == 2
+    assert any(item["url"] == "https://example.com/post?a=1" for item in kept)
+    assert any(item["url"] == "https://example.com/post-b" for item in kept)
+    assert called["value"] is True
+
+
+def test_ai_dedup_across_candidates_falls_back_when_ai_fails(monkeypatch) -> None:
+    candidates = [
+        {
+            "source": "rss",
+            "title": "Same article title with enough length for strict duplicate",
+            "url": "https://example.com/post?a=1&utm_source=x",
+        },
+        {
+            "source": "rss",
+            "title": "Same article title with enough length for strict duplicate",
+            "url": "https://example.com/post?a=1",
+        },
+        {
+            "source": "rss",
+            "title": "Another clearly different article title",
+            "url": "https://example.com/post-b",
+        },
+    ]
+
+    def _fail_call_ai(*args, **kwargs):
+        raise RuntimeError("boom")
+
+    monkeypatch.setattr("src.ai.dedup._call_ai", _fail_call_ai)
 
     kept = ai_dedup_across_candidates(
         candidates,
@@ -82,4 +118,3 @@ def test_ai_dedup_across_candidates_prefers_programmatic_result(monkeypatch) -> 
         item["url"] == "https://example.com/post?a=1&utm_source=x" for item in kept
     )
     assert any(item["url"] == "https://example.com/post-b" for item in kept)
-    assert called["value"] is False

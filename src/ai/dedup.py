@@ -248,13 +248,6 @@ def fallback_dedup_across_candidates(candidates: list[dict]) -> list[dict]:
     return result
 
 
-def _should_skip_ai_candidate_dedup(
-    candidates: list[dict], deduped: list[dict]
-) -> bool:
-    # 当前程序只做严格 URL/标题近似去重；一旦已经命中，说明重复很明确，无需再交给模型。
-    return len(deduped) < len(candidates)
-
-
 def ai_dedup_across_candidates(
     candidates: list[dict],
     focus: str,
@@ -266,9 +259,6 @@ def ai_dedup_across_candidates(
         return candidates
 
     fallback_result = fallback_dedup_across_candidates(candidates)
-    if _should_skip_ai_candidate_dedup(candidates, fallback_result):
-        logger.info("  跨源去重：程序规则已命中重复，跳过 AI 复判")
-        return fallback_result
 
     lang_label = "中文" if language == "zh" else "English"
     focus_line = f"用户关注方向：{focus}\n\n" if focus else ""
