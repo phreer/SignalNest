@@ -14,6 +14,9 @@ cp docker/.env.example .env
 # Use the repository virtualenv for all Python commands
 # Prefer .venv/bin/python -m ... over system python
 
+# Start the long-running service (Web UI + embedded worker + scheduler)
+python -m src.main
+
 # Run a scheduled digest (dry-run: no actual notifications sent)
 python -m src.main --schedule-name "早间日报" --dry-run
 
@@ -43,6 +46,10 @@ SignalNest is a self-hosted AI daily digest service. The execution flow is:
 
 ```
 src/main.py
+  ├─ serve()
+  │   ├─ src.web.app.bootstrap_app_state()  (init app DB + sync archives)
+  │   ├─ src.web.runtime.run_worker_loop()  (single embedded worker + scheduler)
+  │   └─ src.web.app.create_app()           (FastAPI UI with explicit store)
   └─ run_schedule() / run_query()
        └─ src/agent/kernel.py  (run_agent_turn)
             ├─ builds system prompt (injects config/personal/user.md as persona)
@@ -91,6 +98,7 @@ After each run, `data/last_digest.json` is written with all items. Users can set
 ## Key Design Decisions
 
 - **Agent-only architecture**: There is no non-agent code path. All scheduled runs go through the agent kernel.
+- **Single service entrypoint**: `python -m src.main` is the only long-running service mode. It is expected to run as a single service instance with a single uvicorn worker.
 - **State lives in ToolRuntime.state**: Tools mutate `rt.state` (a plain dict) as they execute. The session store serializes/deserializes this dict to SQLite between turns.
 - **Environment variables override config.yaml**: `AI_BACKEND`, `AI_MODEL`, `AI_API_KEY`, `AI_API_BASE` always take priority over yaml values.
 - **Local dev**: `src/config_loader.py` reads `.env` from the repo root. Docker reads `docker/.env`.

@@ -164,7 +164,23 @@ cp docker/.env.example .env
 AI_API_KEY=dummy
 ```
 
-### 调度模式
+### 服务模式
+
+本地默认启动方式：
+
+```bash
+python -m src.main
+```
+
+这会同时启动：
+
+- Web UI
+- 单个 embedded worker
+- 单个 embedded scheduler
+
+当前部署假设是单服务实例、单 uvicorn worker。
+
+### 单次执行 / 调试
 
 ```bash
 python -m src.main --schedule-name "早间日报" --dry-run

@@ -157,7 +157,23 @@ cp docker/.env.example .env
 
 For local runs, `src/config_loader.py` reads repository-root `.env` (not `docker/.env`).
 
-### Schedule mode
+### Service mode
+
+Default local startup:
+
+```bash
+python -m src.main
+```
+
+This starts:
+
+- the Web UI
+- one embedded worker
+- one embedded scheduler
+
+The current deployment assumption is a single service instance with a single uvicorn worker.
+
+### One-off runs / debugging
 
 ```bash
 python -m src.main --schedule-name "Morning Digest" --dry-run
