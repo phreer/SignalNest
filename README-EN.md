@@ -32,7 +32,7 @@ A self-hosted personal AI digest system — scheduled aggregation from GitHub Tr
 
 - Multi-source ingestion: compose `github` / `youtube` / `rss` per schedule.
 - AI processing pipeline: batch title filtering → per-item scoring and summaries → daily digest generation.
-- History deduplication: inject recent 7-day titles from `data/history/` to reduce repeats.
+- History deduplication: once a canonical `dedup_key` has been selected for a digest, it is excluded from future digests.
 - Per-source minimums: `ai.min_items_per_source` (default GitHub>=5, YouTube>=2).
 - Dual-track YouTube: subscribed channels + optional keyword search derived from `focus`.
 - User persona injection: reads `config/personal/user.md` and injects user background and preferences into the Agent system prompt.

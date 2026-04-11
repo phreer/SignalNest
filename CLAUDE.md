@@ -61,12 +61,14 @@ src/main.py
 
 `summarize_items()` in `summarizer.py` orchestrates a 4-stage pipeline:
 
-1. **dedup.py** — History dedup against last 7 days of `data/history/*.json` (title/URL normalization)
+1. **store.py + dedup.py** — Drop any item whose canonical `dedup_key` has already been selected in a previous digest
 2. **filter.py** — Batch title selection via single AI call; enforces `min_items_per_source` guarantees
-3. **dedup.py** — Cross-source dedup on candidates
+3. **dedup.py** — AI-first cross-source dedup on current candidates, with deterministic fallback on failure
 4. **scorer.py** — Parallel AI scoring + summary (ThreadPoolExecutor, `ai.max_workers`)
 
 `digest.py` then generates an overall "today's highlights" paragraph.
+
+`data/history/*.json` is still written as an archive, but it no longer participates in the primary digest filtering path.
 
 `title_translator.py` runs before `summarize_items()` to enrich non-GitHub items with `translated_title`. Translation requests are sent in batches of at most 10 items; if a batch returns no parseable result, it is recursively split and retried. GitHub items are intentionally skipped and keep their original repo-style titles.
 

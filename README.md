@@ -33,7 +33,7 @@
 - 多源采集：`github` / `youtube` / `rss` 按 schedule 自由组合。
 - AI 处理流水线：批量标题筛选 → 逐条评分与摘要 → 生成今日要点总结。
 - 标题翻译：非 GitHub 条目会补充 `translated_title`，Web UI 与 digest report 同时展示原始标题和译文。
-- 历史去重：自动注入 `data/history/` 最近 7 天标题，降低重复推送。
+- 历史去重：基于数据库中已入选过的 `dedup_key`，已推送内容不会再次进入 digest。
 - 来源保底：`ai.min_items_per_source` 支持来源最小条数（默认 GitHub>=5、YouTube>=2）。
 - YouTube 双通路：订阅频道 + 基于 `focus` 的关键词搜索（可选）。
 - 用户人格注入：读取 `config/personal/user.md`，将用户偏好与背景注入 Agent system prompt。

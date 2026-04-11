@@ -234,7 +234,8 @@ Main tables:
 - `job_runs`
 - `job_logs`
 - `digests`
-- `collected_items`
+- `raw_items`
+- `item_annotations`
 - `deep_summaries`
 
 The agent's internal execution store remains separate:

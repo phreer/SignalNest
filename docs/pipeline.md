@@ -11,7 +11,7 @@ Agent 调用 collect_* 工具
   └─ rt.state["raw_items"]          所有抓取的原始条目
 
 summarize_items()
-  ├─ Stage A  历史去重                ai_dedup_against_history()
+  ├─ Stage A  过滤历史已入选内容       selected dedup_key check
   ├─ Stage 1  AI 批量标题筛选          batch_select_by_titles()
   ├─ Stage B  跨来源去重              ai_dedup_across_candidates()
   └─ Stage 2  并行 AI 评分 + 摘要      score_single_item() × N
@@ -20,7 +20,8 @@ generate_digest_summary()
   └─ rt.state["digest_summary"]     今日要点总结
 
 build_indexed_items()
-  └─ store.replace_items_for_job()  写入 collected_items 表
+  ├─ store.upsert_raw_items()       写入 raw_items 表
+  └─ store.replace_annotations_for_job() 写入 item_annotations 表
 ```
 
 ---
@@ -149,8 +150,10 @@ build_indexed_items()
 每个 `collect_*` 工具在执行后，通过 `_merge_items(existing, new)` 将结果追加到 `rt.state["raw_items"]`。
 
 **去重键：**
-- 有 URL → `f"{source}:{url}"` （小写）
-- 无 URL → `f"{source}:{title}"` （小写）
+- YouTube → `youtube::{video_id}`
+- GitHub → `github::{owner/repo}`
+- 其他优先使用规范化 URL
+- 无 URL 时回退到 `source::{normalized_title}`
 
 多次调用不同 collect 工具时，同一条目不会重复入 `raw_items`。
 
@@ -170,22 +173,17 @@ build_indexed_items()
 
 ---
 
-### Stage A — 历史去重（`src/ai/dedup.py`）
+### Stage A — 过滤历史已入选内容
 
-**目标：** 过滤掉近 7 天内已推送过的内容，避免重复。
+**目标：** 过滤掉过去任意一次已经入选过 digest 的内容，避免重复推送。
 
-**两步执行：**
+**执行方式：**
 
-1. **确定性去重（先执行）：**
-   - YouTube → 按 `video_id` 匹配
-   - GitHub → 按 `owner/repo` 匹配
-   - 其他 → 规范化 URL 匹配，或标题相似度 ≥ 0.97（标题 ≥ 20 字符时）
+1. 从 `raw_items + item_annotations` 读取所有 `selected_for_digest=1` 的历史 `dedup_key`
+2. 同时兼容旧数据中的 legacy key 和当前 canonical key
+3. 当前轮 `raw_items` 若命中这些 key，则直接跳过
 
-2. **AI 去重（仅当确定性步骤未找到任何重复时才触发）：**
-   - 将全部候选条目 + 最多 200 条历史记录一次性发给 AI 判断
-   - AI 指示：URL 完全匹配 > 来源特定 key > 近似标题，禁止按主题合并不同事件
-
-**历史数据来源：** `data/history/digest_*.json`，加载最近 7 天，最多 600 条，Stage 1 提示词中最多使用 120 条标题。
+**说明：** `data/history/digest_*.json` 仍会持续写入，但只用于归档与回看，不再参与主筛选决策。
 
 ---
 
@@ -196,7 +194,6 @@ build_indexed_items()
 **AI 输入：** 编号列表 `[i] [SOURCE] 标题 — 描述[:80字符]`，附带：
 - `focus` 关注方向（如有）
 - 最多 3 条用户口味示例（来自 `feedback.db`，评分 ≥ 4）
-- 最多 200 条历史标题（提示 AI 避免重复语义内容）
 
 **AI 输出：** `{"selected": [0, 3, 7, ...]}`，最多选 `min(max_output × 2, len(candidates))` 条。
 
@@ -208,10 +205,12 @@ build_indexed_items()
 
 **目标：** 处理同一事件被多个来源报道的情况，只保留一条最优代表。
 
-**两步执行（逻辑同 Stage A）：**
+**执行方式：**
 
-1. **确定性去重：** 规范化 URL 合并同 URL 条目（保留最完整的一条），然后标题相似度 ≥ 0.97 的合并
-2. **AI 去重（仅确定性未找到重复时触发）：** 安全检查：若 AI 保留数 > 确定性结果保留数，则回退到确定性结果
+1. 先计算一份确定性 `fallback_result`：规范化 URL 合并同 URL 条目，再用标题相似度 ≥ 0.97 的规则合并明显重复
+2. 始终调用 AI 做当前批次跨源去重判断
+3. 如果 AI 失败或结果异常，回退到 `fallback_result`
+4. 如果 AI 结果比程序规则更宽松（保留条数更多），也回退到 `fallback_result`
 
 **Stage B 之后执行 RSS 每 feed 上限：**
 
@@ -279,28 +278,37 @@ build_indexed_items()
 - 以 `(source, url)` 为 key 在 `news_items` 中查找，有匹配则 `selected_for_digest=True`，并将 AI 字段（score/summary/reason）合并进去
 - **全量 raw_items 都会入库**，未被选中的条目 `selected_for_digest=0`，AI 字段为 NULL
 
-### 4.2 写入数据库（`store.replace_items_for_job()`）
+### 4.2 写入数据库（`store.upsert_raw_items()` + `store.replace_annotations_for_job()`）
 
-原子操作：先删除该 `job_run_id` 的所有旧行，再批量插入新行。
+原子操作分两步：
 
-**`collected_items` 表写入的字段：**
+1. `upsert_raw_items()` 按 canonical `dedup_key` 写入或更新 `raw_items`
+2. `replace_annotations_for_job()` 先删除该 `job_run_id` 的旧 annotation，再插入本轮 annotation
+
+**`raw_items` 表核心字段：**
 
 | 列 | 来源 | 说明 |
 |---|---|---|
 | `source` | `raw.source` | rss / github / youtube |
-| `external_id` | 计算得出 | YouTube: video_id；GitHub: owner/repo；其他: 空 |
 | `title` | `raw.title` | |
 | `url` | `raw.url` | |
-| `author` | `raw.channel` | 仅 YouTube 有值 |
-| `feed_title` | `raw.feed_title` | 仅 RSS 有值 |
-| `language` | `raw.language` | 仅 GitHub 有值 |
+| `dedup_key` | canonical identity | 统一内容身份键 |
+| `external_id` | 计算得出 | YouTube: video_id；GitHub: owner/repo；其他: 空 |
 | `published_at` | `raw.published_at` | |
-| `collected_at` | 写入时的 UTC 时间 | |
+| `first_seen_at` | 首次入库时间 | |
+| `last_seen_at` | 最近一次再次看到该条目的时间 | |
+| `seen_count` | 自动累加 | 该条目被采集到的次数 |
+
+**`item_annotations` 表写入的字段：**
+
+| 列 | 来源 | 说明 |
+|---|---|---|
+| `raw_item_id` | `raw_items.id` | |
+| `job_run_id` | 当前任务 | |
 | `selected_for_digest` | bool → 0/1 | |
 | `ai_score` | `selected.ai_score` | 未选中为 NULL |
 | `ai_summary` | `selected.ai_summary` | 未选中为 NULL |
 | `ai_reason` | `selected.ai_reason` | 未选中为 NULL |
-| `raw_json` | 完整 item 字典（含 AI 字段）序列化为 JSON | |
 
 ---
 
@@ -308,10 +316,10 @@ build_indexed_items()
 
 | 文件 | 内容 |
 |---|---|
-| `data/app.db` | `job_runs`、`job_logs`、`digests`、`collected_items`、`deep_summaries` |
+| `data/app.db` | `job_runs`、`job_logs`、`digests`、`raw_items`、`item_annotations`、`deep_summaries` |
 | `data/agent_sessions.db` | Agent 对话历史、tool call 日志、session state |
 | `data/feedback.db` | 用户评分（1-5），用于生成 AI 评分口味示例 |
-| `data/history/digest_*.json` | 历次运行归档，供 Stage A 历史去重使用（保留 7 天） |
+| `data/history/digest_*.json` | 历次运行归档，用于审计与回看 |
 
 ---
 
