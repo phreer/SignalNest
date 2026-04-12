@@ -7,6 +7,7 @@ from src.agent.tools import ToolRuntime, _tool_summarize_news
 
 class AgentSummarizeCandidateTests(unittest.TestCase):
     def test_summarize_news_prefers_candidate_raw_items(self) -> None:
+        events = []
         rt = ToolRuntime(
             config={"ai": {"max_items_per_digest": 5}},
             state={
@@ -32,6 +33,7 @@ class AgentSummarizeCandidateTests(unittest.TestCase):
             },
             dry_run=True,
             now=datetime.now(timezone.utc),
+            progress_callback=events.append,
         )
 
         with (
@@ -59,6 +61,8 @@ class AgentSummarizeCandidateTests(unittest.TestCase):
         self.assertEqual(result["news_count"], 1)
         self.assertEqual(summarize.call_args.args[0][0]["title"], "candidate")
         self.assertEqual(len(summarize.call_args.args[0]), 1)
+        progress_callback = summarize.call_args.kwargs["progress_callback"]
+        self.assertTrue(callable(progress_callback))
 
 
 if __name__ == "__main__":

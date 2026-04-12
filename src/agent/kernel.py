@@ -433,6 +433,7 @@ def run_agent_turn(
         state=state,
         dry_run=options.dry_run,
         now=datetime.now(ZoneInfo(tz_name)),
+        progress_callback=options.progress_callback,
     )
 
     user_profile = _load_user_profile(config)

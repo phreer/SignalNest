@@ -59,6 +59,32 @@ def _fake_schedule_run(
 ):
     if progress_callback:
         progress_callback(
+            {"type": "prefetch_progress", "stage": "prefetch_start", "sources": ["rss"]}
+        )
+        progress_callback(
+            {
+                "type": "prefetch_progress",
+                "stage": "prefetch_source_start",
+                "source": "rss",
+            }
+        )
+        progress_callback(
+            {
+                "type": "prefetch_progress",
+                "stage": "prefetch_source_done",
+                "source": "rss",
+                "fetched_count": 1,
+            }
+        )
+        progress_callback(
+            {
+                "type": "prefetch_progress",
+                "stage": "prefetch_done",
+                "sources": ["rss"],
+                "raw_items_count": 1,
+            }
+        )
+        progress_callback(
             {"type": "turn_started", "session_id": "session-1", "turn_index": 1}
         )
         progress_callback(
@@ -67,6 +93,14 @@ def _fake_schedule_run(
                 "step_no": 1,
                 "tool_name": "collect_rss",
                 "arguments": {},
+            }
+        )
+        progress_callback(
+            {
+                "type": "summarizer_progress",
+                "stage": "stage2_score_progress",
+                "completed": 3,
+                "total": 10,
             }
         )
         progress_callback(
@@ -202,12 +236,26 @@ class AppStateStoreTests(unittest.TestCase):
             resp = client.get(f"/api/jobs/{result['job_run_id']}/logs")
             self.assertEqual(resp.status_code, 200)
             payload = resp.json()
+            prefetch_progress = next(
+                log
+                for log in payload["logs"]
+                if log["event_type"] == "prefetch_progress"
+            )
             tool_finish = next(
                 log for log in payload["logs"] if log["event_type"] == "tool_finish"
             )
+            summarizer_progress = next(
+                log
+                for log in payload["logs"]
+                if log["event_type"] == "summarizer_progress"
+            )
+            self.assertEqual(prefetch_progress["extra"]["stage"], "prefetch_start")
             self.assertEqual(
                 tool_finish["extra"]["result"]["feed_diagnostics"][0]["failure_reason"],
                 "all_entries_outside_lookback",
+            )
+            self.assertEqual(
+                summarizer_progress["extra"]["stage"], "stage2_score_progress"
             )
 
     def test_stale_running_job_is_recovered_as_lost(self) -> None:

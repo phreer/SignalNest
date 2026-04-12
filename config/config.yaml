@@ -226,6 +226,8 @@ ai:
   # 自定义 API 端点（环境变量 AI_API_BASE 优先，使用官方接口时留空）
   api_base: "http://fedora-desktop.local:11434"
   max_tokens: 2048              # 每条摘要的最大 token 数
+  request_timeout_seconds: 90   # 单次 AI 请求超时，避免 summarize_news 被单个请求无限阻塞
+  request_num_retries: 1        # LiteLLM 请求失败后的最大重试次数
   max_workers: 10                # Stage 2 并行 AI 调用数（根据 API 并发限制调整）
   min_relevance_score: 5        # 相关性过滤阈值（1-10），低于此分数不展示
   max_items_per_digest: 20      # 每次最多展示的新闻条目数

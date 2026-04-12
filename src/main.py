@@ -116,32 +116,13 @@ def _merge_prefetched_items(*groups: list[dict]) -> list[dict]:
     return merged
 
 
-def _prefetch_schedule_raw_items(schedule: dict, config: dict) -> list[dict]:
-    content_blocks = [
-        str(block).strip().lower()
-        for block in schedule.get("content", [])
-        if str(block).strip()
-    ]
-    if content_blocks and "news" not in content_blocks:
-        return []
-
-    sources = [
-        str(s).strip().lower() for s in schedule.get("sources", []) if str(s).strip()
-    ]
-    if not sources:
-        sources = ["github", "youtube", "rss"]
-
-    prefetched: list[list[dict]] = []
-    focus = str(schedule.get("focus", "") or "")
-
-    if "github" in sources:
-        prefetched.append(collect_github(config))
-    if "rss" in sources:
-        prefetched.append(collect_rss(config))
-    if "youtube" in sources:
-        prefetched.append(collect_youtube(config, focus=focus))
-
-    return _merge_prefetched_items(*prefetched)
+def _emit_prefetch_progress(
+    progress_callback: Callable[[dict[str, Any]], None] | None,
+    event: dict[str, Any],
+) -> None:
+    if progress_callback is None:
+        return
+    progress_callback({"type": "prefetch_progress", **event})
 
 
 def _build_candidate_raw_items(raw_items: list[dict], config: dict) -> list[dict]:
@@ -210,7 +191,64 @@ def run_schedule(
     deny_tools.update({"collect_github", "collect_rss", "collect_youtube"})
     run_config["agent"]["policy"]["deny_tools"] = sorted(deny_tools)
 
-    prefetched_raw_items = _prefetch_schedule_raw_items(schedule, config)
+    content_blocks = [
+        str(block).strip().lower()
+        for block in schedule.get("content", [])
+        if str(block).strip()
+    ]
+    sources = [
+        str(s).strip().lower() for s in schedule.get("sources", []) if str(s).strip()
+    ]
+    if not sources:
+        sources = ["github", "youtube", "rss"]
+    prefetch_sources = (
+        sources if (not content_blocks or "news" in content_blocks) else []
+    )
+
+    _emit_prefetch_progress(
+        progress_callback,
+        {
+            "stage": "prefetch_start",
+            "schedule_name": str(schedule.get("name", "") or schedule_name),
+            "sources": prefetch_sources,
+        },
+    )
+
+    prefetched_groups: list[list[dict]] = []
+    focus = str(schedule.get("focus", "") or "")
+    for source in prefetch_sources:
+        _emit_prefetch_progress(
+            progress_callback,
+            {"stage": "prefetch_source_start", "source": source},
+        )
+        if source == "github":
+            items = collect_github(config)
+        elif source == "rss":
+            items = collect_rss(config)
+        elif source == "youtube":
+            items = collect_youtube(config, focus=focus)
+        else:
+            items = []
+        prefetched_groups.append(items)
+        _emit_prefetch_progress(
+            progress_callback,
+            {
+                "stage": "prefetch_source_done",
+                "source": source,
+                "fetched_count": len(items),
+            },
+        )
+
+    prefetched_raw_items = _merge_prefetched_items(*prefetched_groups)
+    _emit_prefetch_progress(
+        progress_callback,
+        {
+            "stage": "prefetch_done",
+            "sources": prefetch_sources,
+            "raw_items_count": len(prefetched_raw_items),
+        },
+    )
+
     if prefetched_raw_items:
         store = AppStateStore.from_config(config)
         store.init_db()

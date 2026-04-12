@@ -12,8 +12,9 @@ from __future__ import annotations
 
 import logging
 import os
+import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import Optional
+from typing import Callable, Optional
 
 from src.ai.dedup import (
     ai_dedup_across_candidates,
@@ -35,6 +36,8 @@ __all__ = ["summarize_items", "generate_digest_summary"]
 
 logger = logging.getLogger(__name__)
 
+SummarizerProgress = Callable[[dict], None]
+
 
 def _safe_positive_int(value, default: int) -> int:
     try:
@@ -42,6 +45,32 @@ def _safe_positive_int(value, default: int) -> int:
     except (TypeError, ValueError):
         return default
     return parsed if parsed > 0 else default
+
+
+def _build_call_kwargs(ai_cfg: dict) -> dict:
+    model = os.environ.get("AI_MODEL") or ai_cfg.get("model", "openai/gpt-4o-mini")
+    api_base = os.environ.get("AI_API_BASE") or ai_cfg.get("api_base") or None
+    api_key = os.environ.get("AI_API_KEY", "")
+
+    call_kwargs: dict = {
+        "model": model,
+        "api_key": api_key,
+        "max_tokens": ai_cfg.get("max_tokens", 512),
+        "timeout": _safe_positive_int(ai_cfg.get("request_timeout_seconds", 90), 90),
+        "num_retries": _safe_positive_int(ai_cfg.get("request_num_retries", 1), 1),
+    }
+    if api_base:
+        call_kwargs["api_base"] = api_base
+    return call_kwargs
+
+
+def _emit_progress(progress_callback: SummarizerProgress | None, event: dict) -> None:
+    if progress_callback is None:
+        return
+    try:
+        progress_callback(event)
+    except Exception:
+        logger.debug("summarizer progress callback failed", exc_info=True)
 
 
 def summarize_items(
@@ -52,6 +81,7 @@ def summarize_items(
     focus: str = "",
     schedule_name: str = "",
     already_selected_keys: set[str] | None = None,
+    progress_callback: SummarizerProgress | None = None,
 ) -> list[dict]:
     """
     两阶段处理：
@@ -107,10 +137,21 @@ def summarize_items(
         f"effective_cap={effective_max_output} min_score={min_score} "
         f"schedule={schedule_name or '(unknown)'}"
     )
+    _emit_progress(
+        progress_callback,
+        {
+            "type": "summarizer_progress",
+            "stage": "start",
+            "raw_count": len(raw_items),
+            "requested_max": requested_max,
+            "config_cap": config_cap,
+            "effective_cap": effective_max_output,
+            "min_score": min_score,
+            "schedule_name": schedule_name,
+        },
+    )
 
     rss_per_feed_limit = _safe_positive_int(rss_cfg.get("max_items_per_feed", 3), 3)
-    model = os.environ.get("AI_MODEL") or ai_cfg.get("model", "openai/gpt-4o-mini")
-    api_base = os.environ.get("AI_API_BASE") or ai_cfg.get("api_base") or None
     backend = os.environ.get("AI_BACKEND") or ai_cfg.get("backend", "litellm")
     api_key = os.environ.get("AI_API_KEY", "")
 
@@ -118,13 +159,7 @@ def summarize_items(
         logger.error("AI_API_KEY 未配置，跳过 AI 摘要（backend=litellm 需要 API key）")
         return raw_items[:effective_max_output]
 
-    call_kwargs: dict = {
-        "model": model,
-        "api_key": api_key,
-        "max_tokens": ai_cfg.get("max_tokens", 512),
-    }
-    if api_base:
-        call_kwargs["api_base"] = api_base
+    call_kwargs = _build_call_kwargs(ai_cfg)
 
     taste_limit = ai_cfg.get("taste_examples_limit", 8)
     source_minimums = normalize_source_minimums(ai_cfg.get("min_items_per_source"))
@@ -137,6 +172,7 @@ def summarize_items(
     # ── 阶段 A2：跳过曾入选过 digest 的 items ────────────────────────────────
     if already_selected_keys:
         pre_count = len(items_after_history)
+        t0 = time.monotonic()
         items_after_history = [
             item
             for item in items_after_history
@@ -145,12 +181,33 @@ def summarize_items(
         skipped = pre_count - len(items_after_history)
         if skipped:
             logger.info(f"  skipped_already_selected={skipped}")
+        _emit_progress(
+            progress_callback,
+            {
+                "type": "summarizer_progress",
+                "stage": "filter_history",
+                "before_count": pre_count,
+                "after_count": len(items_after_history),
+                "skipped_count": skipped,
+                "duration_ms": round((time.monotonic() - t0) * 1000),
+            },
+        )
         if not items_after_history:
             logger.info(f"  新闻筛选完成: final_count=0 (all items already selected)")
+            _emit_progress(
+                progress_callback,
+                {
+                    "type": "summarizer_progress",
+                    "stage": "completed",
+                    "final_count": 0,
+                    "reason": "all_items_already_selected",
+                },
+            )
             return []
 
     # ── 阶段 1：标题批量筛选 ──────────────────────────────────────────────────
     max_keep = min(effective_max_output * 2, len(items_after_history))
+    t0 = time.monotonic()
     selected_indices = batch_select_by_titles(
         items_after_history,
         focus,
@@ -164,14 +221,36 @@ def summarize_items(
         items_after_history, selected_indices, source_minimums, max_keep
     )
     candidates = [items_after_history[i] for i in selected_indices]
+    _emit_progress(
+        progress_callback,
+        {
+            "type": "summarizer_progress",
+            "stage": "stage1_select",
+            "input_count": len(items_after_history),
+            "selected_count": len(candidates),
+            "max_keep": max_keep,
+            "duration_ms": round((time.monotonic() - t0) * 1000),
+        },
+    )
     logger.info(f"  after_stage1_select_count={len(candidates)}")
     if not candidates:
         logger.info(
             f"  新闻筛选完成: final_count=0 effective_cap={effective_max_output}"
         )
+        _emit_progress(
+            progress_callback,
+            {
+                "type": "summarizer_progress",
+                "stage": "completed",
+                "final_count": 0,
+                "reason": "no_candidates_after_stage1",
+            },
+        )
         return []
 
     # ── 阶段 B：跨源去重 ──────────────────────────────────────────────────────
+    before_dedup = len(candidates)
+    t0 = time.monotonic()
     candidates = ai_dedup_across_candidates(
         candidates,
         focus=focus,
@@ -179,10 +258,29 @@ def summarize_items(
         language=language,
         backend=backend,
     )
+    _emit_progress(
+        progress_callback,
+        {
+            "type": "summarizer_progress",
+            "stage": "cross_source_dedup",
+            "before_count": before_dedup,
+            "after_count": len(candidates),
+            "duration_ms": round((time.monotonic() - t0) * 1000),
+        },
+    )
     logger.info(f"  after_cross_source_dedup_count={len(candidates)}")
     if not candidates:
         logger.info(
             f"  新闻筛选完成: final_count=0 effective_cap={effective_max_output}"
+        )
+        _emit_progress(
+            progress_callback,
+            {
+                "type": "summarizer_progress",
+                "stage": "completed",
+                "final_count": 0,
+                "reason": "no_candidates_after_dedup",
+            },
         )
         return []
 
@@ -200,6 +298,16 @@ def summarize_items(
         logger.info(
             f"  RSS per-feed 封顶：{len(candidates)} → {len(capped)} 条进入摘要"
         )
+    _emit_progress(
+        progress_callback,
+        {
+            "type": "summarizer_progress",
+            "stage": "rss_feed_cap",
+            "before_count": len(candidates),
+            "after_count": len(capped),
+            "rss_per_feed_limit": rss_per_feed_limit,
+        },
+    )
     candidates = capped
 
     # ── 候选不足时从剩余池补全 ────────────────────────────────────────────────
@@ -209,6 +317,7 @@ def summarize_items(
         remaining_pool = [
             item for item in items_after_history if item_key(item) not in existing_keys
         ]
+        t0 = time.monotonic()
         fill_indices = ai_pick_fill_candidates(
             candidates,
             remaining_pool,
@@ -239,6 +348,18 @@ def summarize_items(
         logger.info(
             f"  after_fill_candidates_count={len(candidates)} (filled={filled}, need={need_fill})"
         )
+        _emit_progress(
+            progress_callback,
+            {
+                "type": "summarizer_progress",
+                "stage": "fill_candidates",
+                "remaining_pool_count": len(remaining_pool),
+                "need_count": need_fill,
+                "filled_count": filled,
+                "candidate_count": len(candidates),
+                "duration_ms": round((time.monotonic() - t0) * 1000),
+            },
+        )
 
     if not candidates:
         logger.info(
@@ -250,6 +371,7 @@ def summarize_items(
     yt_candidates = [item for item in candidates if item.get("source") == "youtube"]
     if yt_candidates:
         logger.info(f"  拉取 YouTube 字幕（{len(yt_candidates)} 个视频）...")
+        t0 = time.monotonic()
         try:
             from src.collectors.youtube_collector import _get_transcript
 
@@ -261,13 +383,32 @@ def summarize_items(
                     item["transcript_snippet"] = _get_transcript(video_id)
         except Exception as e:
             logger.warning(f"YouTube 字幕补充失败: {e}")
+        _emit_progress(
+            progress_callback,
+            {
+                "type": "summarizer_progress",
+                "stage": "youtube_transcripts",
+                "youtube_candidate_count": len(yt_candidates),
+                "duration_ms": round((time.monotonic() - t0) * 1000),
+            },
+        )
 
     # ── 阶段 2：并行完整评分+摘要 ─────────────────────────────────────────────
     system_prompt = build_scoring_system_prompt(taste_examples, language, focus=focus)
     results: list[dict] = []
     low_score_pool: list[dict] = []
     total = len(candidates)
+    _emit_progress(
+        progress_callback,
+        {
+            "type": "summarizer_progress",
+            "stage": "stage2_score_start",
+            "candidate_count": total,
+            "max_workers": max_workers,
+        },
+    )
 
+    t0 = time.monotonic()
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         futures = {
             executor.submit(
@@ -282,12 +423,37 @@ def summarize_items(
             ): item
             for i, item in enumerate(candidates)
         }
+        completed = 0
         for future in as_completed(futures):
             high, low = future.result()
             if high is not None:
                 results.append(high)
             elif low is not None:
                 low_score_pool.append(low)
+            completed += 1
+            _emit_progress(
+                progress_callback,
+                {
+                    "type": "summarizer_progress",
+                    "stage": "stage2_score_progress",
+                    "completed": completed,
+                    "total": total,
+                    "high_score_count": len(results),
+                    "low_score_count": len(low_score_pool),
+                },
+            )
+
+    _emit_progress(
+        progress_callback,
+        {
+            "type": "summarizer_progress",
+            "stage": "stage2_score_done",
+            "candidate_count": total,
+            "high_score_count": len(results),
+            "low_score_count": len(low_score_pool),
+            "duration_ms": round((time.monotonic() - t0) * 1000),
+        },
+    )
 
     logger.info(f"  after_stage2_score_count={len(results)}")
     results.sort(key=lambda x: x.get("ai_score", 0), reverse=True)
@@ -323,6 +489,18 @@ def summarize_items(
     final_items = selected[:effective_max_output]
     final_items.sort(key=lambda x: x.get("ai_score", 0), reverse=True)
 
+    _emit_progress(
+        progress_callback,
+        {
+            "type": "summarizer_progress",
+            "stage": "completed",
+            "final_count": len(final_items),
+            "selected_count": len(selected),
+            "high_score_count": len(results),
+            "low_score_count": len(low_score_pool),
+            "effective_cap": effective_max_output,
+        },
+    )
     logger.info(
         f"  新闻筛选完成: final_count={len(final_items)} "
         f"effective_cap={effective_max_output} requested_max={requested_max} config_cap={config_cap}"

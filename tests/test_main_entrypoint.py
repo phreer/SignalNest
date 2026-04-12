@@ -114,6 +114,7 @@ class MainEntrypointTests(unittest.TestCase):
             config["storage"]["data_dir"] = tmp
 
             observed = {}
+            events = []
 
             def _fake_run_agent_turn(message, run_config, options):
                 observed["message"] = message
@@ -126,6 +127,9 @@ class MainEntrypointTests(unittest.TestCase):
                     "response": "done",
                     "steps": [],
                 }
+
+            def _progress(event):
+                events.append(event)
 
             with (
                 patch(
@@ -144,7 +148,9 @@ class MainEntrypointTests(unittest.TestCase):
                     "src.agent.kernel.run_agent_turn", side_effect=_fake_run_agent_turn
                 ),
             ):
-                result = main.run_schedule("早间日报", config, dry_run=True)
+                result = main.run_schedule(
+                    "早间日报", config, dry_run=True, progress_callback=_progress
+                )
 
             self.assertEqual(result["status"], "ok")
             self.assertIn(
@@ -154,6 +160,15 @@ class MainEntrypointTests(unittest.TestCase):
             self.assertIn("collect_rss", observed["deny_tools"])
             self.assertIn("collect_github", observed["deny_tools"])
             self.assertIn("collect_youtube", observed["deny_tools"])
+            prefetch_stages = [
+                event["stage"]
+                for event in events
+                if event.get("type") == "prefetch_progress"
+            ]
+            self.assertIn("prefetch_start", prefetch_stages)
+            self.assertIn("prefetch_source_start", prefetch_stages)
+            self.assertIn("prefetch_source_done", prefetch_stages)
+            self.assertIn("prefetch_done", prefetch_stages)
 
             store = AppStateStore.from_config(config)
             store.init_db()

@@ -221,6 +221,68 @@ def _make_progress_callback(store: AppStateStore, job_run_id: int):
             )
             return
 
+        if event_type == "prefetch_progress":
+            stage = str(event.get("stage", ""))
+            source = str(event.get("source", ""))
+            if stage == "prefetch_start":
+                message = "Prefetching configured sources"
+            elif stage == "prefetch_source_start":
+                message = f"Prefetching {source}"
+            elif stage == "prefetch_source_done":
+                message = f"Prefetched {source} ({event.get('fetched_count', 0)} items)"
+            elif stage == "prefetch_done":
+                message = (
+                    f"Prefetch complete ({event.get('raw_items_count', 0)} raw items)"
+                )
+            else:
+                message = f"prefetch:{stage}"
+
+            store.update_job_progress(
+                job_run_id,
+                stage="prefetch",
+                message=message,
+            )
+            store.add_job_log(
+                job_run_id,
+                level="INFO",
+                component="runtime",
+                event_type="prefetch_progress",
+                message=message,
+                extra=event,
+            )
+            return
+
+        if event_type == "summarizer_progress":
+            stage = str(event.get("stage", ""))
+            detail_parts: list[str] = []
+            if "candidate_count" in event:
+                detail_parts.append(f"candidates={event.get('candidate_count')}")
+            if "final_count" in event:
+                detail_parts.append(f"final={event.get('final_count')}")
+            if "completed" in event and "total" in event:
+                detail_parts.append(
+                    f"progress={event.get('completed')}/{event.get('total')}"
+                )
+            if "duration_ms" in event:
+                detail_parts.append(f"duration={event.get('duration_ms')}ms")
+            message = f"summarizer:{stage}"
+            if detail_parts:
+                message += " | " + ", ".join(detail_parts)
+            store.update_job_progress(
+                job_run_id,
+                stage="summarize_news",
+                message=message,
+            )
+            store.add_job_log(
+                job_run_id,
+                level="INFO",
+                component="agent",
+                event_type="summarizer_progress",
+                message=message,
+                extra=event,
+            )
+            return
+
         if event_type == "turn_finished":
             store.add_job_log(
                 job_run_id,

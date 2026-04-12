@@ -12,6 +12,14 @@ from src.ai.cli_backend import _call_ai
 logger = logging.getLogger(__name__)
 
 
+def _safe_positive_int(value, default: int) -> int:
+    try:
+        parsed = int(value)
+    except (TypeError, ValueError):
+        return default
+    return parsed if parsed > 0 else default
+
+
 def generate_digest_summary(
     news_items: list[dict],
     config: dict,
@@ -34,7 +42,13 @@ def generate_digest_summary(
     api_key = os.environ.get("AI_API_KEY", "")
     language = config.get("app", {}).get("language", "zh")
 
-    call_kwargs: dict = dict(model=model, api_key=api_key, max_tokens=8000)
+    call_kwargs: dict = dict(
+        model=model,
+        api_key=api_key,
+        max_tokens=8000,
+        timeout=_safe_positive_int(ai_cfg.get("request_timeout_seconds", 90), 90),
+        num_retries=_safe_positive_int(ai_cfg.get("request_num_retries", 1), 1),
+    )
     if api_base:
         call_kwargs["api_base"] = api_base
 
